@@ -1,0 +1,324 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">{{ isEditMode ? 'Editar Petrolera' : 'Nueva Petrolera' }}</h1>
+  </header>
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  <form [formGroup]="petroleraForm" (ngSubmit)="onSubmit()" class="form-container">
+    <div class="form-grid">
+      <!-- Nombre -->
+      <div class="form-group full-width">
+        <label for="nombre">Nombre *</label>
+        <input
+          id="nombre"
+          type="text"
+          formControlName="nombre"
+          class="form-control"
+          [class.error]="f['nombre'].invalid && f['nombre'].touched"
+          placeholder="Ej: Repsol, Cepsa, BP...">
+        @if (f['nombre'].invalid && f['nombre'].touched) {
+          <div class="error-text">
+            @if (f['nombre'].errors?.['required']) {
+              <span>El nombre es obligatorio</span>
+            }
+            @if (f['nombre'].errors?.['maxlength']) {
+              <span>Máximo 100 caracteres</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Email -->
+      <div class="form-group full-width">
+        <label for="email">Email de contacto</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          class="form-control"
+          [class.error]="f['email'].invalid && f['email'].touched"
+          placeholder="correo@petrolera.com">
+        @if (f['email'].invalid && f['email'].touched) {
+          <div class="error-text">
+            @if (f['email'].errors?.['email']) {
+              <span>El email no es válido</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Días envío créditos -->
+      <div class="form-group full-width">
+        <label>Días de la semana para envío automático de créditos (a las 8:00)</label>
+        <div class="dias-semana-grid">
+          @for (dia of diasSemana; track dia.value) {
+            <label class="dia-checkbox-label" [class.selected]="isDiaSeleccionado(dia.value)">
+              <input
+                type="checkbox"
+                [checked]="isDiaSeleccionado(dia.value)"
+                (change)="toggleDia(dia.value)">
+              {{ dia.label }}
+            </label>
+          }
+        </div>
+        @if (diasSeleccionados.length === 0) {
+          <small class="help-text-form">Sin envío automático configurado.</small>
+        } @else {
+          <small class="help-text-form">Los créditos pendientes se enviarán los días seleccionados a las 8:00.</small>
+        }
+      </div>
+
+      <!-- Activa -->
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            formControlName="activa">
+          <span>Activa</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="cancelar()" [disabled]="loading">
+        Cancelar
+      </button>
+      <button type="submit" class="btn-primary" [disabled]="loading || petroleraForm.invalid">
+        {{ loading ? 'Guardando...' : (isEditMode ? 'Actualizar' : 'Crear') }}
+      </button>
+    </div>
+  </form>
+
+  <!-- Plantillas de Correo de Contratos (solo en modo edición) -->
+  @if (isEditMode) {
+    <div class="plantillas-section">
+      <div class="section-header">
+        <h2>Plantillas de Correo para Contratos</h2>
+        <button type="button" class="btn-primary btn-sm" (click)="abrirFormPlantilla()">
+          + Nueva Plantilla
+        </button>
+      </div>
+
+      <p class="section-description">
+        Configure las plantillas de correo que se enviarán a esta petrolera para solicitudes de baja y cambio de condiciones, así como las notificaciones que recibirán los socios.
+      </p>
+
+      @if (loadingPlantillas) {
+        <p>Cargando plantillas...</p>
+      }
+
+      @if (!loadingPlantillas && plantillasContrato.length === 0) {
+        <div class="empty-state">
+          <p>No hay plantillas de correo configuradas para esta petrolera.</p>
+          <p>Haga clic en "Nueva Plantilla" para crear una.</p>
+        </div>
+      }
+
+      @if (!loadingPlantillas && plantillasContrato.length > 0) {
+        <div class="plantillas-grid">
+          @for (plantilla of plantillasContrato; track plantilla.id) {
+            <div class="plantilla-card" [class.inactiva]="!plantilla.activa">
+              <div class="plantilla-header">
+                <span class="plantilla-tipo">{{ obtenerLabelTipo(plantilla.tipoEvento) }}</span>
+                <span class="plantilla-estado" [class.activa]="plantilla.activa">
+                  {{ plantilla.activa ? 'Activa' : 'Inactiva' }}
+                </span>
+              </div>
+              <div class="plantilla-asunto">
+                <strong>Asunto:</strong> {{ plantilla.asunto }}
+              </div>
+              <div class="plantilla-preview">
+                {{ plantilla.cuerpo.length > 150 ? (plantilla.cuerpo | slice:0:150) + '...' : plantilla.cuerpo }}
+              </div>
+              <div class="plantilla-actions">
+                <button type="button" class="btn-secondary btn-sm" (click)="abrirFormPlantilla(plantilla)">
+                  Editar
+                </button>
+                <button type="button" class="btn-danger btn-sm" (click)="eliminarPlantilla(plantilla.id!)">
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Modal/Form para editar plantilla -->
+      @if (mostrarFormPlantilla) {
+        <div class="modal-overlay" (click)="cerrarFormPlantilla()">
+          <div class="modal-content plantilla-modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>{{ plantillaEditando ? 'Editar Plantilla' : 'Nueva Plantilla' }}</h3>
+              <button type="button" class="btn-close" (click)="cerrarFormPlantilla()"></button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Tipo de Plantilla *</label>
+                <select [(ngModel)]="nuevaPlantilla.tipoEvento" [disabled]="!!plantillaEditando">
+                  <option value="">Seleccione un tipo</option>
+                  @for (tipo of tiposPlantillaContrato; track tipo.value) {
+                    <option [value]="tipo.value">{{ tipo.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Asunto *</label>
+                <input type="text" [(ngModel)]="nuevaPlantilla.asunto" placeholder="Asunto del correo">
+              </div>
+
+              @if (nuevaPlantilla.tipoEvento) {
+                <div class="variables-section">
+                  <label>Variables disponibles:</label>
+                  <div class="variables-list">
+                    @for (variable of getVariablesDisponibles(nuevaPlantilla.tipoEvento); track variable) {
+                      <button type="button" class="variable-tag" (click)="insertarVariable(variable)">
+                        {{ variable }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div class="form-group">
+                <label>Cuerpo del correo *</label>
+                <textarea [(ngModel)]="nuevaPlantilla.cuerpo" rows="10" placeholder="Escriba el contenido del correo. Puede usar las variables disponibles arriba."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" [(ngModel)]="nuevaPlantilla.activa">
+                  <span>Activa</span>
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn-secondary" (click)="cerrarFormPlantilla()">Cancelar</button>
+              <button type="button" class="btn-primary" (click)="guardarPlantilla()"
+                [disabled]="!nuevaPlantilla.tipoEvento || !nuevaPlantilla.asunto.trim() || !nuevaPlantilla.cuerpo.trim()">
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Plantillas de Correo de Créditos (solo en modo edición) -->
+    <div class="plantillas-section">
+      <div class="section-header">
+        <h2>Plantillas de Correo para Créditos</h2>
+        <button type="button" class="btn-primary btn-sm" (click)="abrirFormPlantillaCredito()">
+          + Nueva Plantilla
+        </button>
+      </div>
+
+      <p class="section-description">
+        Configure las plantillas de correo para el flujo de créditos: solicitudes enviadas a la petrolera y notificaciones enviadas a los socios en cada etapa.
+      </p>
+
+      @if (loadingPlantillasCredito) {
+        <p>Cargando plantillas...</p>
+      }
+
+      @if (!loadingPlantillasCredito && plantillasCredito.length === 0) {
+        <div class="empty-state">
+          <p>No hay plantillas de crédito configuradas para esta petrolera.</p>
+          <p>Haga clic en "Nueva Plantilla" para crear una.</p>
+        </div>
+      }
+
+      @if (!loadingPlantillasCredito && plantillasCredito.length > 0) {
+        <div class="plantillas-grid">
+          @for (plantilla of plantillasCredito; track plantilla.id) {
+            <div class="plantilla-card" [class.inactiva]="!plantilla.activa">
+              <div class="plantilla-header">
+                <span class="plantilla-tipo">{{ obtenerLabelTipoCredito(plantilla.tipoEvento) }}</span>
+                <span class="plantilla-estado" [class.activa]="plantilla.activa">
+                  {{ plantilla.activa ? 'Activa' : 'Inactiva' }}
+                </span>
+              </div>
+              <div class="plantilla-asunto">
+                <strong>Asunto:</strong> {{ plantilla.asunto }}
+              </div>
+              <div class="plantilla-preview">
+                {{ plantilla.cuerpo.length > 150 ? (plantilla.cuerpo | slice:0:150) + '...' : plantilla.cuerpo }}
+              </div>
+              <div class="plantilla-actions">
+                <button type="button" class="btn-secondary btn-sm" (click)="abrirFormPlantillaCredito(plantilla)">
+                  Editar
+                </button>
+                <button type="button" class="btn-danger btn-sm" (click)="eliminarPlantillaCredito(plantilla.id!)">
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- Modal/Form para editar plantilla de crédito -->
+      @if (mostrarFormPlantillaCredito) {
+        <div class="modal-overlay" (click)="cerrarFormPlantillaCredito()">
+          <div class="modal-content plantilla-modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>{{ plantillaCreditoEditando ? 'Editar Plantilla de Crédito' : 'Nueva Plantilla de Crédito' }}</h3>
+              <button type="button" class="btn-close" (click)="cerrarFormPlantillaCredito()"></button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label>Tipo de Plantilla *</label>
+                <select [(ngModel)]="nuevaPlantillaCredito.tipoEvento" [disabled]="!!plantillaCreditoEditando">
+                  <option value="">Seleccione un tipo</option>
+                  @for (tipo of tiposPlantillaCredito; track tipo.value) {
+                    <option [value]="tipo.value">{{ tipo.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Asunto *</label>
+                <input type="text" [(ngModel)]="nuevaPlantillaCredito.asunto" placeholder="Asunto del correo">
+              </div>
+
+              @if (nuevaPlantillaCredito.tipoEvento) {
+                <div class="variables-section">
+                  <label>Variables disponibles:</label>
+                  <div class="variables-list">
+                    @for (variable of getVariablesDisponibles(nuevaPlantillaCredito.tipoEvento); track variable) {
+                      <button type="button" class="variable-tag" (click)="insertarVariableCredito(variable)">
+                        {{ variable }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div class="form-group">
+                <label>Cuerpo del correo *</label>
+                <textarea [(ngModel)]="nuevaPlantillaCredito.cuerpo" rows="10" placeholder="Escriba el contenido del correo. Puede usar las variables disponibles arriba."></textarea>
+              </div>
+
+              <div class="form-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" [(ngModel)]="nuevaPlantillaCredito.activa">
+                  <span>Activa</span>
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn-secondary" (click)="cerrarFormPlantillaCredito()">Cancelar</button>
+              <button type="button" class="btn-primary" (click)="guardarPlantillaCredito()"
+                [disabled]="!nuevaPlantillaCredito.tipoEvento || !nuevaPlantillaCredito.asunto.trim() || !nuevaPlantillaCredito.cuerpo.trim()">
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

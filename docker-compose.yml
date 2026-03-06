@@ -1,0 +1,275 @@
+services:
+
+  # ─── Base de datos ───────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: atg
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/sql/docker-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+    networks:
+      - backend
+
+  # ─── Microservicios Java ─────────────────────────────────────────────────────
+  auth:
+    build: ./backend/auth
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - KEYCLOAK_INTERNAL_URL=${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      - KEYCLOAK_ISSUER_URI=${KEYCLOAK_ISSUER_URI:-https://manuhd.duckdns.org/keycloak/realms/atg}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-atg}
+      - KEYCLOAK_DEVELOPER_USERNAME=${KEYCLOAK_DEVELOPER_USERNAME:-admin}
+      - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED=${MAIL_STARTTLS:-false}
+      - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+      - DEVELOPER_EMAIL=${DEVELOPER_EMAIL:-manu@localhost}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  socios:
+    build: ./backend/socios
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - KEYCLOAK_INTERNAL_URL=${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      - KEYCLOAK_ISSUER_URI=${KEYCLOAK_ISSUER_URI:-https://manuhd.duckdns.org/keycloak/realms/atg}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-atg}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  petroleras:
+    build: ./backend/petroleras
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - KEYCLOAK_INTERNAL_URL=${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      - KEYCLOAK_ISSUER_URI=${KEYCLOAK_ISSUER_URI:-https://manuhd.duckdns.org/keycloak/realms/atg}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-atg}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  tarjetas:
+    build: ./backend/tarjetas
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - APP_SOCIOS_URL=http://socios:8081
+      - KEYCLOAK_INTERNAL_URL=${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      - KEYCLOAK_ISSUER_URI=${KEYCLOAK_ISSUER_URI:-https://manuhd.duckdns.org/keycloak/realms/atg}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-atg}
+      - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED=${MAIL_STARTTLS:-false}
+      - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  contratos:
+    build: ./backend/contratos
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8082
+      - KEYCLOAK_INTERNAL_URL=${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      - KEYCLOAK_ISSUER_URI=${KEYCLOAK_ISSUER_URI:-https://manuhd.duckdns.org/keycloak/realms/atg}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-atg}
+      - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED=${MAIL_STARTTLS:-false}
+      - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+    volumes:
+      - contratos_storage:/app/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  creditos:
+    build: ./backend/creditos
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_creditos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CREDITOS}
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - MICROSERVICES_SOCIOS_URL=http://socios:8081
+      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8082
+      - KEYCLOAK_INTERNAL_URL=${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      - KEYCLOAK_ISSUER_URI=${KEYCLOAK_ISSUER_URI:-https://manuhd.duckdns.org/keycloak/realms/atg}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-atg}
+      - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED=${MAIL_STARTTLS:-false}
+      - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  dispositivos:
+    build: ./backend/dispositivos
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - MICROSERVICES_SOCIOS_URL=http://socios:8081
+      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8082
+      - KEYCLOAK_INTERNAL_URL=${KEYCLOAK_INTERNAL_URL:-http://keycloak:8080}
+      - KEYCLOAK_ISSUER_URI=${KEYCLOAK_ISSUER_URI:-https://manuhd.duckdns.org/keycloak/realms/atg}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-atg}
+      - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED=${MAIL_STARTTLS:-false}
+      - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  # ─── Keycloak (Identity Provider) ───────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    container_name: atg-keycloak
+    command: start --import-realm
+    environment:
+      KC_HTTP_RELATIVE_PATH: /keycloak
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: ${DOMAIN:-manuhd.duckdns.org}
+      KC_HOSTNAME_STRICT: "false"
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+      - keycloak_data:/opt/keycloak/data
+    restart: unless-stopped
+    networks:
+      - backend
+
+  # ─── Mailhog (SMTP para testing) ─────────────────────────────────────────────
+  # Atrapa todos los emails enviados por los microservicios y los muestra en
+  # una interfaz web accesible en /mail/ (sin enviar nada al exterior).
+  # Para producción: reemplazar las variables MAIL_* en .env con credenciales
+  # de un relay real (Brevo, Mailgun, etc.) y eliminar este servicio.
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: atg-mailhog
+    command: ["-ui-web-path=/mail"]
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # ─── Nginx (Frontend + Reverse Proxy) ────────────────────────────────────────
+  nginx:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot_certs:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - socios
+      - petroleras
+      - tarjetas
+      - contratos
+      - creditos
+      - dispositivos
+      - mailhog
+      - keycloak
+    networks:
+      - backend
+      - muebles
+
+  # ─── Certbot (renovación automática de SSL) ───────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - certbot_certs:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    # Comprueba si hay que renovar el certificado cada 12 horas
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done;'"
+
+# ─── Volúmenes persistentes ───────────────────────────────────────────────────
+volumes:
+  mysql_data:
+  certbot_certs:
+  certbot_www:
+  contratos_storage:
+  keycloak_data:
+
+# ─── Redes ────────────────────────────────────────────────────────────────────
+networks:
+  backend:
+    driver: bridge
+  # Red del proyecto muebles-horrillo (externa) — el nginx del ATG la necesita
+  # para proxear muebleshorrillo.duckdns.org hacia sus contenedores
+  muebles:
+    external: true
+    name: muebles-horrillo_backend

@@ -1,0 +1,334 @@
+<div class="detalle-container">
+  <div class="detalle-header">
+    <button class="btn btn-back" (click)="volver()">← Volver</button>
+    <h2>Detalle de Solicitud #{{ solicitud?.id }}</h2>
+  </div>
+
+  <div *ngIf="loading && !solicitud" class="loading">Cargando...</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+  <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+
+  <div *ngIf="solicitud" class="detalle-content">
+    <!-- Estado y Tipo -->
+    <div class="info-card">
+      <h3>Estado Actual</h3>
+      <div class="estado-section">
+        <app-estado-badge [estado]="solicitud.estado" size="large"></app-estado-badge>
+        <span class="tipo-badge">{{ solicitud.tipo }}</span>
+      </div>
+    </div>
+
+    <!-- Información Principal -->
+    <div class="info-card">
+      <h3>Información de la Solicitud</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Matrícula:</span>
+          <span class="info-value">{{ solicitud.matricula }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Fecha Solicitud:</span>
+          <span class="info-value">{{ formatearFecha(solicitud.fechaSolicitud) }}</span>
+        </div>
+        <div class="info-item" *ngIf="solicitud.fechaProcesado">
+          <span class="info-label">Fecha Procesado:</span>
+          <span class="info-value">{{ formatearFecha(solicitud.fechaProcesado) }}</span>
+        </div>
+        <div class="info-item" *ngIf="solicitud.procesadoPor">
+          <span class="info-label">Procesado Por:</span>
+          <span class="info-value">{{ solicitud.procesadoPor }}</span>
+        </div>
+        <div class="info-item" *ngIf="solicitud.fechaLlegadaEstimada">
+          <span class="info-label">Fecha Llegada Estimada:</span>
+          <span class="info-value">{{ formatearFecha(solicitud.fechaLlegadaEstimada) }}</span>
+        </div>
+        <div class="info-item" *ngIf="solicitud.fechaEntrega">
+          <span class="info-label">Fecha Entrega:</span>
+          <span class="info-value">{{ formatearFecha(solicitud.fechaEntrega) }}</span>
+        </div>
+      </div>
+      <div class="info-item full-width" *ngIf="solicitud.observaciones">
+        <span class="info-label">Observaciones:</span>
+        <p class="info-value">{{ solicitud.observaciones }}</p>
+      </div>
+    </div>
+
+    <!-- Datos del Socio -->
+    <div class="info-card" *ngIf="socio">
+      <h3>Datos del Socio</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Nombre:</span>
+          <span class="info-value">{{ socio.nombre }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Número Socio:</span>
+          <span class="info-value">{{ socio.numeroSocio }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Email:</span>
+          <span class="info-value">{{ socio.email }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Provincia:</span>
+          <span class="info-value">{{ socio.provincia }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Datos de la Petrolera -->
+    <div class="info-card" *ngIf="petrolera">
+      <h3>Datos de la Petrolera</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="info-label">Nombre:</span>
+          <span class="info-value">{{ petrolera.nombre }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Email:</span>
+          <span class="info-value">{{ petrolera.email }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Correos Enviados -->
+    <div class="info-card">
+      <app-email-logs [correosEnviados]="solicitud.correosEnviados || ''"></app-email-logs>
+    </div>
+
+    <!-- Acciones Disponibles -->
+    <div class="actions-card" *ngIf="solicitud.estado !== 'COMPLETADA' && solicitud.estado !== 'RECHAZADA'">
+      <h3>Acciones Disponibles</h3>
+      <div class="actions-grid">
+        <button
+          *ngIf="puedeAprobar"
+          class="btn btn-success"
+          (click)="aprobar()"
+          [disabled]="loading"
+        >
+          ✓ Aprobar Solicitud
+        </button>
+
+        <button
+          *ngIf="puedeAprobar"
+          class="btn btn-danger"
+          (click)="rechazar()"
+          [disabled]="loading"
+        >
+          ✗ Rechazar Solicitud
+        </button>
+
+        <button
+          *ngIf="puedeRegistrarLlegada"
+          class="btn btn-primary"
+          (click)="abrirModalLlegada()"
+          [disabled]="loading"
+        >
+          📦 Registrar Llegada de Tarjeta
+        </button>
+
+        <button
+          *ngIf="puedeMarcarEntregada"
+          class="btn btn-info"
+          (click)="abrirModalEntregada()"
+          [disabled]="loading"
+        >
+          ✓✓ Marcar como Entregada
+        </button>
+
+        <button
+          *ngIf="puedeFinalizar"
+          class="btn btn-success"
+          (click)="finalizar()"
+          [disabled]="loading"
+        >
+          ✓✓✓ Finalizar Proceso
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Rechazar Solicitud -->
+<div class="modal-overlay" *ngIf="showRechazoModal" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Rechazar Solicitud</h3>
+      <button class="modal-close" (click)="cerrarModal()">×</button>
+    </div>
+    <div class="form-group">
+      <label for="motivoRechazo">Motivo del rechazo *</label>
+      <textarea
+        id="motivoRechazo"
+        [(ngModel)]="motivoRechazo"
+        class="form-control"
+        rows="4"
+        placeholder="Ingrese el motivo del rechazo..."
+      ></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+      <button type="button" class="btn btn-danger" [disabled]="!motivoRechazo.trim()" (click)="confirmarRechazo()">
+        Confirmar Rechazo
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Registrar Llegada -->
+<div class="modal-overlay" *ngIf="showLlegadaModal" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Registrar Llegada de Tarjeta</h3>
+      <button class="modal-close" (click)="cerrarModal()">×</button>
+    </div>
+    <form [formGroup]="llegadaForm" (ngSubmit)="registrarLlegada()">
+      <div class="form-group">
+        <label for="fechaLlegadaEstimada">Fecha Estimada de Entrega/Recogida *</label>
+        <input
+          type="date"
+          id="fechaLlegadaEstimada"
+          formControlName="fechaLlegadaEstimada"
+          class="form-control"
+        >
+      </div>
+      <div class="form-group">
+        <label for="numeroContrato">Número de Contrato</label>
+        <input
+          type="text"
+          id="numeroContrato"
+          formControlName="numeroContrato"
+          class="form-control"
+          placeholder="Número de contrato (opcional)"
+          maxlength="50"
+        >
+        <small class="form-text">Campo opcional</small>
+      </div>
+      <div class="form-group">
+        <label for="observaciones">Observaciones</label>
+        <textarea
+          id="observaciones"
+          formControlName="observaciones"
+          class="form-control"
+          rows="3"
+        ></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="llegadaForm.invalid || loading">
+          Registrar Llegada
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Marcar Entregada -->
+<div class="modal-overlay" *ngIf="showEntregadaModal" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Marcar como Entregada</h3>
+      <button class="modal-close" (click)="cerrarModal()">×</button>
+    </div>
+    <form [formGroup]="entregadaForm" (ngSubmit)="marcarEntregada()">
+      <div class="form-group">
+        <label for="observacionesEntrega">Observaciones</label>
+        <textarea
+          id="observacionesEntrega"
+          formControlName="observaciones"
+          class="form-control"
+          rows="3"
+          placeholder="Información adicional sobre la entrega (opcional)"
+        ></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn btn-success" [disabled]="entregadaForm.invalid || loading">
+          Marcar como Entregada
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Aprobar BAJA -->
+<div class="modal-overlay" *ngIf="showBajaModal" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Aprobar Baja de Tarjeta</h3>
+      <button class="modal-close" (click)="cerrarModal()">×</button>
+    </div>
+    <form [formGroup]="bajaForm" (ngSubmit)="aprobarBaja()">
+      <div class="alert alert-info">
+        <strong>Información:</strong> Al aprobar esta solicitud, la tarjeta se marcará como inactiva y se registrará la fecha de baja.
+      </div>
+      <div class="form-group">
+        <label for="fechaBaja">Fecha de Baja *</label>
+        <input
+          type="date"
+          id="fechaBaja"
+          formControlName="fechaBaja"
+          class="form-control"
+        >
+        <small class="form-text">Fecha en la que se da de baja la tarjeta (por defecto: hoy)</small>
+      </div>
+      <div class="form-group">
+        <label for="observacionesBaja">Observaciones</label>
+        <textarea
+          id="observacionesBaja"
+          formControlName="observaciones"
+          class="form-control"
+          rows="3"
+          placeholder="Información adicional sobre la baja (opcional)"
+        ></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn btn-danger" [disabled]="bajaForm.invalid || loading">
+          Aprobar Baja
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Aprobar DUPLICADO -->
+<div class="modal-overlay" *ngIf="showDuplicadoModal" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Aprobar Duplicado de Tarjeta</h3>
+      <button class="modal-close" (click)="cerrarModal()">×</button>
+    </div>
+    <form [formGroup]="duplicadoForm" (ngSubmit)="aprobarDuplicado()">
+      <div class="alert alert-info">
+        <strong>Información:</strong> Al aprobar esta solicitud, se incrementará el contador de tarjetas físicas (cantidad) para esta matrícula.
+      </div>
+      <div class="form-group">
+        <label for="fechaRespuesta">Fecha de Respuesta *</label>
+        <input
+          type="date"
+          id="fechaRespuesta"
+          formControlName="fechaRespuesta"
+          class="form-control"
+        >
+        <small class="form-text">Fecha de respuesta a la solicitud de duplicado (por defecto: hoy)</small>
+      </div>
+      <div class="form-group">
+        <label for="observacionesDuplicado">Observaciones</label>
+        <textarea
+          id="observacionesDuplicado"
+          formControlName="observaciones"
+          class="form-control"
+          rows="3"
+          placeholder="Información adicional sobre el duplicado (opcional)"
+        ></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="duplicadoForm.invalid || loading">
+          Aprobar Duplicado
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

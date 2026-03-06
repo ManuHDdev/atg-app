@@ -1,0 +1,318 @@
+name: atg-app
+
+services:
+
+  # ─── Base de datos ───────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: atg
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/sql/docker-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+    networks:
+      - backend
+
+  # ─── Microservicios Java ─────────────────────────────────────────────────────
+  auth:
+    image: ghcr.io/manuhddev/atg-auth:latest
+    restart: unless-stopped
+    environment:
+      # Datasource
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      # JPA
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQLDialect
+      # Keycloak JWT
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/keycloak/realms/atg/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER_URI=https://${DOMAIN}/keycloak/realms/atg
+      - KEYCLOAK_REALM=atg
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
+      # Keycloak Admin API
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
+      - KEYCLOAK_DEVELOPER_USERNAME=${KEYCLOAK_DEVELOPER_USERNAME:-admin}
+      # CORS
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      # Mail
+      - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED=${MAIL_STARTTLS:-false}
+      - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+      - DEVELOPER_EMAIL=${DEVELOPER_EMAIL:-manu@localhost}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  socios:
+    image: ghcr.io/manuhddev/atg-socios:latest
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQLDialect
+      - SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=50MB
+      - SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=50MB
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/keycloak/realms/atg/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER_URI=https://${DOMAIN}/keycloak/realms/atg
+      - KEYCLOAK_REALM=atg
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  petroleras:
+    image: ghcr.io/manuhddev/atg-petroleras:latest
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQLDialect
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/keycloak/realms/atg/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER_URI=https://${DOMAIN}/keycloak/realms/atg
+      - KEYCLOAK_REALM=atg
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
+      - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  tarjetas:
+    image: ghcr.io/manuhddev/atg-tarjetas:latest
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQLDialect
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/keycloak/realms/atg/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER_URI=https://${DOMAIN}/keycloak/realms/atg
+      - KEYCLOAK_REALM=atg
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - APP_SOCIOS_URL=http://socios:8081
+      - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
+      - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  contratos:
+    image: ghcr.io/manuhddev/atg-contratos:latest
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQLDialect
+      - SPRING_SQL_INIT_MODE=always
+      - SPRING_JPA_DEFER_DATASOURCE_INITIALIZATION=true
+      - SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=50MB
+      - SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=50MB
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/keycloak/realms/atg/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER_URI=https://${DOMAIN}/keycloak/realms/atg
+      - KEYCLOAK_REALM=atg
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8082
+      - STORAGE_PLANTILLAS=/app/storage/plantillas/originales
+      - STORAGE_CONTRATOS=/app/storage/contratos/solicitudes
+      - STORAGE_BORRADORES=/app/storage/contratos/borradores
+      - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
+      - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+    volumes:
+      - contratos_storage:/app/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  creditos:
+    image: ghcr.io/manuhddev/atg-creditos:latest
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_creditos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CREDITOS}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQLDialect
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/keycloak/realms/atg/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER_URI=https://${DOMAIN}/keycloak/realms/atg
+      - KEYCLOAK_REALM=atg
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - MICROSERVICES_SOCIOS_URL=http://socios:8081
+      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8082
+      - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
+      - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  dispositivos:
+    image: ghcr.io/manuhddev/atg-dispositivos:latest
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=admin_contratos
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQLDialect
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/keycloak/realms/atg/protocol/openid-connect/certs
+      - KEYCLOAK_ISSUER_URI=https://${DOMAIN}/keycloak/realms/atg
+      - KEYCLOAK_REALM=atg
+      - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
+      - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - MICROSERVICES_SOCIOS_URL=http://socios:8081
+      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8082
+      - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
+      - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
+      - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
+      - SPRING_MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
+      - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
+      - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend
+
+  # ─── Keycloak ─────────────────────────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    container_name: atg-keycloak
+    command: start --import-realm
+    environment:
+      KC_HTTP_RELATIVE_PATH: /keycloak
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME: ${DOMAIN}
+      KC_HOSTNAME_STRICT: "false"
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+      - keycloak_data:/opt/keycloak/data
+    restart: unless-stopped
+    networks:
+      - backend
+
+  # ─── Mailhog (testing) ────────────────────────────────────────────────────────
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: atg-mailhog
+    command: ["-ui-web-path=/mail"]
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # ─── Nginx + Frontend (imagen GHCR con nginx config bakeada) ─────────────────
+  nginx:
+    image: ghcr.io/manuhddev/atg-frontend:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certbot_certs:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - auth
+      - socios
+      - petroleras
+      - tarjetas
+      - contratos
+      - creditos
+      - dispositivos
+      - mailhog
+      - keycloak
+    networks:
+      - backend
+      - muebles
+
+  # ─── Certbot (renovación SSL) ─────────────────────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - certbot_certs:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $${!}; done;'"
+
+# ─── Volúmenes ────────────────────────────────────────────────────────────────
+volumes:
+  mysql_data:
+  certbot_certs:
+  certbot_www:
+  contratos_storage:
+  keycloak_data:
+
+# ─── Redes ────────────────────────────────────────────────────────────────────
+networks:
+  backend:
+    driver: bridge
+  muebles:
+    external: true
+    name: muebles-horrillo_backend

@@ -1,0 +1,159 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">
+        {{ petroleraId ? 'Tipos de Solicitud de ' + petroleraNombre : 'Gestión de Tipos de Solicitud' }}
+      </h1>
+      @if (petroleraId) {
+        <button class="btn-link" (click)="volver()">← Volver a Petroleras</button>
+      }
+    </div>
+    @if (petroleraId) {
+      <button class="btn-primary" (click)="nuevoTipoSolicitud()">+ Nuevo Tipo de Solicitud</button>
+    }
+  </header>
+
+  @if (loading) {
+    <div class="loading">Cargando...</div>
+  }
+
+  @if (!loading && !petroleraId) {
+    <div class="info-message">
+      <p>Seleccione una petrolera desde la gestión de petroleras para configurar sus tipos de solicitud.</p>
+      <button class="btn-primary" (click)="volver()">Ir a Petroleras</button>
+    </div>
+  }
+
+  @if (!loading && petroleraId && mostrarFormulario) {
+    <div class="form-container">
+      <div class="form-header">
+        <h2>{{ editandoId ? 'Editar Tipo de Solicitud' : 'Nuevo Tipo de Solicitud' }}</h2>
+        <button class="btn-icon" (click)="cancelarFormulario()">✕</button>
+      </div>
+
+      <form [formGroup]="tipoSolicitudForm" (ngSubmit)="guardarTipoSolicitud()">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nombre">Nombre *</label>
+            <input
+              type="text"
+              id="nombre"
+              formControlName="nombre"
+              placeholder="Ej: Precio Lista"
+              [class.error]="f['nombre'].invalid && f['nombre'].touched"
+            />
+            @if (f['nombre'].invalid && f['nombre'].touched) {
+              <span class="error-message">El nombre es obligatorio</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="codigo">Código *</label>
+            <input
+              type="text"
+              id="codigo"
+              formControlName="codigo"
+              placeholder="Ej: PRECIO_LISTA"
+              [class.error]="f['codigo'].invalid && f['codigo'].touched"
+            />
+            @if (f['codigo'].invalid && f['codigo'].touched) {
+              <span class="error-message">El código es obligatorio</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="activa" />
+              Activa
+            </label>
+          </div>
+        </div>
+
+        <!-- Campo para subir plantilla PDF -->
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="plantillaPdf">Plantilla PDF</label>
+            <input
+              type="file"
+              id="plantillaPdf"
+              accept="application/pdf"
+              (change)="onArchivoSeleccionado($event)"
+            />
+            @if (nombreArchivoMostrar) {
+              <small class="archivo-actual-badge">📄 Archivo actual: {{ nombreArchivoMostrar }}</small>
+            }
+            <small class="help-text">
+              Seleccione un archivo PDF que se usará como plantilla editable para este tipo de solicitud.
+            </small>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancelarFormulario()">Cancelar</button>
+          <button type="submit" class="btn-primary">{{ editandoId ? 'Actualizar' : 'Crear' }}</button>
+        </div>
+      </form>
+    </div>
+  }
+
+  @if (!loading && petroleraId && tiposSolicitud.length === 0 && !mostrarFormulario) {
+    <div class="empty-state">
+      <p>No hay tipos de solicitud configurados para esta petrolera.</p>
+      <button class="btn-primary" (click)="nuevoTipoSolicitud()">Crear primer tipo de solicitud</button>
+    </div>
+  }
+
+  @if (!loading && petroleraId && tiposSolicitud.length > 0 && !mostrarFormulario) {
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Código</th>
+            <th>Plantilla PDF</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tipoSolicitud of tiposSolicitud; track tipoSolicitud.id) {
+            <tr>
+              <td>{{ tipoSolicitud.nombre }}</td>
+              <td><code>{{ tipoSolicitud.codigo }}</code></td>
+              <td>
+                @if (tipoSolicitud.nombreArchivoPlantilla) {
+                  <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <span class="badge-success">{{ tipoSolicitud.nombreArchivoPlantilla }}</span>
+                    <button
+                      class="btn-icon btn-small"
+                      (click)="previsualizarPlantillaPdf(tipoSolicitud.id!)"
+                      title="Previsualizar plantilla">
+                      👁️
+                    </button>
+                    <button
+                      class="btn-icon-danger btn-small"
+                      (click)="eliminarPlantillaPdf(tipoSolicitud.id!)"
+                      title="Eliminar plantilla">
+                      🗑️
+                    </button>
+                  </div>
+                } @else {
+                  <span class="badge-warning">Sin plantilla</span>
+                }
+              </td>
+              <td>
+                <span [class]="tipoSolicitud.activa ? 'badge-success' : 'badge-danger'">
+                  {{ tipoSolicitud.activa ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn-icon" (click)="editarTipoSolicitud(tipoSolicitud)">Editar</button>
+                <button class="btn-icon-danger" (click)="eliminarTipoSolicitud(tipoSolicitud.id!)">Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

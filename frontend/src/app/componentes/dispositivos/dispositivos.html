@@ -1,0 +1,377 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">Gestión de Dispositivos</h1>
+    <button class="btn-primary" (click)="abrirFormulario()">+ Nueva Solicitud</button>
+  </header>
+
+  <!-- Filtros -->
+  <div class="filters-container">
+    <div class="filter-group">
+      <label for="filtroEstado">Estado</label>
+      <select id="filtroEstado" [(ngModel)]="filtroEstado">
+        <option value="TODOS">Todos</option>
+        <option [value]="EstadoSolicitud.PENDIENTE">Pendiente</option>
+        <option [value]="EstadoSolicitud.ENVIADO_PETROLERA">Enviado a Petrolera</option>
+        <option [value]="EstadoSolicitud.APROBADO">Aprobado</option>
+        <option [value]="EstadoSolicitud.DENEGADO">Denegado</option>
+        <option [value]="EstadoSolicitud.COMPLETADO">Completado</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="filtroTipo">Tipo</label>
+      <select id="filtroTipo" [(ngModel)]="filtroTipo">
+        <option value="TODOS">Todos</option>
+        @for (tipo of tiposSolicitud; track tipo.value) {
+          <option [value]="tipo.value">{{ tipo.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- Tabla de solicitudes -->
+  @if (solicitudesFiltradas.length === 0) {
+    <div class="empty-state">
+      <p>No hay solicitudes de dispositivo para mostrar</p>
+    </div>
+  }
+
+  @if (solicitudesFiltradas.length > 0) {
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Socio</th>
+            <th>Empresa</th>
+            <th>Petrolera</th>
+            <th>Matrícula</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th>Fecha Creación</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (solicitud of solicitudesFiltradas; track solicitud.id) {
+            <tr>
+              <td>{{ solicitud.id }}</td>
+              <td>{{ getTipoLabel(solicitud.tipoSolicitud) }}</td>
+              <td>{{ solicitud.socioNombre }}</td>
+              <td>{{ solicitud.empresaNombre || 'N/A' }}</td>
+              <td>{{ solicitud.petroleraNombre }}</td>
+              <td>
+                {{ solicitud.dispositivoMatricula || solicitud.matricula || 'N/A' }}
+                @if (solicitud.tipoSolicitud === TipoSolicitud.CAMBIO_MATRICULA && solicitud.matriculaDestino) {
+                  <span class="matricula-arrow"> → {{ solicitud.matriculaDestino }}</span>
+                }
+              </td>
+              <td>{{ solicitud.tipoSolicitud === TipoSolicitud.SOLICITUD_CREDITO && solicitud.monto ? (solicitud.monto | number:'1.2-2') + ' €' : '-' }}</td>
+              <td>
+                <span class="badge" [ngClass]="getEstadoClass(solicitud.estado)">
+                  {{ getEstadoTexto(solicitud.estado) }}
+                </span>
+                @if (solicitud.programadoEnvio && solicitud.fechaProgramadaEnvio) {
+                  <span class="badge badge-scheduled"
+                        title="Programado: {{ solicitud.fechaProgramadaEnvio | date:'dd/MM/yyyy HH:mm' }}">
+                    Programado
+                  </span>
+                }
+              </td>
+              <td>{{ solicitud.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td class="actions">
+                <button class="btn-action" (click)="verDetalle(solicitud)" title="Ver detalle">
+                  <i class="bi bi-eye"></i>
+                </button>
+                @if (solicitud.estado === EstadoSolicitud.PENDIENTE) {
+                  <button class="btn-action" (click)="enviarAPetrolera(solicitud)" title="Enviar a petrolera">
+                    <i class="bi bi-send"></i>
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Modal de formulario -->
+  @if (mostrarFormulario) {
+    <div class="modal-overlay" (click)="cerrarFormulario()">
+      <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">Nueva Solicitud de Dispositivo</h2>
+          <button class="btn-close" (click)="cerrarFormulario()"></button>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Tipo de Solicitud *</label>
+                <select class="form-input" [(ngModel)]="nuevaSolicitud.tipoSolicitud" name="tipoSolicitud" (change)="onTipoSolicitudChange()" required>
+                  @for (tipo of tiposSolicitud; track tipo.value) {
+                    <option [value]="tipo.value">{{ tipo.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group autocomplete-container">
+                <label class="form-label">Socio *</label>
+                <div class="autocomplete-wrapper">
+                  <input
+                    type="text"
+                    class="form-input"
+                    placeholder="Buscar socio por nombre, número..."
+                    [(ngModel)]="busquedaSocio"
+                    (input)="buscarSocios()"
+                    (focus)="buscarSocios()"
+                    name="busquedaSocio"
+                    autocomplete="off">
+                  @if (busquedaSocio) {
+                    <button
+                      type="button"
+                      class="autocomplete-clear"
+                      (click)="limpiarBusquedaSocio()">✕</button>
+                  }
+                  @if (mostrarListaSocios) {
+                    <ul class="autocomplete-list">
+                      @for (socio of sociosFiltrados; track socio.id) {
+                        <li class="autocomplete-item" (click)="seleccionarSocio(socio)">
+                          <div class="autocomplete-item-main">{{ socio.nombre }}</div>
+                          <div class="autocomplete-item-sub">{{ socio.numeroSocio }} - {{ socio.email }}</div>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Empresa</label>
+                <select class="form-input" [(ngModel)]="nuevaSolicitud.empresaId" name="empresaId">
+                  <option [value]="undefined">Sin empresa</option>
+                  @for (empresa of empresas; track empresa.id) {
+                    <option [value]="empresa.id">{{ empresa.nombre }} ({{ empresa.cif }})</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Petrolera *</label>
+                <select class="form-input" [(ngModel)]="nuevaSolicitud.petroleraId" name="petroleraId" required>
+                  <option value="0">Seleccione una petrolera</option>
+                  @for (petrolera of petroleras; track petrolera.id) {
+                    <option [value]="petrolera.id">{{ petrolera.nombre }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- ALTA: Matrícula -->
+              @if (nuevaSolicitud.tipoSolicitud === TipoSolicitud.ALTA_DISPOSITIVO) {
+                <div class="form-group">
+                  <label class="form-label">Matrícula *</label>
+                  <input type="text" class="form-input" [(ngModel)]="nuevaSolicitud.matricula"
+                         name="matricula" placeholder="Ej: 1234ABC" maxlength="20">
+                </div>
+              }
+
+              <!-- CREDITO/BAJA/CAMBIO: Selector de dispositivo activo -->
+              @if (requiresDispositivo()) {
+                <div class="form-group">
+                  <label class="form-label">Dispositivo Activo *</label>
+                  <select class="form-input" [(ngModel)]="nuevaSolicitud.dispositivoId" name="dispositivoId" required>
+                    <option [value]="undefined">Seleccione un dispositivo</option>
+                    @for (disp of dispositivosSocio; track disp.id) {
+                      <option [value]="disp.id">{{ disp.matricula }} ({{ disp.petroleraNombre }})</option>
+                    }
+                  </select>
+                  @if (socioSeleccionado && dispositivosSocio.length === 0) {
+                    <span class="form-hint form-hint-error">Este socio no tiene dispositivos activos</span>
+                  }
+                </div>
+              }
+
+              <!-- CREDITO: Monto -->
+              @if (nuevaSolicitud.tipoSolicitud === TipoSolicitud.SOLICITUD_CREDITO) {
+                <div class="form-group">
+                  <label class="form-label">Monto (€) *</label>
+                  <input type="number" class="form-input" [(ngModel)]="nuevaSolicitud.monto"
+                         name="monto" step="0.01" min="0">
+                </div>
+              }
+
+              <!-- CAMBIO: Matrícula destino -->
+              @if (nuevaSolicitud.tipoSolicitud === TipoSolicitud.CAMBIO_MATRICULA) {
+                <div class="form-group">
+                  <label class="form-label">Matrícula Destino *</label>
+                  <input type="text" class="form-input" [(ngModel)]="nuevaSolicitud.matriculaDestino"
+                         name="matriculaDestino" placeholder="Nueva matrícula" maxlength="20">
+                </div>
+              }
+
+              <div class="form-group form-group-full">
+                <label class="form-label">Observaciones</label>
+                <textarea class="form-input form-textarea" [(ngModel)]="nuevaSolicitud.observaciones"
+                          name="observaciones" rows="3"></textarea>
+              </div>
+
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="cerrarFormulario()">Cancelar</button>
+          <button class="btn-primary" (click)="guardarSolicitud()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de detalle -->
+  @if (solicitudSeleccionada) {
+    <div class="modal-overlay" (click)="solicitudSeleccionada = undefined">
+      <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">Detalle de Solicitud #{{ solicitudSeleccionada.id }}</h2>
+          <button class="btn-close" (click)="solicitudSeleccionada = undefined"></button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Tipo</span>
+              <span class="detail-value">{{ getTipoLabel(solicitudSeleccionada.tipoSolicitud) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Estado</span>
+              <span class="detail-value">
+                <span class="badge" [ngClass]="getEstadoClass(solicitudSeleccionada.estado)">
+                  {{ getEstadoTexto(solicitudSeleccionada.estado) }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Socio</span>
+              <span class="detail-value">
+                {{ solicitudSeleccionada.socioNombre }}
+                <span class="detail-sub">{{ solicitudSeleccionada.socioEmail }}</span>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Petrolera</span>
+              <span class="detail-value">
+                {{ solicitudSeleccionada.petroleraNombre }}
+                <span class="detail-sub">{{ solicitudSeleccionada.petroleraEmail }}</span>
+              </span>
+            </div>
+            @if (solicitudSeleccionada.empresaNombre) {
+              <div class="detail-item">
+                <span class="detail-label">Empresa</span>
+                <span class="detail-value">{{ solicitudSeleccionada.empresaNombre }}</span>
+              </div>
+            }
+            @if (solicitudSeleccionada.dispositivoMatricula) {
+              <div class="detail-item">
+                <span class="detail-label">Dispositivo</span>
+                <span class="detail-value">{{ solicitudSeleccionada.dispositivoMatricula }}</span>
+              </div>
+            }
+            @if (solicitudSeleccionada.matricula) {
+              <div class="detail-item">
+                <span class="detail-label">Matrícula</span>
+                <span class="detail-value">
+                  {{ solicitudSeleccionada.matricula }}
+                  @if (solicitudSeleccionada.matriculaDestino) {
+                    <span class="matricula-arrow"> → {{ solicitudSeleccionada.matriculaDestino }}</span>
+                  }
+                </span>
+              </div>
+            }
+            @if (solicitudSeleccionada.monto) {
+              <div class="detail-item">
+                <span class="detail-label">Monto</span>
+                <span class="detail-value detail-value-highlight">{{ solicitudSeleccionada.monto | number:'1.2-2' }} €</span>
+              </div>
+            }
+            @if (solicitudSeleccionada.observaciones) {
+              <div class="detail-item detail-item-full">
+                <span class="detail-label">Observaciones</span>
+                <span class="detail-value">{{ solicitudSeleccionada.observaciones }}</span>
+              </div>
+            }
+            <div class="detail-item">
+              <span class="detail-label">Fecha de Creación</span>
+              <span class="detail-value">{{ solicitudSeleccionada.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            @if (solicitudSeleccionada.programadoEnvio && solicitudSeleccionada.fechaProgramadaEnvio) {
+              <div class="detail-item">
+                <span class="detail-label">Envío Programado</span>
+                <span class="detail-value">
+                  <span class="badge badge-scheduled">
+                    {{ solicitudSeleccionada.fechaProgramadaEnvio | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+                </span>
+              </div>
+            }
+            @if (solicitudSeleccionada.fechaEnvioPetrolera) {
+              <div class="detail-item">
+                <span class="detail-label">Fecha Envío Petrolera</span>
+                <span class="detail-value">{{ solicitudSeleccionada.fechaEnvioPetrolera | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            }
+            @if (solicitudSeleccionada.fechaRespuestaPetrolera) {
+              <div class="detail-item">
+                <span class="detail-label">Fecha Respuesta Petrolera</span>
+                <span class="detail-value">{{ solicitudSeleccionada.fechaRespuestaPetrolera | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            }
+            @if (solicitudSeleccionada.respuestaPetrolera) {
+              <div class="detail-item detail-item-full">
+                <span class="detail-label">Respuesta de la Petrolera</span>
+                <div class="detail-response">
+                  {{ solicitudSeleccionada.respuestaPetrolera }}
+                </div>
+              </div>
+            }
+
+            <!-- Historial de Correos -->
+            <div class="detail-item detail-item-full">
+              <app-email-logs [correosEnviados]="solicitudSeleccionada.correosEnviados || ''"></app-email-logs>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="solicitudSeleccionada = undefined">Cerrar</button>
+          @if (solicitudSeleccionada.estado === EstadoSolicitud.ENVIADO_PETROLERA) {
+            <button class="btn-primary" (click)="abrirModalRespuesta(solicitudSeleccionada, true)">Aprobar</button>
+            <button class="btn-danger" (click)="abrirModalRespuesta(solicitudSeleccionada, false)">Denegar</button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de respuesta petrolera -->
+  @if (mostrarModalRespuesta) {
+    <div class="modal-overlay" (click)="cerrarModalRespuesta()">
+      <div class="modal-container" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">{{ aprobandoRespuesta ? 'Aprobar' : 'Denegar' }} Solicitud #{{ solicitudRespondiendo?.id }}</h2>
+          <button class="btn-close" (click)="cerrarModalRespuesta()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Comentarios de la petrolera</label>
+            <textarea class="form-input form-textarea" [(ngModel)]="comentarioRespuesta"
+                      rows="5" placeholder="Ingrese los comentarios de respuesta de la petrolera..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="cerrarModalRespuesta()">Cancelar</button>
+          <button [class]="aprobandoRespuesta ? 'btn-primary' : 'btn-danger'" (click)="confirmarRespuesta()">
+            {{ aprobandoRespuesta ? 'Confirmar Aprobación' : 'Confirmar Denegación' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

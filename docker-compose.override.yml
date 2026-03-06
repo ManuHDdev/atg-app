@@ -1,0 +1,24 @@
+# docker-compose.override.yml — Solo para desarrollo LOCAL
+# Este archivo es cargado automáticamente por Docker Compose al hacer "docker compose up"
+# NO transferir al servidor de producción (transfer.ps1 no lo incluye)
+#
+# Qué hace:
+#   - Expone el puerto 8025 de Mailhog para acceder a la UI en http://localhost:8025
+#   - Expone el puerto 8180 de Keycloak para acceder al admin en http://localhost:8180/keycloak/admin/
+#   - Configura Keycloak para desarrollo local (sin HTTPS)
+#
+# En producción, Mailhog y Keycloak solo son accesibles a través de nginx
+
+services:
+  mailhog:
+    ports:
+      - "1025:1025"   # SMTP (para servicios fuera de Docker, ej. Spring Boot desde IntelliJ)
+      - "8025:8025"   # Web UI → http://localhost:8025
+
+  keycloak:
+    ports:
+      - "8180:8080"   # Admin UI → http://localhost:8180/keycloak/admin/
+    environment:
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: "8180"
+      KC_HOSTNAME_STRICT: "false"

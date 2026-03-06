@@ -1,0 +1,40 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="cerrar()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ titulo }}</h2>
+        <button class="btn-close" (click)="cerrar()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        @if (!pdfPreviewUrl) {
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Cargando PDF...</p>
+          </div>
+        }
+
+        @if (pdfPreviewUrl) {
+          <div class="pdf-viewer-container">
+            <embed
+              [src]="pdfPreviewUrl"
+              type="application/pdf"
+              class="pdf-viewer"
+            />
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        @if (mostrarBotonDescargar) {
+          <button class="btn-secondary" (click)="descargarPdf()" [disabled]="!pdfPreviewUrl">
+            📥 Descargar PDF
+          </button>
+        }
+        <button class="btn-primary" (click)="cerrar()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+}

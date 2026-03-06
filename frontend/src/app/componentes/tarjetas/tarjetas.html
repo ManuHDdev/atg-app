@@ -1,0 +1,114 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">Gestión de Tarjetas</h1>
+  </header>
+
+  @if (loading) {
+    <div class="loading">Cargando...</div>
+  }
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  @if (!loading && !error) {
+    <!-- Filtros -->
+    <div class="filter-container">
+      <div class="filter-group autocomplete-container">
+        <label for="filtroSocio">Filtrar por Socio:</label>
+        <div class="autocomplete-wrapper">
+          <input
+            type="text"
+            id="filtroSocio"
+            class="filter-input"
+            placeholder="Buscar socio por nombre, número..."
+            [(ngModel)]="busquedaSocio"
+            (input)="buscarSocios()"
+            (focus)="buscarSocios()"
+            autocomplete="off">
+          @if (busquedaSocio) {
+            <button class="autocomplete-clear" (click)="limpiarBusquedaSocio()">✕</button>
+          }
+          @if (mostrarListaSocios) {
+            <ul class="autocomplete-list">
+              @for (socio of sociosFiltrados; track socio.id) {
+                <li class="autocomplete-item" (click)="seleccionarSocio(socio)">
+                  <div class="autocomplete-item-main">{{ socio.nombre }}</div>
+                  <div class="autocomplete-item-sub">{{ socio.numeroSocio }} - {{ socio.email }}</div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label for="filtroPetrolera">Filtrar por Petrolera:</label>
+        <select id="filtroPetrolera" [(ngModel)]="filtroPetroleraId" (change)="aplicarFiltros()" class="filter-select">
+          <option value="">Todas las petroleras</option>
+          @for (petrolera of petroleras; track petrolera.id) {
+            <option [value]="petrolera.id">{{ petrolera.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <button class="btn-secondary" (click)="limpiarFiltros()">Limpiar Filtros</button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Socio</th>
+            <th>Petrolera</th>
+            <th>Matrícula</th>
+            <th>N° Contrato</th>
+            <th>Fecha Alta</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tarjeta of tarjetasFiltradas; track tarjeta.id) {
+            <tr>
+              <td>{{ obtenerNombreSocio(tarjeta.socioId) }}</td>
+              <td>{{ obtenerNombrePetrolera(tarjeta.petroleraId) }}</td>
+              <td>{{ tarjeta.matricula }}</td>
+              <td>{{ tarjeta.numeroContrato }}</td>
+              <td>{{ tarjeta.fechaAlta ? (tarjeta.fechaAlta | date:'dd/MM/yyyy') : '-' }}</td>
+              <td>
+                <span [class]="tarjeta.activa ? 'badge-success' : 'badge-danger'">
+                  {{ tarjeta.activa ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn-icon" (click)="editarTarjeta(tarjeta.id!)">Editar</button>
+                <button class="btn-icon-danger" (click)="abrirModalEliminar(tarjeta.id!)">Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+@if (mostrarModalEliminar) {
+  <div class="modal-overlay" (click)="cancelarEliminar()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Confirmar eliminación</h3>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro de que desea <strong>eliminar definitivamente</strong> esta tarjeta?</p>
+        <p class="text-danger">Esta acción no se puede deshacer.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="cancelarEliminar()">Cancelar</button>
+        <button class="btn-danger" (click)="confirmarEliminar()" [disabled]="loading">Eliminar</button>
+      </div>
+    </div>
+  </div>
+}

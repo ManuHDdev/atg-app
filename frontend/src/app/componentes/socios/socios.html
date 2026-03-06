@@ -1,0 +1,73 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">Gestión de Socios</h1>
+    <button class="btn-primary" (click)="nuevoSocio()">+ Nuevo Socio</button>
+  </header>
+
+  @if (loading) {
+    <div class="loading">Cargando...</div>
+  }
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  @if (!loading && !error) {
+    <!-- Buscador -->
+    <div class="search-container">
+      <div class="search-box">
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Buscar por nombre, número de socio, email o agrupación..."
+          [(ngModel)]="terminoBusqueda"
+          (input)="buscarSocios()">
+        @if (terminoBusqueda) {
+          <button class="search-clear" (click)="limpiarBusqueda()">✕</button>
+        }
+      </div>
+      <div class="search-results">
+        {{ sociosFiltrados.length }} resultado(s) encontrado(s)
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Número Socio</th>
+            <th>Nombre</th>
+            <th>Email</th>
+            <th>Teléfono</th>
+            <th>Agrupación</th>
+            <th>Fecha Alta</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (socio of sociosFiltrados; track socio.id) {
+            <tr>
+              <td>{{ socio.numeroSocio }}</td>
+              <td>{{ socio.nombre }}</td>
+              <td>{{ socio.email }}</td>
+              <td>{{ socio.telefono }}</td>
+              <td><span class="badge-info">{{ socio.agrupacion }}</span></td>
+              <td>{{ socio.fechaAlta ? (socio.fechaAlta | date:'dd/MM/yyyy') : '-' }}</td>
+              <td>
+                <span [class]="socio.activo ? 'badge-success' : 'badge-danger'">
+                  {{ socio.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn-icon" (click)="verDetalle(socio.id!)">Ver</button>
+                <button class="btn-icon" (click)="editarSocio(socio.id!)">Editar</button>
+                <button class="btn-icon-danger" (click)="eliminarSocio(socio.id!)">Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

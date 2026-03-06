@@ -1,0 +1,510 @@
+<div class="content-wrapper">
+  @if (loading) {
+    <div class="loading">Cargando...</div>
+  }
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  @if (!loading && !error && empresa) {
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">{{ empresa.nombre }}</h1>
+        <button class="btn-link" (click)="volver()">← Volver a la lista</button>
+      </div>
+      <div class="header-actions">
+        <button class="btn-secondary" (click)="editarEmpresa()">Editar</button>
+        <button class="btn-danger" (click)="eliminarEmpresa()">Eliminar</button>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <button
+        class="tab-button"
+        [class.active]="activeTab === 'general'"
+        (click)="cambiarTab('general')">
+        Información General
+      </button>
+      <button
+        class="tab-button"
+        [class.active]="activeTab === 'solicitudes'"
+        (click)="cambiarTab('solicitudes')">
+        Historial de Solicitudes
+      </button>
+      <button
+        class="tab-button"
+        [class.active]="activeTab === 'activos'"
+        (click)="cambiarTab('activos')">
+        Elementos Activos
+      </button>
+    </div>
+
+    <!-- Tab Content: General -->
+    @if (activeTab === 'general') {
+      <div class="detail-container">
+        <!-- Información de la Empresa -->
+        <section class="detail-section">
+          <h2 class="section-title">Información de la Empresa</h2>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">CIF:</span>
+              <span class="detail-value">{{ empresa.cif }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">Email:</span>
+              <span class="detail-value">{{ empresa.email || '-' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">Teléfono:</span>
+              <span class="detail-value">{{ empresa.telefono || '-' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">Fecha Alta:</span>
+              <span class="detail-value">
+                {{ empresa.fechaAlta ? (empresa.fechaAlta | date:'dd/MM/yyyy') : '-' }}
+              </span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">Estado:</span>
+              <span class="detail-value">
+                <span [class]="empresa.activa ? 'badge-success' : 'badge-danger'">
+                  {{ empresa.activa ? 'Activa' : 'Inactiva' }}
+                </span>
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Dirección -->
+        <section class="detail-section">
+          <h2 class="section-title">Dirección</h2>
+          <div class="detail-grid">
+            <div class="detail-item full-width">
+              <span class="detail-label">Dirección:</span>
+              <span class="detail-value">{{ empresa.direccion || '-' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">Población:</span>
+              <span class="detail-value">{{ empresa.poblacion || '-' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">Provincia:</span>
+              <span class="detail-value">{{ empresa.provincia || '-' }}</span>
+            </div>
+
+            <div class="detail-item">
+              <span class="detail-label">Código Postal:</span>
+              <span class="detail-value">{{ empresa.codigoPostal || '-' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Socio Propietario -->
+        @if (socio) {
+          <section class="detail-section">
+            <div class="section-header">
+              <h2 class="section-title">Socio Propietario</h2>
+              <button class="btn-secondary btn-sm" (click)="verSocio()">Ver Perfil Completo</button>
+            </div>
+
+            <div class="empresa-card">
+              <div class="empresa-header">
+                <h3 class="empresa-name">{{ socio.nombre }}</h3>
+                <span [class]="socio.activo ? 'badge-success' : 'badge-danger'">
+                  {{ socio.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </div>
+              <div class="empresa-info">
+                <span><strong>Número Socio:</strong> {{ socio.numeroSocio }}</span>
+                <span><strong>Email:</strong> {{ socio.email || '-' }}</span>
+                <span><strong>Teléfono:</strong> {{ socio.telefono || '-' }}</span>
+              </div>
+            </div>
+          </section>
+        }
+      </div>
+    }
+
+    <!-- Tab Content: Historial de Solicitudes -->
+    @if (activeTab === 'solicitudes') {
+      <div class="detail-container">
+        @if (loadingSolicitudes) {
+          <div class="loading">Cargando historial de solicitudes...</div>
+        }
+
+        @if (!loadingSolicitudes) {
+          <!-- Filtros -->
+          <section class="detail-section filters-section">
+            <h2 class="section-title">Filtros</h2>
+            <div class="filters-grid">
+              <div class="filter-group">
+                <label for="filtroFechaDesde">Fecha Desde</label>
+                <input
+                  type="date"
+                  id="filtroFechaDesde"
+                  [(ngModel)]="filtroFechaDesde"
+                  (change)="aplicarFiltros()"
+                  class="form-control">
+              </div>
+
+              <div class="filter-group">
+                <label for="filtroFechaHasta">Fecha Hasta</label>
+                <input
+                  type="date"
+                  id="filtroFechaHasta"
+                  [(ngModel)]="filtroFechaHasta"
+                  (change)="aplicarFiltros()"
+                  class="form-control">
+              </div>
+
+              <div class="filter-group">
+                <label for="filtroTipoSolicitud">Tipo Solicitud</label>
+                <select
+                  id="filtroTipoSolicitud"
+                  [(ngModel)]="filtroTipoSolicitud"
+                  (change)="aplicarFiltros()"
+                  class="form-control">
+                  <option value="">Todos</option>
+                  <option value="NUEVO">Nuevo</option>
+                  <option value="BAJA">Baja</option>
+                  <option value="CAMBIO_CONDICIONES">Cambio Condiciones</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label for="filtroEstadoContrato">Estado Contrato</label>
+                <select
+                  id="filtroEstadoContrato"
+                  [(ngModel)]="filtroEstadoContrato"
+                  (change)="aplicarFiltros()"
+                  class="form-control">
+                  <option value="">Todos</option>
+                  <option value="BORRADOR">Borrador</option>
+                  <option value="ENVIADO_SOCIO">Enviado a Socio</option>
+                  <option value="FIRMADO_SOCIO">Firmado por Socio</option>
+                  <option value="ENVIADO_PETROLERA">Enviado a Petrolera</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label for="filtroEstadoCredito">Estado Crédito</label>
+                <select
+                  id="filtroEstadoCredito"
+                  [(ngModel)]="filtroEstadoCredito"
+                  (change)="aplicarFiltros()"
+                  class="form-control">
+                  <option value="">Todos</option>
+                  <option value="PENDIENTE">Pendiente</option>
+                  <option value="ENVIADO_PETROLERA">Enviado a Petrolera</option>
+                  <option value="APROBADO">Aprobado</option>
+                  <option value="DENEGADO">Denegado</option>
+                  <option value="COMPLETADO_APROBADO">Completado (Aprobado)</option>
+                  <option value="COMPLETADO_DENEGADO">Completado (Denegado)</option>
+                </select>
+              </div>
+
+              <div class="filter-actions">
+                <button class="btn-secondary btn-sm" (click)="limpiarFiltros()">
+                  Limpiar Filtros
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Solicitudes de Contratos -->
+          <section class="detail-section">
+            <h2 class="section-title">Solicitudes de Contratos ({{ solicitudesContratoFiltradas.length }})</h2>
+            @if (solicitudesContratoFiltradas.length === 0) {
+              <p class="empty-text">No hay solicitudes de contratos que coincidan con los filtros.</p>
+            } @else {
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Número</th>
+                      <th>Fecha</th>
+                      <th>Tipo</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (solicitud of contratosContratosPaginados; track solicitud.id) {
+                      <tr>
+                        <td><strong>{{ solicitud.numeroSolicitud }}</strong></td>
+                        <td>{{ solicitud.fechaHoraSolicitud | date:'dd/MM/yyyy' }}</td>
+                        <td>{{ solicitud.tipoSolicitud }}</td>
+                        <td>
+                          <span class="badge">{{ solicitud.estado }}</span>
+                        </td>
+                        <td>
+                          <button class="btn-icon" (click)="verDetalleContrato(solicitud.id!)" title="Ver detalle">
+                            👁️
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Paginación Contratos -->
+              @if (totalPaginasContratos > 1) {
+                <div class="pagination">
+                  <button
+                    class="btn-secondary btn-sm"
+                    [disabled]="paginaContratosActual === 0"
+                    (click)="cambiarPaginaContratos(paginaContratosActual - 1)">
+                    ← Anterior
+                  </button>
+
+                  <span class="page-info">
+                    Página {{ paginaContratosActual + 1 }} de {{ totalPaginasContratos }}
+                  </span>
+
+                  <button
+                    class="btn-secondary btn-sm"
+                    [disabled]="paginaContratosActual >= totalPaginasContratos - 1"
+                    (click)="cambiarPaginaContratos(paginaContratosActual + 1)">
+                    Siguiente →
+                  </button>
+                </div>
+              }
+            }
+          </section>
+
+          <!-- Tarjetas -->
+          <section class="detail-section">
+            <h2 class="section-title">Tarjetas ({{ tarjetasSolicitudes.length }})</h2>
+            @if (tarjetasSolicitudes.length === 0) {
+              <p class="empty-text">No hay tarjetas registradas.</p>
+            } @else {
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Número</th>
+                      <th>Matrícula</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (tarjeta of tarjetasSolicitudes; track tarjeta.id) {
+                      <tr>
+                        <td><strong>{{ tarjeta.numeroContrato || '-' }}</strong></td>
+                        <td>{{ tarjeta.matricula || '-' }}</td>
+                        <td>
+                          <span [class]="tarjeta.activa ? 'badge-success' : 'badge-danger'">
+                            {{ tarjeta.activa ? 'Activa' : 'Inactiva' }}
+                          </span>
+                        </td>
+                        <td>
+                          <button class="btn-icon" (click)="verDetalleTarjeta(tarjeta.id!)" title="Ver detalle">
+                            👁️
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+
+          <!-- Solicitudes de Créditos -->
+          <section class="detail-section">
+            <h2 class="section-title">Solicitudes de Créditos ({{ solicitudesCreditoFiltradas.length }})</h2>
+            @if (solicitudesCreditoFiltradas.length === 0) {
+              <p class="empty-text">No hay solicitudes de créditos que coincidan con los filtros.</p>
+            } @else {
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Monto</th>
+                      <th>Estado</th>
+                      <th>Fecha Solicitud</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (credito of solicitudesCreditoPaginadas; track credito.id) {
+                      <tr>
+                        <td><strong>#{{ credito.id }}</strong></td>
+                        <td>{{ credito.monto | currency:'EUR' }}</td>
+                        <td>
+                          <span class="badge">{{ credito.estado }}</span>
+                        </td>
+                        <td>{{ credito.createdAt ? (credito.createdAt | date:'dd/MM/yyyy') : '-' }}</td>
+                        <td>
+                          <button class="btn-icon" (click)="verDetalleCredito(credito.id!)" title="Ver detalle">
+                            👁️
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Paginación Créditos -->
+              @if (totalPaginasCreditos > 1) {
+                <div class="pagination">
+                  <button
+                    class="btn-secondary btn-sm"
+                    [disabled]="paginaCreditosActual === 0"
+                    (click)="cambiarPaginaCreditos(paginaCreditosActual - 1)">
+                    ← Anterior
+                  </button>
+
+                  <span class="page-info">
+                    Página {{ paginaCreditosActual + 1 }} de {{ totalPaginasCreditos }}
+                  </span>
+
+                  <button
+                    class="btn-secondary btn-sm"
+                    [disabled]="paginaCreditosActual >= totalPaginasCreditos - 1"
+                    (click)="cambiarPaginaCreditos(paginaCreditosActual + 1)">
+                    Siguiente →
+                  </button>
+                </div>
+              }
+            }
+          </section>
+        }
+      </div>
+    }
+
+    <!-- Tab Content: Elementos Activos -->
+    @if (activeTab === 'activos') {
+      <div class="detail-container">
+        @if (loadingActivos) {
+          <div class="loading">Cargando elementos activos...</div>
+        }
+
+        @if (!loadingActivos) {
+          <!-- Contratos Activos -->
+          <section class="detail-section">
+            <h2 class="section-title">Contratos Activos ({{ contratosActivos.length }})</h2>
+            @if (contratosActivos.length === 0) {
+              <p class="empty-text">No hay contratos activos.</p>
+            } @else {
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Tipo</th>
+                      <th>Estado</th>
+                      <th>Fecha Vigencia</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (contrato of contratosActivos; track contrato.id) {
+                      <tr>
+                        <td><strong>#{{ contrato.id }}</strong></td>
+                        <td>{{ contrato.tipoContrato || '-' }}</td>
+                        <td>
+                          <span class="badge-success">{{ contrato.estado }}</span>
+                        </td>
+                        <td>
+                          {{ contrato.fechaVigenciaDesde ? (contrato.fechaVigenciaDesde | date:'dd/MM/yyyy') : '-' }}
+                        </td>
+                        <td>
+                          <button class="btn-icon" (click)="verDetalleContrato(contrato.id!)" title="Ver detalle">
+                            👁️
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+
+          <!-- Tarjetas Activas -->
+          <section class="detail-section">
+            <h2 class="section-title">Tarjetas Activas ({{ tarjetasActivas.length }})</h2>
+            @if (tarjetasActivas.length === 0) {
+              <p class="empty-text">No hay tarjetas activas.</p>
+            } @else {
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Número</th>
+                      <th>Matrícula</th>
+                      <th>Cantidad</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (tarjeta of tarjetasActivas; track tarjeta.id) {
+                      <tr>
+                        <td><strong>{{ tarjeta.numeroContrato || '-' }}</strong></td>
+                        <td>{{ tarjeta.matricula || '-' }}</td>
+                        <td>{{ tarjeta.cantidad }} tarjeta(s)</td>
+                        <td>
+                          <button class="btn-icon" (click)="verDetalleTarjeta(tarjeta.id!)" title="Ver detalle">
+                            👁️
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+
+          <!-- Créditos Activos -->
+          <section class="detail-section">
+            <h2 class="section-title">Créditos Aprobados ({{ creditosActivos.length }})</h2>
+            @if (creditosActivos.length === 0) {
+              <p class="empty-text">No hay créditos aprobados.</p>
+            } @else {
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Monto</th>
+                      <th>Fecha Aprobación</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (credito of creditosActivos; track credito.id) {
+                      <tr>
+                        <td><strong>#{{ credito.id }}</strong></td>
+                        <td>{{ credito.monto | currency:'EUR' }}</td>
+                        <td>{{ credito.fechaRespuestaPetrolera ? (credito.fechaRespuestaPetrolera | date:'dd/MM/yyyy') : '-' }}</td>
+                        <td>
+                          <button class="btn-icon" (click)="verDetalleCredito(credito.id!)" title="Ver detalle">
+                            👁️
+                          </button>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </section>
+        }
+      </div>
+    }
+  }
+</div>

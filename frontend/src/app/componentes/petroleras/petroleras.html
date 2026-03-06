@@ -1,0 +1,45 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">Gestión de Petroleras</h1>
+    <button class="btn-primary" (click)="nuevaPetrolera()">+ Nueva Petrolera</button>
+  </header>
+
+  @if (loading) {
+    <div class="loading">Cargando...</div>
+  }
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  @if (!loading && !error) {
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (petrolera of petroleras; track petrolera.id) {
+            <tr>
+              <td>{{ petrolera.nombre }}</td>
+              <td>
+                <span [class]="petrolera.activa ? 'badge-success' : 'badge-danger'">
+                  {{ petrolera.activa ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn-icon" (click)="verDetalle(petrolera.id!, $event)">Ver</button>
+                <button class="btn-icon" (click)="editarPetrolera(petrolera.id!)">Editar</button>
+                <button class="btn-icon-danger" (click)="eliminarPetrolera(petrolera.id!)">Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

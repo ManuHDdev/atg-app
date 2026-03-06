@@ -1,0 +1,10 @@
+<span
+  class="estado-badge"
+  [class]="estadoClass"
+  [class.badge-small]="size === 'small'"
+  [class.badge-medium]="size === 'medium'"
+  [class.badge-large]="size === 'large'"
+>
+  <span class="badge-icon">{{ estadoIcon }}</span>
+  <span class="badge-label">{{ estadoLabel }}</span>
+</span>

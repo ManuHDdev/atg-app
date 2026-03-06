@@ -1,0 +1,186 @@
+<div class="content-wrapper">
+  <div class="page-header">
+    <h1 class="page-title">{{ isEditMode ? 'Editar' : 'Nueva' }} Plantilla de Email</h1>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    Cargando...
+  </div>
+
+  <div class="form-layout" *ngIf="!loading">
+    <!-- Formulario principal -->
+    <div class="form-container">
+      <form (ngSubmit)="guardar()">
+        <div class="form-group">
+          <label for="petroleraId">Petrolera *</label>
+          <select
+            id="petroleraId"
+            class="form-control"
+            [(ngModel)]="plantilla.petroleraId"
+            name="petroleraId"
+            required>
+            <option [value]="0" disabled>Seleccione una petrolera</option>
+            <option *ngFor="let petrolera of petroleras" [value]="petrolera.id">
+              {{ petrolera.nombre }}
+            </option>
+          </select>
+          <small class="help-text">
+            Las plantillas están asociadas a una petrolera específica
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="tipoEvento">Tipo de Evento *</label>
+          <select
+            id="tipoEvento"
+            class="form-control"
+            [(ngModel)]="plantilla.tipoEvento"
+            name="tipoEvento"
+            required>
+            <option *ngFor="let tipo of tiposEvento" [value]="tipo.value">
+              {{ tipo.label }}
+            </option>
+          </select>
+          <small class="help-text">
+            Este campo determina qué variables estarán disponibles para usar en la plantilla
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="asunto">Asunto del Email *</label>
+          <div class="input-with-buttons">
+            <input
+              type="text"
+              id="asunto"
+              class="form-control"
+              [(ngModel)]="plantilla.asunto"
+              name="asunto"
+              placeholder="Ej: Tu crédito ha sido aprobado"
+              required>
+            <div class="variable-insert-inline">
+              <button
+                type="button"
+                class="btn-variable-small"
+                *ngFor="let variable of variablesDisponibles"
+                (click)="insertarVariableEnAsunto(variable)"
+                [title]="'Insertar ' + variable">
+                {{ variable }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="cuerpo">Cuerpo del Email *</label>
+          <textarea
+            id="cuerpo"
+            class="form-control textarea-large"
+            [(ngModel)]="plantilla.cuerpo"
+            name="cuerpo"
+            rows="12"
+            placeholder="Escribe el contenido del email aquí. Puedes usar HTML para darle formato."
+            required></textarea>
+          <small class="help-text">
+            Puedes usar HTML para formatear el texto (por ejemplo: &lt;strong&gt;, &lt;em&gt;, &lt;br&gt;, &lt;p&gt;)
+          </small>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [(ngModel)]="plantilla.activa"
+              name="activa">
+            <span>Plantilla activa</span>
+          </label>
+          <small class="help-text">
+            Solo las plantillas activas se utilizarán para enviar emails
+          </small>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancelar()">
+            Cancelar
+          </button>
+          <button type="button" class="btn-secondary" (click)="generarPreview()">
+            👁️ Vista Previa
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="loading">
+            {{ isEditMode ? 'Actualizar' : 'Crear' }} Plantilla
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Panel lateral de variables -->
+    <div class="variables-panel">
+      <div class="panel-sticky">
+        <h3 class="panel-title">Variables Disponibles</h3>
+        <p class="panel-description">
+          Haz clic en una variable para insertarla en el cuerpo del email en la posición del cursor.
+        </p>
+
+        <div class="panel-info">
+          <strong>Tipo de evento seleccionado:</strong><br>
+          <span class="badge-info">{{ obtenerLabelTipoEvento(plantilla.tipoEvento) }}</span>
+        </div>
+
+        <div class="variables-list">
+          <button
+            type="button"
+            class="btn-variable"
+            *ngFor="let variable of variablesDisponibles"
+            (click)="insertarVariable(variable)">
+            {{ variable }}
+          </button>
+        </div>
+
+        <div class="panel-help">
+          <h4>💡 Cómo usar las variables</h4>
+          <p>
+            Las variables se reemplazan automáticamente con los datos reales cuando se envía el email.
+          </p>
+          <p>
+            Ejemplo:<br>
+            <code>Hola {{'{{'}}nombreSocio{{'}}'}},</code><br>
+            se convertirá en:<br>
+            <code>Hola Juan Pérez,</code>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de vista previa -->
+  <div class="modal" *ngIf="mostrarPreview" [class.show]="mostrarPreview">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Vista Previa del Email</h5>
+          <button type="button" class="btn-close" (click)="cerrarPreview()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="preview-container">
+            <div class="preview-subject">
+              <strong>Asunto:</strong> {{ plantilla.asunto }}
+            </div>
+            <div class="preview-divider"></div>
+            <div class="preview-body" [innerHTML]="previewHtml"></div>
+          </div>
+          <div class="preview-note">
+            <strong>Nota:</strong> Esta es una vista previa con datos de ejemplo. Los valores reales se insertarán cuando se envíe el email.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="cerrarPreview()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" *ngIf="mostrarPreview"></div>
+</div>

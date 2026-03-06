@@ -1,0 +1,546 @@
+<div class="content-wrapper">
+  @if (loading) {
+    <div class="loading">Cargando solicitud...</div>
+  }
+
+  @if (!loading && solicitud) {
+    <header class="page-header">
+      <div>
+        <button class="btn-link" (click)="volver()">← Volver a Solicitudes</button>
+        <h1 class="page-title">Solicitud {{ solicitud.numeroSolicitud }}</h1>
+      </div>
+      <span [class]="'badge-large ' + getEstadoClass(solicitud.estado!)">
+        {{ getEstadoTexto(solicitud.estado!) }}
+      </span>
+    </header>
+
+    <!-- Información General -->
+    <div class="detail-card">
+      <h2>Información General</h2>
+      <div class="info-grid">
+        <div class="info-item">
+          <label>Número de Solicitud</label>
+          <span class="value"><strong>{{ solicitud.numeroSolicitud }}</strong></span>
+        </div>
+        <div class="info-item">
+          <label>Tipo de Solicitud</label>
+          <span [class]="getTipoSolicitudClass(solicitud.tipoSolicitud)">
+            {{ getTipoSolicitudTexto(solicitud.tipoSolicitud) }}
+          </span>
+        </div>
+        @if (nombreTipoSolicitudPetrolera) {
+          <div class="info-item">
+            <label>Subtipo</label>
+            <span class="value">{{ nombreTipoSolicitudPetrolera }}</span>
+          </div>
+        }
+        <div class="info-item">
+          <label>Fecha de Solicitud</label>
+          <span class="value">{{ solicitud.fechaHoraSolicitud | date: 'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div class="info-item">
+          <label>Tipo de Cliente</label>
+          <span [class]="solicitud.esAutonomo ? 'badge-info' : 'badge-primary'">
+            {{ solicitud.esAutonomo ? 'Autónomo' : 'Empresa' }}
+          </span>
+        </div>
+        @if (solicitud.solicitadoPor) {
+          <div class="info-item">
+            <label>Solicitado Por</label>
+            <span class="value">{{ solicitud.solicitadoPor }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="info-item">
+        <label>Socio</label>
+        <span class="value">{{ nombreSocio || 'Cargando...' }}</span>
+      </div>
+      @if (nombreEmpresa) {
+        <div class="info-item">
+          <label>Empresa</label>
+          <span class="value">{{ nombreEmpresa }}</span>
+        </div>
+      }
+      <div class="info-item">
+        <label>Petrolera</label>
+        <span class="value">{{ nombrePetrolera || 'Cargando...' }}</span>
+      </div>
+      @if (solicitud.observaciones) {
+        <div class="info-item full-width">
+          <label>Observaciones</label>
+          <p class="observations">{{ solicitud.observaciones }}</p>
+        </div>
+      }
+    </div>
+
+    <!-- Workflow y Gestión de PDFs -->
+    <div class="detail-card">
+      <h2>Workflow de la Solicitud</h2>
+
+      <!-- Estado: BORRADOR -->
+      <div class="workflow-step" [class.active]="solicitud.estado === EstadoSolicitud.BORRADOR">
+        <div class="step-header">
+          <span class="step-number">1</span>
+          <h3>Edición del Contrato</h3>
+          @if (solicitud.estado === EstadoSolicitud.BORRADOR) {
+            <span class="badge-warning">Estado Actual</span>
+          } @else {
+            <span class="badge-success">✓ Completado</span>
+          }
+        </div>
+
+        <div class="step-content">
+          <p>El PDF editable ha sido generado automáticamente desde la plantilla configurada.</p>
+
+          @if (puedeEditarPdf()) {
+            <div class="action-box">
+              <p><strong>Acciones disponibles:</strong></p>
+
+              <!-- Siempre mostrar la plantilla original -->
+              @if (solicitud.rutaPdfEditable) {
+                <div class="pdf-file-info">
+                  <p class="file-label">📋 Plantilla Original:</p>
+                  <p class="file-name">Plantilla editable.pdf</p>
+                  <div class="button-group">
+                    <button class="btn-primary" (click)="previsualizarPlantillaOriginal()">
+                      👁️ Ver Plantilla
+                    </button>
+                    <button class="btn-secondary" (click)="descargarPlantillaOriginal()">
+                      📥 Descargar Plantilla
+                    </button>
+                    <!-- <button class="btn-success" (click)="abrirEditorCampos()">
+                      ✏️ Editar campos
+                    </button> -->
+                  </div>
+                </div>
+              }
+
+              <!-- Mostrar PDF editado subido solo si existe y no es la plantilla inicial -->
+              @if (solicitud.rutaPdfEditable && solicitud.nombrePdfEditable && solicitud.nombrePdfEditable !== 'editable.pdf') {
+                <div class="pdf-file-info">
+                  <p class="file-label">✅ PDF Editado Guardado:</p>
+                  <p class="file-name">{{ solicitud.nombrePdfEditable }}</p>
+                  <p class="help-text">
+                    Este es el PDF que se enviará al socio cuando presiones "Enviar a Socio"
+                  </p>
+                  <div class="button-group">
+                    <button class="btn-primary" (click)="previsualizarPdf('editable')">
+                      👁️ Ver PDF Editado
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <div class="upload-section">
+                <p class="upload-label">Subir PDF editado:</p>
+                <div class="file-input-group">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    (change)="onFileSelected($event)"
+                    #fileInput />
+                  @if (selectedFile) {
+                    <span class="file-name">{{ selectedFile.name }}</span>
+                    <button
+                      class="btn-primary"
+                      (click)="guardarPdfEditado()"
+                      [disabled]="procesando">
+                      💾 Guardar PDF Editado
+                    </button>
+                  }
+                </div>
+                <small class="help-text">
+                  Descargue la plantilla, edítela con Adobe Reader u otro editor de PDFs, y vuelva a subirla aquí.
+                </small>
+              </div>
+
+              @if (puedeEnviarASocio()) {
+                <div class="send-action">
+                  <button
+                    class="btn-success"
+                    (click)="enviarASocio()"
+                    [disabled]="procesando">
+                    📤 Enviar a Socio
+                  </button>
+                  <small class="help-text">
+                    Esto aplanará el PDF (lo hará no editable) y cambiará el estado a "Enviado a Socio".
+                  </small>
+                </div>
+              }
+            </div>
+          } @else {
+            <div class="completed-info">
+              <p>✓ PDF editable guardado correctamente</p>
+              @if (solicitud.rutaPdfEditable && solicitud.nombrePdfEditable) {
+                <div class="pdf-file-info">
+                  <p class="file-label">📄 PDF Editado:</p>
+                  <p class="file-name">{{ solicitud.nombrePdfEditable }}</p>
+                  <div class="button-group">
+                    <button class="btn-primary" (click)="previsualizarPdf('editable')">
+                      👁️ Ver PDF Editado
+                    </button>
+                    <button class="btn-secondary" (click)="descargarPdf('editable')">
+                      📥 Descargar PDF Editado
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Estado: ENVIADO_SOCIO -->
+      <div class="workflow-step" [class.active]="solicitud.estado === EstadoSolicitud.ENVIADO_SOCIO">
+        <div class="step-header">
+          <span class="step-number">2</span>
+          <h3>Firma del Socio</h3>
+          @if (solicitud.estado === EstadoSolicitud.ENVIADO_SOCIO) {
+            <span class="badge-info">Estado Actual</span>
+          } @else if (solicitud.fechaEnvioSocio) {
+            <span class="badge-success">✓ Completado</span>
+          } @else {
+            <span class="badge-secondary">Pendiente</span>
+          }
+        </div>
+
+        <div class="step-content">
+          @if (solicitud.fechaEnvioSocio) {
+            <p><strong>Enviado el:</strong> {{ solicitud.fechaEnvioSocio | date: 'dd/MM/yyyy HH:mm' }}</p>
+            <p>El PDF aplanado (no editable) ha sido enviado al socio para su firma.</p>
+
+            @if (solicitud.rutaPdfEnviado && solicitud.nombrePdfEnviado) {
+              <div class="pdf-file-info">
+                <p class="file-label">📤 PDF Enviado al Socio:</p>
+                <p class="file-name">{{ solicitud.nombrePdfEnviado }}</p>
+                <div class="button-group">
+                  <button class="btn-primary" (click)="previsualizarPdf('enviado')">
+                    👁️ Ver PDF Enviado
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Mostrar PDF firmado ya subido si existe -->
+            @if (solicitud.rutaPdfFirmado && solicitud.nombrePdfFirmado) {
+              <div class="pdf-file-info">
+                <p class="file-label">✍️ PDF Firmado Recibido:</p>
+                <p class="file-name">{{ solicitud.nombrePdfFirmado }}</p>
+                <div class="button-group">
+                  <button class="btn-primary" (click)="previsualizarPdf('firmado')">
+                    👁️ Ver PDF Firmado
+                  </button>
+                </div>
+              </div>
+            }
+
+            @if (puedeSubirFirmado()) {
+              <div class="upload-section">
+                <p class="upload-label"><strong>{{ solicitud.rutaPdfFirmado ? 'Reemplazar PDF firmado:' : 'Recibir PDF firmado:' }}</strong></p>
+                <div class="file-input-group">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    (change)="onFileSelected($event)"
+                    #fileInputFirmado />
+                  @if (selectedFile) {
+                    <span class="file-name">{{ selectedFile.name }}</span>
+                    <button
+                      class="btn-primary"
+                      (click)="subirPdfFirmado()"
+                      [disabled]="procesando">
+                      ✍️ {{ solicitud.rutaPdfFirmado ? 'Reemplazar' : 'Subir' }} PDF Firmado
+                    </button>
+                  }
+                </div>
+                <small class="help-text">
+                  Suba aquí el PDF firmado y escaneado que haya recibido del socio.
+                </small>
+              </div>
+
+              @if (solicitud.rutaPdfFirmado) {
+                <div class="send-action">
+                  <button
+                    class="btn-success"
+                    (click)="aceptarFirmaSocio()"
+                    [disabled]="procesando">
+                    ✓ Aceptar Firma del Socio
+                  </button>
+                  <small class="help-text">
+                    Al aceptar, se avanzará al siguiente paso para enviar a la petrolera.
+                  </small>
+                </div>
+              }
+            }
+          } @else {
+            <p class="pending-text">Pendiente de enviar al socio</p>
+          }
+        </div>
+      </div>
+
+      <!-- Estado: FIRMADO_SOCIO -->
+      <div class="workflow-step" [class.active]="solicitud.estado === EstadoSolicitud.FIRMADO_SOCIO">
+        <div class="step-header">
+          <span class="step-number">3</span>
+          <h3>Envío a Petrolera</h3>
+          @if (solicitud.estado === EstadoSolicitud.FIRMADO_SOCIO) {
+            <span class="badge-primary">Estado Actual</span>
+          } @else if (solicitud.fechaEnvioPetrolera) {
+            <span class="badge-success">✓ Completado</span>
+          } @else {
+            <span class="badge-secondary">Pendiente</span>
+          }
+        </div>
+
+        <div class="step-content">
+          @if (solicitud.fechaRecepcionFirmado) {
+            <p><strong>Firmado recibido el:</strong> {{ solicitud.fechaRecepcionFirmado | date: 'dd/MM/yyyy HH:mm' }}</p>
+            <p>Se ha recibido el PDF firmado por el socio.</p>
+
+            <!-- Mostrar PDF enviado para referencia -->
+            @if (solicitud.rutaPdfEnviado && solicitud.nombrePdfEnviado) {
+              <div class="pdf-file-info">
+                <p class="file-label">📤 PDF que se Envió al Socio:</p>
+                <p class="file-name">{{ solicitud.nombrePdfEnviado }}</p>
+                <div class="button-group">
+                  <button class="btn-primary" (click)="previsualizarPdf('enviado')">
+                    👁️ Ver PDF Enviado
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Mostrar PDF firmado recibido -->
+            @if (solicitud.rutaPdfFirmado && solicitud.nombrePdfFirmado) {
+              <div class="pdf-file-info">
+                <p class="file-label">✍️ PDF Firmado Recibido:</p>
+                <p class="file-name">{{ solicitud.nombrePdfFirmado }}</p>
+                <div class="button-group">
+                  <button class="btn-primary" (click)="previsualizarPdf('firmado')">
+                    👁️ Ver PDF Firmado
+                  </button>
+                  <button class="btn-secondary" (click)="descargarPdf('firmado')">
+                    📥 Descargar
+                  </button>
+                </div>
+              </div>
+            }
+
+            @if (puedeEnviarAPetrolera()) {
+              <div class="send-action">
+                <button
+                  class="btn-success"
+                  (click)="enviarAPetrolera()"
+                  [disabled]="procesando">
+                  🚀 Enviar a Petrolera
+                </button>
+                <small class="help-text">
+                  Esto enviará el PDF final a la petrolera. Después, la petrolera deberá aceptar o rechazar la solicitud.
+                </small>
+              </div>
+            }
+          } @else {
+            <p class="pending-text">Pendiente de recibir el PDF firmado</p>
+          }
+        </div>
+      </div>
+
+      <!-- Estado: Resolución Petrolera -->
+      <div class="workflow-step" [class.active]="solicitud.estado === EstadoSolicitud.ENVIADO_PETROLERA || solicitud.estado === EstadoSolicitud.ACEPTADA_PETROLERA || solicitud.estado === EstadoSolicitud.RECHAZADA_PETROLERA">
+        <div class="step-header">
+          <span class="step-number">4</span>
+          <h3>Resolución Petrolera</h3>
+          @if (solicitud.estado === EstadoSolicitud.ENVIADO_PETROLERA) {
+            <span class="badge-warning">Pendiente de Resolución</span>
+          } @else if (solicitud.estado === EstadoSolicitud.ACEPTADA_PETROLERA) {
+            <span class="badge-success">✓ Aceptada</span>
+          } @else if (solicitud.estado === EstadoSolicitud.RECHAZADA_PETROLERA) {
+            <span class="badge-danger">✗ Rechazada</span>
+          } @else {
+            <span class="badge-secondary">Pendiente</span>
+          }
+        </div>
+
+        <div class="step-content">
+          @if (solicitud.fechaEnvioPetrolera) {
+            <p><strong>Enviado a petrolera el:</strong> {{ solicitud.fechaEnvioPetrolera | date: 'dd/MM/yyyy HH:mm' }}</p>
+
+            @if (solicitud.rutaPdfFinal && solicitud.nombrePdfFinal) {
+              <div class="pdf-file-info">
+                <p class="file-label">🚀 PDF Final Enviado a Petrolera:</p>
+                <p class="file-name">{{ solicitud.nombrePdfFinal }}</p>
+                <div class="button-group">
+                  <button class="btn-primary" (click)="previsualizarPdf('final')">
+                    👁️ Ver PDF Final
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Pendiente de resolución: mostrar botones Aceptar/Rechazar -->
+            @if (solicitud.estado === EstadoSolicitud.ENVIADO_PETROLERA) {
+              <div class="send-action">
+                <p><strong>La petrolera debe resolver esta solicitud:</strong></p>
+                <div class="button-group">
+                  <button
+                    class="btn-success"
+                    (click)="aceptarPorPetrolera()"
+                    [disabled]="procesando">
+                    ✓ Aceptar Solicitud
+                  </button>
+                  <button
+                    class="btn-danger"
+                    (click)="mostrarFormRechazo = !mostrarFormRechazo"
+                    [disabled]="procesando">
+                    ✗ Rechazar Solicitud
+                  </button>
+                </div>
+
+                @if (mostrarFormRechazo) {
+                  <div class="upload-section">
+                    <p class="upload-label"><strong>Motivo del rechazo:</strong></p>
+                    <textarea
+                      class="form-control"
+                      [(ngModel)]="motivoRechazo"
+                      rows="3"
+                      placeholder="Indique el motivo del rechazo..."></textarea>
+                    <div class="button-group" style="margin-top: 0.625rem; margin-bottom: 0;">
+                      <button
+                        class="btn-danger"
+                        (click)="rechazarPorPetrolera()"
+                        [disabled]="procesando || !motivoRechazo.trim()">
+                        Confirmar Rechazo
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Aceptada -->
+            @if (solicitud.estado === EstadoSolicitud.ACEPTADA_PETROLERA) {
+              <div class="completed-info">
+                <p>✅ La solicitud ha sido <strong>aceptada</strong> por la petrolera.</p>
+                @if (solicitud.fechaResolucionPetrolera) {
+                  <p><strong>Fecha de resolución:</strong> {{ solicitud.fechaResolucionPetrolera | date: 'dd/MM/yyyy HH:mm' }}</p>
+                }
+              </div>
+            }
+
+            <!-- Rechazada -->
+            @if (solicitud.estado === EstadoSolicitud.RECHAZADA_PETROLERA) {
+              <div class="rejection-box">
+                <p>❌ La solicitud ha sido <strong>rechazada</strong> por la petrolera.</p>
+                @if (solicitud.fechaResolucionPetrolera) {
+                  <p><strong>Fecha de resolución:</strong> {{ solicitud.fechaResolucionPetrolera | date: 'dd/MM/yyyy HH:mm' }}</p>
+                }
+                @if (solicitud.motivoRechazo) {
+                  <p><strong>Motivo:</strong> {{ solicitud.motivoRechazo }}</p>
+                }
+              </div>
+            }
+          } @else {
+            <p class="pending-text">Pendiente de enviar a la petrolera</p>
+          }
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Historial de Correos -->
+    <div class="detail-card">
+      <h2>Historial de Correos</h2>
+      <app-email-logs [correosEnviados]="solicitud.correosEnviados || ''"></app-email-logs>
+    </div>
+
+    <!-- Historial de PDFs -->
+    <div class="detail-card">
+      <h2>Historial de Documentos</h2>
+      <div class="documents-grid">
+        @if (solicitud.rutaPdfEditable) {
+          <div class="document-card">
+            <div class="document-icon">📄</div>
+            <h4>PDF Editable</h4>
+            <p>Versión original editable del contrato</p>
+            <div class="button-group-vertical">
+              <button class="btn-primary" (click)="previsualizarPdf('editable')">
+                👁️ Ver
+              </button>
+              <button class="btn-secondary" (click)="descargarPdf('editable')">
+                📥 Descargar
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (solicitud.rutaPdfEnviado) {
+          <div class="document-card">
+            <div class="document-icon">📤</div>
+            <h4>PDF Enviado</h4>
+            <p>Versión aplanada enviada al socio</p>
+            <div class="button-group-vertical">
+              <button class="btn-primary" (click)="previsualizarPdf('enviado')">
+                👁️ Ver
+              </button>
+              <button class="btn-secondary" (click)="descargarPdf('enviado')">
+                📥 Descargar
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (solicitud.rutaPdfFirmado) {
+          <div class="document-card">
+            <div class="document-icon">✍️</div>
+            <h4>PDF Firmado</h4>
+            <p>Versión firmada por el socio</p>
+            <div class="button-group-vertical">
+              <button class="btn-primary" (click)="previsualizarPdf('firmado')">
+                👁️ Ver
+              </button>
+              <button class="btn-secondary" (click)="descargarPdf('firmado')">
+                📥 Descargar
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (solicitud.rutaPdfFinal) {
+          <div class="document-card">
+            <div class="document-icon">✅</div>
+            <h4>PDF Final</h4>
+            <p>Versión final enviada a petrolera</p>
+            <div class="button-group-vertical">
+              <button class="btn-primary" (click)="previsualizarPdf('final')">
+                👁️ Ver
+              </button>
+              <button class="btn-secondary" (click)="descargarPdf('final')">
+                📥 Descargar
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Modal de previsualización de PDF -->
+<app-pdf-preview-modal
+  [isOpen]="modalPreviewAbierto"
+  [titulo]="tituloPreview"
+  [pdfBlob]="pdfPreviewBlob"
+  [mostrarBotonDescargar]="mostrarBotonDescargar"
+  (close)="cerrarModalPreview()">
+</app-pdf-preview-modal>
+
+<!-- Modal de edición de campos del PDF -->
+@if (solicitud?.id) {
+  <app-pdf-editor-modal
+    [solicitudId]="solicitud!.id!"
+    [isOpen]="modalEditorCamposAbierto"
+    (close)="onEditorCamposCerrado()"
+    (fieldsSaved)="onCamposGuardados()">
+  </app-pdf-editor-modal>
+}

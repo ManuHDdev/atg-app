@@ -1,0 +1,35 @@
+. Cómo ejecutar los .ps1
+Abre una terminal PowerShell (no cmd) en la raíz del proyecto (d:\ATG\app) y ejecuta:
+
+.\deploy\deploy-all.ps1 -Frontend
+En VS Code puedes abrir una terminal PowerShell directamente con Ctrl+ñ → dropdown → "PowerShell". Si te da error de ejecución de scripts, usa:
+powershell -ExecutionPolicy Bypass -File .\deploy\deploy-all.ps1 -Frontend
+
+Para ejecutar los .ps1:
+
+Abre una terminal PowerShell (no cmd) en la raíz del proyecto (d:\ATG\app) y ejecuta:
+
+.\deploy\deploy-all.ps1              # todo
+.\deploy\deploy-all.ps1 -Frontend   # solo frontend
+.\deploy\deploy-all.ps1 -Services contratos,creditos  # servicios específicos
+Si PowerShell te bloquea con un error de "execution policy", ejecuta primero:
+
+
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+
+
+====================================
+La contraseña está en el archivo .env del servidor. Compruébala así:
+cat ~/atg-app/.env | grep -i mysql
+
+
+Conectarme al MySQL del docker:
+docker exec -it atg-mysql mysql -u root -p
+
+
+
+
+
+
+

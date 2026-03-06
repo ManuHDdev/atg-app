@@ -1,0 +1,292 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">
+      @if (f['tipoSolicitud'].value === TipoSolicitudContrato.NUEVO) {
+        Nuevo Contrato
+      } @else if (f['tipoSolicitud'].value === TipoSolicitudContrato.BAJA) {
+        Baja de Contrato
+      } @else if (f['tipoSolicitud'].value === TipoSolicitudContrato.CAMBIO_CONDICIONES) {
+        Cambio de Condiciones de Contrato
+      } @else {
+        Solicitud de Contrato
+      }
+    </h1>
+  </header>
+
+  <div class="form-container">
+    <form [formGroup]="contratoForm" (ngSubmit)="onSubmit()">
+
+      <!-- Tipo de Solicitud -->
+      <div class="form-section">
+        <h3>Tipo de Solicitud</h3>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" formControlName="tipoSolicitud" [value]="TipoSolicitudContrato.NUEVO" />
+            <span>Nuevo Contrato</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="tipoSolicitud" [value]="TipoSolicitudContrato.BAJA" />
+            <span>Baja de Contrato</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" formControlName="tipoSolicitud" [value]="TipoSolicitudContrato.CAMBIO_CONDICIONES" />
+            <span>Cambio de Condiciones</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Tipo de Socio (solo para NUEVO) -->
+      @if (f['tipoSolicitud'].value === TipoSolicitudContrato.NUEVO) {
+        <div class="form-section">
+          <h3>Tipo de Cliente</h3>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" formControlName="esAutonomo" [value]="true" />
+              <span>Autónomo</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" formControlName="esAutonomo" [value]="false" />
+              <span>Empresa</span>
+            </label>
+          </div>
+        </div>
+      }
+
+      <!-- Datos del Socio -->
+      <div class="form-section">
+        <h3>Datos del Cliente</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="socioId">Socio *</label>
+            <app-socio-autocomplete
+              formControlName="socioId"
+              placeholder="Buscar socio por nombre, número o email..."
+              [required]="true"
+              (socioSelected)="onSocioSeleccionado($event)">
+            </app-socio-autocomplete>
+            @if (f['socioId'].invalid && f['socioId'].touched) {
+              <span class="error-message">El socio es obligatorio</span>
+            }
+          </div>
+
+          @if (!f['esAutonomo'].value) {
+            <div class="form-group">
+              <label for="empresaId">Empresa *</label>
+              <select
+                id="empresaId"
+                formControlName="empresaId"
+                [disabled]="!f['socioId'].value"
+                [class.error]="f['empresaId'].invalid && f['empresaId'].touched">
+                <option [value]="null">
+                  @if (!f['socioId'].value) {
+                    Primero seleccione un socio
+                  } @else if (empresasFiltradas.length === 0) {
+                    No hay empresas para este socio
+                  } @else {
+                    Seleccione una empresa
+                  }
+                </option>
+                @for (empresa of empresasFiltradas; track empresa.id) {
+                  <option [value]="empresa.id">{{ empresa.razonSocial }} - {{ empresa.cif }}</option>
+                }
+              </select>
+              @if (f['empresaId'].invalid && f['empresaId'].touched) {
+                <span class="error-message">La empresa es obligatoria</span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Datos del Contrato -->
+      <div class="form-section">
+        <h3>Datos del Contrato</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="petroleraId">Petrolera *</label>
+            <select
+              id="petroleraId"
+              formControlName="petroleraId"
+              [class.error]="f['petroleraId'].invalid && f['petroleraId'].touched">
+              <option [value]="null">
+                @if (f['tipoSolicitud'].value !== TipoSolicitudContrato.NUEVO && petrolerasFiltradas.length === 0) {
+                  No hay petroleras con contratos activos
+                } @else {
+                  Seleccione una petrolera
+                }
+              </option>
+              @for (petrolera of petrolerasFiltradas; track petrolera.id) {
+                <option [value]="petrolera.id">{{ petrolera.nombre }}</option>
+              }
+            </select>
+            @if (f['petroleraId'].invalid && f['petroleraId'].touched) {
+              <span class="error-message">La petrolera es obligatoria</span>
+            }
+            @if (f['tipoSolicitud'].value !== TipoSolicitudContrato.NUEVO && petrolerasFiltradas.length === 0 && f['socioId'].value) {
+              <small class="help-text error-text">
+                ⚠️ Este socio no tiene contratos activos con ninguna petrolera
+              </small>
+            }
+          </div>
+        </div>
+
+        <!-- Selector de Contrato (solo para BAJA y CAMBIO_CONDICIONES) -->
+        @if (f['tipoSolicitud'].value === TipoSolicitudContrato.BAJA ||
+             f['tipoSolicitud'].value === TipoSolicitudContrato.CAMBIO_CONDICIONES) {
+          <div class="form-row">
+            <div class="form-group full-width">
+              <label for="contratoId">Contrato a {{ f['tipoSolicitud'].value === TipoSolicitudContrato.BAJA ? 'dar de baja' : 'modificar' }} *</label>
+              <select
+                id="contratoId"
+                formControlName="contratoId"
+                [disabled]="!f['socioId'].value || !f['petroleraId'].value"
+                [class.error]="f['contratoId'].invalid && f['contratoId'].touched">
+                <option [value]="null">
+                  @if (!f['socioId'].value || !f['petroleraId'].value) {
+                    Primero seleccione socio y petrolera
+                  } @else if (contratosActivos.length === 0) {
+                    No hay contratos activos para este socio y petrolera
+                  } @else {
+                    Seleccione un contrato
+                  }
+                </option>
+                @for (contrato of contratosActivos; track contrato.id) {
+                  <option [value]="contrato.id">
+                    Contrato #{{ contrato.id }} - {{ contrato.tipoContrato }}
+                    @if (contrato.fechaVigenciaDesde) {
+                      (Vigente desde: {{ contrato.fechaVigenciaDesde }})
+                    }
+                  </option>
+                }
+              </select>
+              @if (f['contratoId'].invalid && f['contratoId'].touched) {
+                <span class="error-message">Debe seleccionar un contrato</span>
+              }
+              @if (contratosActivos.length === 0 && f['socioId'].value && f['petroleraId'].value) {
+                <small class="help-text error-text">
+                  ⚠️ Este socio no tiene contratos activos con la petrolera seleccionada
+                </small>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Tipos de Solicitud dinámicos (solo para NUEVO con tipo ALTA) -->
+        @if (f['tipoSolicitud'].value === TipoSolicitudContrato.NUEVO && mostrarSubsecciones && tiposSolicitud.length > 0) {
+          <div class="form-row">
+            <div class="form-group">
+              <label for="tipoSolicitudPetroleraId">Tipo de Solicitud *</label>
+              <select
+                id="tipoSolicitudPetroleraId"
+                formControlName="tipoSolicitudPetroleraId"
+                [class.error]="f['tipoSolicitudPetroleraId'].invalid && f['tipoSolicitudPetroleraId'].touched">
+                <option [value]="null">Seleccione un tipo de solicitud</option>
+                @for (tipoSolicitud of tiposSolicitud; track tipoSolicitud.id) {
+                  <option [value]="tipoSolicitud.id">{{ tipoSolicitud.nombre }}</option>
+                }
+              </select>
+              @if (f['tipoSolicitudPetroleraId'].invalid && f['tipoSolicitudPetroleraId'].touched) {
+                <span class="error-message">El tipo de solicitud es obligatorio para contratos de ALTA</span>
+              }
+              <small class="help-text">
+                Seleccione el tipo de solicitud con plantilla PDF configurada (ej: Precio Lista, Precio Poste, Via T, etc.)
+              </small>
+            </div>
+          </div>
+        }
+        @if (f['tipoSolicitud'].value === TipoSolicitudContrato.NUEVO && mostrarSubsecciones && tiposSolicitud.length === 0) {
+          <div class="form-row">
+            <div class="info-message">
+              <p><strong>⚠️ Atención:</strong> No hay tipos de solicitud configurados para esta petrolera.</p>
+              <p>Debe configurar al menos un tipo de solicitud con plantilla PDF en la gestión de Petroleras.</p>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Datos Adicionales -->
+      <div class="form-section">
+        <h3>Información Adicional</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="solicitadoPor">Solicitado Por</label>
+            <input
+              type="text"
+              id="solicitadoPor"
+              formControlName="solicitadoPor"
+              placeholder="Nombre del usuario que realiza la solicitud" />
+            <small class="help-text">
+              Opcional. Se completará automáticamente cuando se implemente autenticación.
+            </small>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="observaciones">Observaciones</label>
+            <textarea
+              id="observaciones"
+              formControlName="observaciones"
+              rows="4"
+              placeholder="Observaciones o notas adicionales sobre la solicitud"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Información importante -->
+      <div class="info-box">
+        <p><strong>ℹ️ Información:</strong></p>
+        @if (f['tipoSolicitud'].value === TipoSolicitudContrato.NUEVO) {
+          <ul>
+            <li>Una vez creado el contrato, se generará automáticamente un PDF editable basado en la plantilla configurada.</li>
+            <li>Podrás editar y completar el PDF antes de enviarlo al socio.</li>
+            <li>El número de contrato se generará automáticamente.</li>
+          </ul>
+        } @else if (f['tipoSolicitud'].value === TipoSolicitudContrato.BAJA) {
+          <ul>
+            <li>Se enviará automáticamente un correo electrónico a la petrolera notificando la baja del contrato.</li>
+            <li>El correo incluirá los datos del socio (nombre, NIF/CIF/DNI) y la fecha de baja.</li>
+            <li>El contrato se marcará como inactivo pero permanecerá en el sistema para consultas.</li>
+            <li>Se registrará la fecha de vigencia hasta la cual estuvo activo.</li>
+          </ul>
+        } @else if (f['tipoSolicitud'].value === TipoSolicitudContrato.CAMBIO_CONDICIONES) {
+          <ul>
+            <li>Se notificará a la petrolera sobre el cambio de condiciones del contrato existente.</li>
+            <li>El contrato original se mantendrá para referencia histórica.</li>
+            <li>Podrás especificar los detalles del cambio en las observaciones.</li>
+          </ul>
+        }
+      </div>
+
+      <!-- Botones -->
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="cancelar()" [disabled]="loading">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="loading || contratoForm.invalid">
+          @if (loading) {
+            @if (f['tipoSolicitud'].value === TipoSolicitudContrato.BAJA) {
+              <span>Procesando baja...</span>
+            } @else if (f['tipoSolicitud'].value === TipoSolicitudContrato.CAMBIO_CONDICIONES) {
+              <span>Procesando cambio...</span>
+            } @else {
+              <span>Creando contrato...</span>
+            }
+          } @else {
+            @if (f['tipoSolicitud'].value === TipoSolicitudContrato.BAJA) {
+              <span>Dar de Baja</span>
+            } @else if (f['tipoSolicitud'].value === TipoSolicitudContrato.CAMBIO_CONDICIONES) {
+              <span>Solicitar Cambio</span>
+            } @else {
+              <span>Crear Contrato</span>
+            }
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+

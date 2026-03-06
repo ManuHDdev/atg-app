@@ -1,0 +1,105 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">
+        <i class="bi bi-bug-fill"></i>
+        Incidencias
+      </h1>
+      <p class="page-subtitle">Seguimiento de bugs, mejoras y sugerencias</p>
+    </div>
+    @if (auth.isAdmin()) {
+      <button class="btn-primary" (click)="nueva()">
+        <i class="bi bi-plus-lg"></i>
+        Nueva incidencia
+      </button>
+    }
+  </div>
+
+  <!-- Filtros de estado -->
+  <div class="filtros">
+    <button class="filtro-btn" [class.active]="filtroEstado === ''" (click)="filtroEstado = ''">
+      Todas ({{ incidencias.length }})
+    </button>
+    @for (estado of ESTADOS_FILTRO; track estado) {
+      <button class="filtro-btn" [class.active]="filtroEstado === estado" (click)="filtroEstado = estado">
+        {{ ESTADO_LABELS[estado] }}
+      </button>
+    }
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Cargando...</span>
+    </div>
+  }
+
+  @if (error) {
+    <div class="alert-error">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      {{ error }}
+    </div>
+  }
+
+  @if (!loading && !error) {
+    <div class="card">
+      @if (incidenciasFiltradas.length === 0) {
+        <div class="empty-state">
+          <i class="bi bi-check-circle"></i>
+          <p>No hay incidencias{{ filtroEstado ? ' con este estado' : '' }}</p>
+          @if (auth.isAdmin() && !filtroEstado) {
+            <button class="btn-primary" (click)="nueva()">Crear primera incidencia</button>
+          }
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Título</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
+                <th>Autor</th>
+                <th>Fecha</th>
+                <th class="col-comentarios"><i class="bi bi-chat-dots"></i></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (inc of incidenciasFiltradas; track inc.id) {
+                <tr class="tabla-row-clickable" (click)="verDetalle(inc.id)">
+                  <td>
+                    <span class="badge" [class]="tipoClass(inc.tipo)">
+                      {{ TIPO_LABELS[inc.tipo] }}
+                    </span>
+                  </td>
+                  <td class="col-titulo">{{ inc.titulo }}</td>
+                  <td>
+                    <span class="badge" [class]="prioridadClass(inc.prioridad)">
+                      {{ inc.prioridad }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="estado-badge" [class]="estadoClass(inc.estado)">
+                      {{ ESTADO_LABELS[inc.estado] }}
+                    </span>
+                  </td>
+                  <td class="text-secondary">{{ inc.autor }}</td>
+                  <td class="text-secondary">{{ inc.fechaCreacion | date:'dd/MM/yyyy' }}</td>
+                  <td class="col-comentarios">
+                    @if (inc.numComentarios > 0) {
+                      <span class="comentarios-count">
+                        <i class="bi bi-chat-dots-fill"></i>
+                        {{ inc.numComentarios }}
+                      </span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,169 @@
+<div class="form-container">
+  <div class="form-header">
+    <h2>{{ getTituloFormulario() }}</h2>
+    <p class="form-description">{{ getDescripcionFormulario() }}</p>
+  </div>
+
+  <div *ngIf="success" class="alert alert-success">
+    Solicitud creada exitosamente. Redirigiendo...
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <form [formGroup]="formulario" (ngSubmit)="onSubmit()" class="form">
+    <div class="form-grid">
+      <!-- Selector de Socio con Autocomplete -->
+      <div class="form-group">
+        <label for="socioId">Socio *</label>
+        <app-socio-autocomplete
+          formControlName="socioId"
+          placeholder="Buscar socio por nombre o número..."
+          [required]="true"
+          (socioSelected)="onSocioSelected($event)"
+        ></app-socio-autocomplete>
+        <div *ngIf="formulario.get('socioId')?.invalid && formulario.get('socioId')?.touched" class="error-message">
+          El socio es obligatorio
+        </div>
+      </div>
+
+      <!-- Selector de Petrolera -->
+      <div class="form-group">
+        <label for="petroleraId">Petrolera *</label>
+        <select
+          id="petroleraId"
+          formControlName="petroleraId"
+          class="form-control"
+          (change)="onPetroleraSelected()"
+        >
+          <option value="">Seleccione una petrolera</option>
+          <option *ngFor="let petrolera of petroleras" [value]="petrolera.id">
+            {{ petrolera.nombre }}
+          </option>
+        </select>
+        <div *ngIf="formulario.get('petroleraId')?.invalid && formulario.get('petroleraId')?.touched" class="error-message">
+          La petrolera es obligatoria
+        </div>
+      </div>
+
+      <!-- Campo Solicitado Por (solo para ALTA) -->
+      <div class="form-group full-width" *ngIf="tipo === 'ALTA'">
+        <label for="solicitadoPor">Solicitado Por (Persona de Oficina) *</label>
+        <input
+          type="text"
+          id="solicitadoPor"
+          formControlName="solicitadoPor"
+          class="form-control"
+          placeholder="Nombre de quien realiza la solicitud"
+          maxlength="100"
+        >
+        <small class="form-text">Indica el nombre de la persona de oficina que solicita la tarjeta</small>
+        <div *ngIf="formulario.get('solicitadoPor')?.invalid && formulario.get('solicitadoPor')?.touched" class="error-message">
+          Este campo es obligatorio
+        </div>
+      </div>
+
+      <!-- Selector de Tarjeta (para BAJA y DUPLICADO) -->
+      <div class="form-group full-width" *ngIf="tipo === 'BAJA' || tipo === 'DUPLICADO'">
+        <label for="tarjetaId">
+          {{ tipo === 'BAJA' ? 'Tarjeta a Dar de Baja *' : 'Tarjeta a Duplicar *' }}
+        </label>
+        <select id="tarjetaId" formControlName="tarjetaId" class="form-control" [disabled]="!selectedSocio || !formulario.get('petroleraId')?.value || tarjetasDelSocio.length === 0">
+          <option value="">
+            {{
+              !selectedSocio ? 'Primero seleccione un socio' :
+              !formulario.get('petroleraId')?.value ? 'Primero seleccione una petrolera' :
+              (tarjetasDelSocio.length === 0 ? 'No hay tarjetas activas con esta petrolera' : 'Seleccione una tarjeta')
+            }}
+          </option>
+          <option *ngFor="let tarjeta of tarjetasDelSocio" [value]="tarjeta.id">
+            {{ tarjeta.matricula || 'Sin matrícula' }} - Contrato: {{ tarjeta.numeroContrato || 'N/A' }}
+            <span *ngIf="tipo === 'DUPLICADO' && tarjeta.cantidad"> ({{ tarjeta.cantidad }} tarjeta{{ tarjeta.cantidad > 1 ? 's' : '' }})</span>
+          </option>
+        </select>
+        <small class="form-text" *ngIf="selectedSocio && formulario.get('petroleraId')?.value">
+          {{ tipo === 'BAJA' ? 'Selecciona la tarjeta del socio con esta petrolera que deseas dar de baja' : 'Selecciona la tarjeta del socio con esta petrolera que deseas duplicar' }}
+        </small>
+        <div *ngIf="formulario.get('tarjetaId')?.invalid && formulario.get('tarjetaId')?.touched" class="error-message">
+          Debes seleccionar una tarjeta
+        </div>
+      </div>
+
+      <!-- Campo Matrícula -->
+      <div class="form-group full-width">
+        <label for="matricula">Matrícula *</label>
+        <input
+          type="text"
+          id="matricula"
+          formControlName="matricula"
+          class="form-control"
+          [placeholder]="(tipo === 'BAJA' || tipo === 'DUPLICADO') ? 'Se rellena automáticamente al seleccionar la tarjeta' : 'Ej: 1234ABC'"
+          [readonly]="tipo === 'BAJA' || tipo === 'DUPLICADO'"
+          maxlength="20"
+        >
+        <small class="form-text" *ngIf="tipo === 'BAJA' || tipo === 'DUPLICADO'">
+          Este campo se rellena automáticamente con la matrícula de la tarjeta seleccionada
+        </small>
+        <small class="form-text" *ngIf="tipo !== 'BAJA' && tipo !== 'DUPLICADO'">
+          Matrícula del vehículo (obligatorio)
+        </small>
+        <div *ngIf="formulario.get('matricula')?.invalid && formulario.get('matricula')?.touched" class="error-message">
+          La matrícula es obligatoria
+        </div>
+      </div>
+
+      <!-- Campo Número de Contrato (solo para LLEGADA) -->
+      <div class="form-group full-width" *ngIf="tipo === 'LLEGADA'">
+        <label for="numeroContrato">Número de Contrato</label>
+        <input
+          type="text"
+          id="numeroContrato"
+          formControlName="numeroContrato"
+          class="form-control"
+          placeholder="Número de contrato (opcional)"
+          maxlength="50"
+        >
+        <small class="form-text">Campo opcional</small>
+      </div>
+
+      <!-- Fecha Llegada Estimada (solo para LLEGADA) -->
+      <div class="form-group full-width" *ngIf="tipo === 'LLEGADA'">
+        <label for="fechaLlegadaEstimada">Fecha Estimada de Entrega/Recogida *</label>
+        <input
+          type="date"
+          id="fechaLlegadaEstimada"
+          formControlName="fechaLlegadaEstimada"
+          class="form-control"
+        >
+        <small class="form-text">Fecha en la que el socio podrá recoger o recibirá la tarjeta</small>
+        <div *ngIf="formulario.get('fechaLlegadaEstimada')?.invalid && formulario.get('fechaLlegadaEstimada')?.touched" class="error-message">
+          La fecha estimada es obligatoria para solicitudes de llegada
+        </div>
+      </div>
+
+      <!-- Observaciones -->
+      <div class="form-group full-width">
+        <label for="observaciones">Observaciones</label>
+        <textarea
+          id="observaciones"
+          formControlName="observaciones"
+          class="form-control"
+          rows="4"
+          placeholder="Información adicional (opcional)"
+          maxlength="500"
+        ></textarea>
+        <small class="form-text">Máximo 500 caracteres</small>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" (click)="cancelar()" [disabled]="loading">
+        Cancelar
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="loading || formulario.invalid">
+        {{ loading ? 'Creando...' : 'Crear Solicitud' }}
+      </button>
+    </div>
+  </form>
+</div>

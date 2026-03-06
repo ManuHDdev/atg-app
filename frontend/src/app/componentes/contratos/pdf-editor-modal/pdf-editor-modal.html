@@ -1,0 +1,162 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="cerrar()">
+    <div class="modal-container" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Vista previa del contrato</h2>
+        <button class="btn-close" (click)="cerrar()" [disabled]="saving || guardandoCampos"></button>
+      </div>
+
+      <div class="modal-body">
+        @if (loading) {
+          <div class="loading">
+            <div class="spinner"></div>
+            <p>Cargando PDF...</p>
+          </div>
+        }
+
+        @if (!loading && pdfPreviewUrl) {
+          <div class="pdf-editor-layout">
+            <!-- Panel izquierdo: visor PDF -->
+            <div class="pdf-viewer-container">
+              <embed
+                [src]="pdfPreviewUrl"
+                type="application/pdf"
+                class="pdf-viewer"
+              />
+            </div>
+
+            <!-- Panel derecho: campos del formulario (solo si hay solicitudId y campos) -->
+            @if (tieneCamposEditables()) {
+              <div class="fields-panel">
+                <div class="fields-panel-header">
+                  <h3>Campos del formulario</h3>
+                  <p class="fields-hint">Rellene los campos y pulse "Guardar campos"</p>
+                </div>
+                <div class="fields-list">
+                  @for (campo of campos; track campo.nombre) {
+                    <div class="field-item">
+                      <label [for]="'campo-' + campo.nombre" class="field-label">
+                        {{ campo.nombre }}
+                      </label>
+
+                      @if (getTipoCampo(campo) === 'checkbox') {
+                        <div class="checkbox-wrapper">
+                          <input
+                            type="checkbox"
+                            [id]="'campo-' + campo.nombre"
+                            [checked]="valoresCampos[campo.nombre] === 'Yes'"
+                            (change)="onCheckboxChange(campo.nombre, $event)"
+                          />
+                          <span class="checkbox-label">{{ valoresCampos[campo.nombre] === 'Yes' ? 'Sí' : 'No' }}</span>
+                        </div>
+                      } @else if (getTipoCampo(campo) === 'select') {
+                        <select
+                          [id]="'campo-' + campo.nombre"
+                          [(ngModel)]="valoresCampos[campo.nombre]"
+                          class="field-select"
+                        >
+                          <option value="">-- Seleccionar --</option>
+                          @for (opcion of campo.opciones; track opcion) {
+                            <option [value]="opcion">{{ opcion }}</option>
+                          }
+                        </select>
+                      } @else {
+                        <input
+                          type="text"
+                          [id]="'campo-' + campo.nombre"
+                          [(ngModel)]="valoresCampos[campo.nombre]"
+                          [placeholder]="campo.nombre"
+                          class="field-input"
+                        />
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        @if (!loading && !pdfPreviewUrl) {
+          <div class="error-message">
+            <p>No se pudo cargar el PDF</p>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <div class="footer-info">
+          <p class="help-text">
+            <strong>Instrucciones:</strong>
+          </p>
+          <ol class="help-steps">
+            @if (tieneCamposEditables()) {
+              <li>Rellene los campos del formulario a la derecha y pulse "Guardar campos"</li>
+            }
+            <li>O descargue la plantilla, edítela externamente y súbala aquí</li>
+            <li>O continúe sin cambios si la plantilla es correcta</li>
+          </ol>
+        </div>
+        <div class="footer-actions">
+          <div class="footer-actions-left">
+            <!-- Botón guardar campos (solo en modo solicitud con campos) -->
+            @if (tieneCamposEditables()) {
+              <button
+                class="btn-success"
+                (click)="guardarCamposRellenados()"
+                [disabled]="loading || guardandoCampos || saving"
+              >
+                @if (guardandoCampos) {
+                  <span>Guardando...</span>
+                } @else {
+                  <span>✓ Guardar campos</span>
+                }
+              </button>
+            }
+
+            <!-- Botón subir PDF externo -->
+            <div class="upload-wrapper">
+              <input
+                type="file"
+                #fileInput
+                accept="application/pdf"
+                (change)="onArchivoSeleccionado($event)"
+                style="display: none"
+              />
+              <button
+                class="btn-secondary"
+                (click)="fileInput.click()"
+                [disabled]="loading || saving || guardandoCampos"
+              >
+                📤 Subir PDF editado
+              </button>
+              @if (archivoEditado) {
+                <span class="file-selected">✓ {{ archivoEditado.name }}</span>
+              }
+            </div>
+          </div>
+          <div class="footer-actions-right">
+            <button
+              class="btn-secondary"
+              (click)="cerrar()"
+              [disabled]="saving || guardandoCampos"
+            >
+              Cancelar
+            </button>
+            <button
+              class="btn-primary"
+              (click)="guardarCambios()"
+              [disabled]="loading || saving || guardandoCampos"
+            >
+              @if (saving) {
+                <span>Guardando...</span>
+              } @else {
+                <span>✓ Continuar {{ archivoEditado ? 'con PDF editado' : 'sin cambios' }}</span>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}

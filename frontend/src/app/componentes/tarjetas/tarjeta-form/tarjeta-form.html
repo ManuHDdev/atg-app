@@ -1,0 +1,130 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">{{ isEditMode ? 'Editar Tarjeta' : 'Nueva Tarjeta' }}</h1>
+  </header>
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  <form [formGroup]="tarjetaForm" (ngSubmit)="onSubmit()" class="form-container">
+    <div class="form-grid">
+      <!-- Socio -->
+      <div class="form-group autocomplete-container">
+        <label for="socioId">Socio *</label>
+        <div class="autocomplete-wrapper">
+          <input
+            type="text"
+            id="socioId"
+            class="form-control"
+            [class.error]="f['socioId'].invalid && f['socioId'].touched"
+            placeholder="Buscar socio por nombre, número..."
+            [(ngModel)]="busquedaSocio"
+            [ngModelOptions]="{standalone: true}"
+            (input)="buscarSocios()"
+            (focus)="buscarSocios()"
+            [disabled]="loadingSocios"
+            autocomplete="off">
+          @if (busquedaSocio) {
+            <button type="button" class="autocomplete-clear" (click)="limpiarBusquedaSocio()">✕</button>
+          }
+          @if (mostrarListaSocios) {
+            <ul class="autocomplete-list">
+              @for (socio of sociosFiltrados; track socio.id) {
+                <li class="autocomplete-item" (click)="seleccionarSocio(socio)">
+                  <div class="autocomplete-item-main">{{ socio.nombre }}</div>
+                  <div class="autocomplete-item-sub">{{ socio.numeroSocio }} - {{ socio.email }}</div>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+        @if (f['socioId'].invalid && f['socioId'].touched) {
+          <div class="error-text">
+            @if (f['socioId'].errors?.['required']) {
+              <span>El socio es obligatorio</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Petrolera -->
+      <div class="form-group">
+        <label for="petroleraId">Petrolera *</label>
+        <select
+          id="petroleraId"
+          formControlName="petroleraId"
+          class="form-control"
+          [class.error]="f['petroleraId'].invalid && f['petroleraId'].touched"
+          [disabled]="loadingPetroleras">
+          <option value="">{{ loadingPetroleras ? 'Cargando petroleras...' : 'Selecciona una petrolera' }}</option>
+          @for (petrolera of petroleras; track petrolera.id) {
+            <option [value]="petrolera.id">
+              {{ petrolera.nombre }}
+            </option>
+          }
+        </select>
+        @if (f['petroleraId'].invalid && f['petroleraId'].touched) {
+          <div class="error-text">
+            @if (f['petroleraId'].errors?.['required']) {
+              <span>La petrolera es obligatoria</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Matrícula -->
+      <div class="form-group">
+        <label for="matricula">Matrícula *</label>
+        <input
+          id="matricula"
+          type="text"
+          formControlName="matricula"
+          class="form-control"
+          [class.error]="f['matricula'].invalid && f['matricula'].touched"
+          placeholder="Ej: 1234ABC"
+          style="text-transform: uppercase;">
+        @if (f['matricula'].invalid && f['matricula'].touched) {
+          <div class="error-text">
+            @if (f['matricula'].errors?.['required']) {
+              <span>La matrícula es obligatoria</span>
+            }
+            @if (f['matricula'].errors?.['maxlength']) {
+              <span>Máximo 20 caracteres</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Número Contrato -->
+      <div class="form-group">
+        <label for="numeroContrato">Número de Contrato</label>
+        <input
+          id="numeroContrato"
+          type="text"
+          formControlName="numeroContrato"
+          class="form-control"
+          placeholder="Opcional">
+      </div>
+
+      <!-- Activa -->
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            formControlName="activa">
+          <span>Activa</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="cancelar()" [disabled]="loading">
+        Cancelar
+      </button>
+      <button type="submit" class="btn-primary" [disabled]="loading || tarjetaForm.invalid || loadingSocios || loadingPetroleras">
+        {{ loading ? 'Guardando...' : (isEditMode ? 'Actualizar' : 'Crear') }}
+      </button>
+    </div>
+  </form>
+</div>

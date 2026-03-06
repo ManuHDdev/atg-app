@@ -1,0 +1,68 @@
+<div class="container">
+  <div class="header">
+    <div>
+      <h2>Gestión de Plantillas de Correo</h2>
+      <p class="subtitle">Configura los correos automáticos que se envían en cada tipo de solicitud</p>
+    </div>
+    <button class="btn btn-secondary" (click)="volver()">
+      ← Volver al Dashboard
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Cargando plantillas...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <div class="plantillas-grid" *ngIf="!loading && !error">
+    <div class="plantilla-card" *ngFor="let plantilla of plantillas">
+      <div class="plantilla-header">
+        <div class="plantilla-icon">{{ getTipoIcon(plantilla.tipo) }}</div>
+        <div class="plantilla-info">
+          <h3>{{ getTipoLabel(plantilla.tipo) }}</h3>
+          <span class="badge" [class.badge-success]="plantilla.activa" [class.badge-danger]="!plantilla.activa">
+            {{ plantilla.activa ? 'Activa' : 'Inactiva' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="plantilla-content">
+        <div class="plantilla-field">
+          <strong>Asunto:</strong>
+          <p>{{ plantilla.asunto }}</p>
+        </div>
+
+        <div class="plantilla-field">
+          <strong>Contenido:</strong>
+          <div class="plantilla-preview" [innerHTML]="plantilla.cuerpo"></div>
+        </div>
+      </div>
+
+      <div class="plantilla-actions">
+        <button class="btn btn-primary" (click)="editarPlantilla(plantilla.id!)">
+          ✏️ Editar Plantilla
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <h4>📝 Variables Disponibles</h4>
+    <p>Puedes usar estas variables en el asunto y cuerpo de los correos. Serán reemplazadas automáticamente:</p>
+    <div class="variables-grid">
+      <div class="variable-item" *ngFor="let variable of [
+        {var: '{nombre}', desc: 'Nombre del socio'},
+        {var: '{nif}', desc: 'NIF/Número de socio'},
+        {var: '{email}', desc: 'Email del socio'},
+        {var: '{telefono}', desc: 'Teléfono del socio'},
+        {var: '{provincia}', desc: 'Provincia del socio'},
+        {var: '{matricula}', desc: 'Matrícula del vehículo'},
+        {var: '{numeroContrato}', desc: 'Número de contrato'},
+        {var: '{fecha}', desc: 'Fecha actual'},
+        {var: '{nombrePetrolera}', desc: 'Nombre de la petrolera'},
+        {var: '{emailPetrolera}', desc: 'Email de la petrolera'}
+      ]">
+        <code>{{ variable.var }}</code>
+        <span>{{ variable.desc }}</span>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,23 @@
+<div class="email-logs" *ngIf="hasEmails">
+  <div class="logs-header">
+    <h4>Historial de Correos Enviados</h4>
+    <span class="logs-count">{{ emailLines.length }} correo(s)</span>
+  </div>
+
+  <div class="logs-content">
+    <div
+      *ngFor="let line of emailLines"
+      class="log-entry"
+      [class.log-success]="isSuccess(line)"
+      [class.log-error]="isError(line)"
+    >
+      <span class="log-icon" *ngIf="isSuccess(line)">✓</span>
+      <span class="log-icon" *ngIf="isError(line)">✗</span>
+      <span class="log-text">{{ line }}</span>
+    </div>
+  </div>
+</div>
+
+<div class="email-logs-empty" *ngIf="!hasEmails">
+  <p>No se han enviado correos para esta solicitud aún.</p>
+</div>

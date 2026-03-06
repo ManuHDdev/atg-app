@@ -1,0 +1,102 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">Gestión de Plantillas de Email</h1>
+    <button class="btn-primary" (click)="nuevaPlantilla()">+ Nueva Plantilla</button>
+  </header>
+
+  @if (loading) {
+    <div class="loading">Cargando...</div>
+  }
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  @if (!loading && !error) {
+    <!-- Información -->
+    <div class="info-box">
+      <h3>ℹ️ Sobre las Plantillas de Email</h3>
+      <p>Las plantillas de email se utilizan para enviar notificaciones automáticas a los socios en diferentes momentos del proceso:</p>
+      <ul>
+        <li><strong>Solicitud/Ampliación de Crédito:</strong> Correo enviado a la petrolera solicitando el crédito</li>
+        <li><strong>Devolución de Aval:</strong> Correo enviado a la petrolera solicitando la devolución del aval</li>
+        <li><strong>Notificaciones al Socio:</strong> Informar al socio cuando se registra, se envía a la petrolera o se recibe respuesta</li>
+      </ul>
+      <p>Puedes usar variables en el asunto y cuerpo del email que serán reemplazadas automáticamente con los datos reales.</p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-container">
+      <div class="filter-group">
+        <label for="filtroTipoEvento">Tipo de Evento:</label>
+        <select id="filtroTipoEvento" [(ngModel)]="filtroTipoEvento" (change)="aplicarFiltros()" class="filter-select">
+          <option value="">Todos</option>
+          @for (tipo of tiposEvento; track tipo.value) {
+            <option [value]="tipo.value">{{ tipo.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filtroActiva">Estado:</label>
+        <select id="filtroActiva" [(ngModel)]="filtroActiva" (change)="aplicarFiltros()" class="filter-select">
+          <option value="">Todas</option>
+          <option value="true">Activas</option>
+          <option value="false">Inactivas</option>
+        </select>
+      </div>
+
+      <button class="btn-secondary" (click)="limpiarFiltros()">Limpiar Filtros</button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Tipo de Evento</th>
+            <th>Asunto</th>
+            <th>Estado</th>
+            <th>Fecha Creación</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (plantilla of plantillasFiltradas; track plantilla.id) {
+            <tr>
+              <td><strong>{{ plantilla.nombre }}</strong></td>
+              <td>
+                <span class="badge-info">{{ obtenerLabelTipoEvento(plantilla.tipoEvento) }}</span>
+              </td>
+              <td>{{ plantilla.asunto }}</td>
+              <td>
+                <button
+                  class="toggle-btn"
+                  [class.active]="plantilla.activa"
+                  (click)="cambiarEstado(plantilla)">
+                  <span class="toggle-slider"></span>
+                  {{ plantilla.activa ? 'Activa' : 'Inactiva' }}
+                </button>
+              </td>
+              <td>{{ plantilla.createdAt ? (plantilla.createdAt | date:'dd/MM/yyyy') : '-' }}</td>
+              <td class="actions">
+                <button class="btn-icon" (click)="editarPlantilla(plantilla.id!)" title="Editar">
+                  ✏️
+                </button>
+                <button class="btn-icon-danger" (click)="eliminarPlantilla(plantilla.id!)" title="Eliminar">
+                  🗑️
+                </button>
+              </td>
+            </tr>
+          }
+          @empty {
+            <tr>
+              <td colspan="6" class="empty-text">No hay plantillas que coincidan con los filtros</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

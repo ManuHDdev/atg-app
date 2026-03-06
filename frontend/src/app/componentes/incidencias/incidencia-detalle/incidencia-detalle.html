@@ -1,0 +1,141 @@
+<div class="page-container">
+  <button class="btn-back" (click)="volver()">
+    <i class="bi bi-arrow-left"></i>
+    Incidencias
+  </button>
+
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Cargando...</span>
+    </div>
+  }
+
+  @if (error) {
+    <div class="alert-error">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      {{ error }}
+    </div>
+  }
+
+  @if (incidencia && !loading) {
+    <!-- Cabecera -->
+    <div class="detalle-header">
+      <div class="detalle-header-main">
+        <div class="detalle-badges">
+          <span class="badge" [ngClass]="'tipo-' + incidencia.tipo.toLowerCase()">{{ TIPO_LABELS[incidencia.tipo] }}</span>
+          <span class="badge" [ngClass]="'prioridad-' + incidencia.prioridad.toLowerCase()">{{ incidencia.prioridad }}</span>
+          <span class="estado-badge" [ngClass]="estadoClass(incidencia.estado)">{{ ESTADO_LABELS[incidencia.estado] }}</span>
+        </div>
+        <h1 class="detalle-titulo">{{ incidencia.titulo }}</h1>
+        <p class="detalle-meta">
+          Creada por <strong>{{ incidencia.autor }}</strong>
+          el {{ incidencia.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}
+          · Actualizada el {{ incidencia.fechaActualizacion | date:'dd/MM/yyyy HH:mm' }}
+        </p>
+      </div>
+      @if (auth.isDeveloper()) {
+        <button class="btn-danger" (click)="eliminar()">
+          <i class="bi bi-trash-fill"></i>
+          Eliminar
+        </button>
+      }
+    </div>
+
+    <div class="detalle-layout">
+      <!-- Columna principal -->
+      <div class="detalle-main">
+        <!-- Descripción -->
+        <div class="card section">
+          <h3 class="section-title"><i class="bi bi-text-paragraph"></i> Descripción</h3>
+          <p class="descripcion-texto">{{ incidencia.descripcion }}</p>
+        </div>
+
+        <!-- Comentarios -->
+        <div class="card section">
+          <h3 class="section-title">
+            <i class="bi bi-chat-dots-fill"></i>
+            Comentarios ({{ incidencia.comentarios.length }})
+          </h3>
+
+          @if (incidencia.comentarios.length === 0) {
+            <p class="text-secondary">Sin comentarios aún.</p>
+          } @else {
+            <div class="comentarios-lista">
+              @for (c of incidencia.comentarios; track c.id) {
+                <div class="comentario">
+                  <div class="comentario-header">
+                    <div class="comentario-autor">
+                      <div class="avatar">{{ c.autor.charAt(0).toUpperCase() }}</div>
+                      <div>
+                        <span class="autor-nombre">{{ c.autor }}</span>
+                        <span class="comentario-fecha">{{ c.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+                      </div>
+                    </div>
+                    @if (auth.isDeveloper()) {
+                      <button class="btn-icon btn-delete" (click)="eliminarComentario(c.id)" title="Eliminar comentario">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    }
+                  </div>
+                  <p class="comentario-texto">{{ c.texto }}</p>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Añadir comentario -->
+          <form [formGroup]="comentarioForm" (ngSubmit)="addComentario()" class="add-comentario">
+            <textarea formControlName="texto" rows="3" placeholder="Añadir un comentario..."></textarea>
+            <button type="submit" class="btn-primary" [disabled]="comentarioForm.invalid || guardandoComentario">
+              @if (guardandoComentario) {
+                <span class="spinner-sm"></span>
+              } @else {
+                <i class="bi bi-send-fill"></i>
+              }
+              Comentar
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Sidebar: cambio de estado (solo DEVELOPER) -->
+      @if (auth.isDeveloper()) {
+        <div class="detalle-sidebar">
+          <div class="card section">
+            <h3 class="section-title"><i class="bi bi-arrow-repeat"></i> Gestión</h3>
+            <form [formGroup]="estadoForm" (ngSubmit)="cambiarEstado()">
+              <div class="form-group">
+                <label>Estado</label>
+                <select formControlName="nuevoEstado">
+                  @for (estado of ESTADOS; track estado) {
+                    <option [value]="estado">{{ ESTADO_LABELS[estado] }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Notas del developer</label>
+                <textarea formControlName="notasDeveloper" rows="4"
+                          placeholder="Notas internas, causa del bug, solución aplicada..."></textarea>
+              </div>
+              <button type="submit" class="btn-primary btn-full" [disabled]="guardandoEstado">
+                @if (guardandoEstado) {
+                  <span class="spinner-sm"></span> Guardando...
+                } @else {
+                  <i class="bi bi-check-lg"></i> Guardar cambios
+                }
+              </button>
+            </form>
+          </div>
+
+          @if (incidencia.notasDeveloper) {
+            <div class="card section notes-card">
+              <h3 class="section-title"><i class="bi bi-sticky-fill"></i> Notas</h3>
+              <p class="notas-texto">{{ incidencia.notasDeveloper }}</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

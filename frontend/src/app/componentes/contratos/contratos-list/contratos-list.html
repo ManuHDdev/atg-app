@@ -1,0 +1,130 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">Gestión de Solicitudes de Contratos</h1>
+    <button class="btn-primary" (click)="nuevaSolicitud()">+ Nueva Solicitud</button>
+  </header>
+
+  <!-- Filtros -->
+  <div class="filters-container">
+    <div class="filter-group">
+      <label for="filtroPetrolera">Petrolera</label>
+      <select id="filtroPetrolera" [(ngModel)]="filtros.petroleraId" (change)="aplicarFiltros()">
+        <option [value]="undefined">Todas</option>
+        @for (petrolera of petroleras; track petrolera.id) {
+          <option [value]="petrolera.id">{{ petrolera.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filtroTipo">Tipo de Contrato</label>
+      <select id="filtroTipo" [(ngModel)]="filtros.tipoContratoId" (change)="aplicarFiltros()">
+        <option [value]="undefined">Todos</option>
+        @for (tipo of tiposContrato; track tipo.id) {
+          <option [value]="tipo.id">{{ tipo.nombre }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filtroEstado">Estado</label>
+      <select id="filtroEstado" [(ngModel)]="filtros.estado" (change)="aplicarFiltros()">
+        <option [value]="undefined">Todos</option>
+        <option [value]="EstadoSolicitud.BORRADOR">Borrador</option>
+        <option [value]="EstadoSolicitud.ENVIADO_SOCIO">Enviado a Socio</option>
+        <option [value]="EstadoSolicitud.FIRMADO_SOCIO">Firmado por Socio</option>
+        <option [value]="EstadoSolicitud.ENVIADO_PETROLERA">Enviado a Petrolera</option>
+        <option [value]="EstadoSolicitud.ACEPTADA_PETROLERA">Aceptada por Petrolera</option>
+        <option [value]="EstadoSolicitud.RECHAZADA_PETROLERA">Rechazada por Petrolera</option>
+      </select>
+    </div>
+
+    <div class="filter-actions">
+      <button class="btn-secondary" (click)="limpiarFiltros()">Limpiar Filtros</button>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading">Cargando solicitudes...</div>
+  }
+
+  @if (!loading && solicitudes.length === 0) {
+    <div class="empty-state">
+      <p>No hay solicitudes de contratos registradas.</p>
+      <button class="btn-primary" (click)="nuevaSolicitud()">Crear primera solicitud</button>
+    </div>
+  }
+
+  @if (!loading && solicitudes.length > 0) {
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo Solicitud</th>
+            <th>Petrolera</th>
+            <th>Socio</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (solicitud of solicitudes; track solicitud.id) {
+            <tr>
+              <td>{{ solicitud.fechaHoraSolicitud | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <span [class]="getTipoSolicitudClass(solicitud.tipoSolicitud)">
+                  {{ getTipoSolicitudTexto(solicitud.tipoSolicitud) }}
+                </span>
+              </td>
+              <td>{{ obtenerPetroleraConSubtipo(solicitud) }}</td>
+              <td>{{ obtenerNombreSocio(solicitud.socioId) }}</td>
+              <td>
+                <span [class]="getEstadoClass(solicitud.estado!)">
+                  {{ getEstadoTexto(solicitud.estado!) }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn-action" (click)="verDetalle(solicitud.id!)" title="Ver detalle">
+                  <i class="bi bi-eye"></i>
+                </button>
+                @if (puedeDescargarFinal(solicitud)) {
+                  <button
+                    class="btn-action"
+                    (click)="descargarPdf(solicitud, 'final')"
+                    title="Descargar PDF final">
+                    <i class="bi bi-cloud-download"></i>
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    @if (totalPages > 1) {
+      <div class="pagination">
+        <button
+          class="btn-secondary"
+          [disabled]="currentPage === 0"
+          (click)="cambiarPagina(currentPage - 1)">
+          Anterior
+        </button>
+
+        <span class="page-info">
+          Página {{ currentPage + 1 }} de {{ totalPages }}
+          ({{ totalElements }} solicitudes)
+        </span>
+
+        <button
+          class="btn-secondary"
+          [disabled]="currentPage >= totalPages - 1"
+          (click)="cambiarPagina(currentPage + 1)">
+          Siguiente
+        </button>
+      </div>
+    }
+  }
+</div>

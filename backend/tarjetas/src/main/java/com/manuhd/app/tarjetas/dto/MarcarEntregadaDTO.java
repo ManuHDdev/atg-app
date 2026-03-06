@@ -1,0 +1,42 @@
+package com.manuhd.app.tarjetas.dto;
+
+import java.time.LocalDateTime;
+
+public class MarcarEntregadaDTO {
+    private LocalDateTime fechaEntrega;
+    private String observaciones;
+    private String procesadoPor;
+
+    public MarcarEntregadaDTO() {
+    }
+
+    public MarcarEntregadaDTO(LocalDateTime fechaEntrega, String observaciones, String procesadoPor) {
+        this.fechaEntrega = fechaEntrega;
+        this.observaciones = observaciones;
+        this.procesadoPor = procesadoPor;
+    }
+
+    public LocalDateTime getFechaEntrega() {
+        return fechaEntrega;
+    }
+
+    public void setFechaEntrega(LocalDateTime fechaEntrega) {
+        this.fechaEntrega = fechaEntrega;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
+    }
+
+    public String getProcesadoPor() {
+        return procesadoPor;
+    }
+
+    public void setProcesadoPor(String procesadoPor) {
+        this.procesadoPor = procesadoPor;
+    }
+}

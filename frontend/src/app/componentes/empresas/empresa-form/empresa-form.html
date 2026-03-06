@@ -1,0 +1,191 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">{{ isEditMode ? 'Editar Empresa' : 'Nueva Empresa' }}</h1>
+  </header>
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  <form [formGroup]="empresaForm" (ngSubmit)="onSubmit()" class="form-container">
+    <div class="form-grid">
+      <!-- Socio -->
+      @if (mostrarSelectorSocio) {
+        <div class="form-group">
+          <label for="socioId">Socio *</label>
+          <select
+            id="socioId"
+            formControlName="socioId"
+            class="form-control"
+            [class.error]="f['socioId'].invalid && f['socioId'].touched">
+            <option value="">Seleccione un socio</option>
+            @for (socio of socios; track socio.id) {
+              <option [value]="socio.id">{{ socio.nombre }} ({{ socio.numeroSocio }})</option>
+            }
+          </select>
+          @if (f['socioId'].invalid && f['socioId'].touched) {
+            <div class="error-text">
+              @if (f['socioId'].errors?.['required']) {
+                <span>Debe seleccionar un socio</span>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <!-- Mostrar socio seleccionado como información -->
+        @if (socioSeleccionado) {
+          <div class="form-group">
+            <label>Socio</label>
+            <div class="info-box">
+              <strong>{{ socioSeleccionado.nombre }}</strong>
+              <span class="badge-info">{{ socioSeleccionado.numeroSocio }}</span>
+            </div>
+          </div>
+        }
+      }
+
+      <!-- Nombre Empresa -->
+      <div class="form-group">
+        <label for="nombre">Nombre de la Empresa *</label>
+        <input
+          id="nombre"
+          type="text"
+          formControlName="nombre"
+          class="form-control"
+          [class.error]="f['nombre'].invalid && f['nombre'].touched">
+        @if (f['nombre'].invalid && f['nombre'].touched) {
+          <div class="error-text">
+            @if (f['nombre'].errors?.['required']) {
+              <span>El nombre de la empresa es obligatorio</span>
+            }
+            @if (f['nombre'].errors?.['maxlength']) {
+              <span>Máximo 200 caracteres</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- CIF -->
+      <div class="form-group">
+        <label for="cif">CIF *</label>
+        <input
+          id="cif"
+          type="text"
+          formControlName="cif"
+          class="form-control"
+          [class.error]="f['cif'].invalid && f['cif'].touched">
+        @if (f['cif'].invalid && f['cif'].touched) {
+          <div class="error-text">
+            @if (f['cif'].errors?.['required']) {
+              <span>El CIF es obligatorio</span>
+            }
+            @if (f['cif'].errors?.['maxlength']) {
+              <span>Máximo 20 caracteres</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          class="form-control"
+          [class.error]="f['email'].invalid && f['email'].touched">
+        @if (f['email'].invalid && f['email'].touched) {
+          <div class="error-text">
+            @if (f['email'].errors?.['email']) {
+              <span>Email inválido</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Teléfono -->
+      <div class="form-group">
+        <label for="telefono">Teléfono</label>
+        <input
+          id="telefono"
+          type="tel"
+          formControlName="telefono"
+          class="form-control">
+      </div>
+
+      <!-- Dirección -->
+      <div class="form-group full-width">
+        <label for="direccion">Dirección</label>
+        <input
+          id="direccion"
+          type="text"
+          formControlName="direccion"
+          class="form-control">
+      </div>
+
+      <!-- Población -->
+      <div class="form-group">
+        <label for="poblacion">Población</label>
+        <input
+          id="poblacion"
+          type="text"
+          formControlName="poblacion"
+          class="form-control">
+      </div>
+
+      <!-- Provincia -->
+      <div class="form-group">
+        <label for="provincia">Provincia</label>
+        <input
+          id="provincia"
+          type="text"
+          formControlName="provincia"
+          class="form-control">
+      </div>
+
+      <!-- Código Postal -->
+      <div class="form-group">
+        <label for="codigoPostal">Código Postal</label>
+        <input
+          id="codigoPostal"
+          type="text"
+          formControlName="codigoPostal"
+          class="form-control">
+      </div>
+
+      <!-- Fecha de Alta (solo lectura en modo edición) -->
+      @if (isEditMode && fechaAlta) {
+        <div class="form-group">
+          <label for="fechaAlta">Fecha de Alta</label>
+          <input
+            id="fechaAlta"
+            type="text"
+            [value]="fechaAlta"
+            class="form-control"
+            readonly
+            disabled>
+        </div>
+      }
+
+      <!-- Activa -->
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            formControlName="activa">
+          <span>Empresa Activa</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="cancelar()" [disabled]="loading">
+        Cancelar
+      </button>
+      <button type="submit" class="btn-primary" [disabled]="loading || empresaForm.invalid">
+        {{ loading ? 'Guardando...' : (isEditMode ? 'Actualizar' : 'Crear') }}
+      </button>
+    </div>
+  </form>
+</div>

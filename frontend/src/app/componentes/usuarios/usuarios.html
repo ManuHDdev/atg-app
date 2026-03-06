@@ -1,0 +1,203 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">
+        <i class="bi bi-people-fill"></i>
+        Gestión de Usuarios
+      </h1>
+      <p class="page-subtitle">Administra los usuarios y sus roles de acceso</p>
+    </div>
+    <button class="btn-primary" (click)="abrirNuevo()">
+      <i class="bi bi-person-plus-fill"></i>
+      Nuevo usuario
+    </button>
+  </div>
+
+  <!-- Estado de carga -->
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Cargando usuarios...</span>
+    </div>
+  }
+
+  @if (error) {
+    <div class="alert-error">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      {{ error }}
+    </div>
+  }
+
+  <!-- Tabla de usuarios -->
+  @if (!loading && !error) {
+    <div class="card">
+      @if (usuarios.length === 0) {
+        <div class="empty-state">
+          <i class="bi bi-people"></i>
+          <p>No hay usuarios registrados</p>
+          <button class="btn-primary" (click)="abrirNuevo()">Crear primer usuario</button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th class="col-acciones">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of usuarios; track u.id) {
+                <tr>
+                  <td>
+                    <div class="user-cell">
+                      <div class="user-avatar">{{ u.username.charAt(0).toUpperCase() }}</div>
+                      <span class="user-username">{{ u.username }}</span>
+                    </div>
+                  </td>
+                  <td>{{ u.firstName }} {{ u.lastName }}</td>
+                  <td class="text-secondary">{{ u.email }}</td>
+                  <td>
+                    @if (u.roles.length > 0) {
+                      <span class="badge" [class]="rolBadgeClass(u.roles)">{{ u.roles[0] }}</span>
+                    } @else {
+                      <span class="text-secondary">Sin rol</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="status-dot" [class.active]="u.enabled" [class.inactive]="!u.enabled">
+                      {{ u.enabled ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
+                  <td class="col-acciones">
+                    <div class="action-buttons">
+                      <button class="btn-icon btn-edit" (click)="abrirEditar(u)" title="Editar">
+                        <i class="bi bi-pencil-fill"></i>
+                      </button>
+                      <button class="btn-icon btn-delete" (click)="eliminar(u)" title="Eliminar">
+                        <i class="bi bi-trash-fill"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- Modal crear/editar -->
+@if (mostrarModal) {
+  <div class="modal-overlay" (click)="cerrarModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          <i class="bi" [class.bi-person-plus-fill]="!editandoId" [class.bi-person-gear]="editandoId"></i>
+          {{ editandoId ? 'Editar usuario' : 'Nuevo usuario' }}
+        </h2>
+        <button class="modal-close" (click)="cerrarModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <form [formGroup]="usuarioForm" (ngSubmit)="guardar()" class="modal-body">
+        @if (errorModal) {
+          <div class="alert-error">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            {{ errorModal }}
+          </div>
+        }
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Usuario <span class="required">*</span></label>
+            <input formControlName="username" type="text" placeholder="nombre.usuario"
+                   [class.input-error]="f['username'].touched && f['username'].invalid">
+            @if (f['username'].touched && f['username'].errors?.['required']) {
+              <span class="field-error">El nombre de usuario es obligatorio</span>
+            }
+            @if (f['username'].touched && f['username'].errors?.['minlength']) {
+              <span class="field-error">Mínimo 3 caracteres</span>
+            }
+          </div>
+          <div class="form-group">
+            <label>Rol <span class="required">*</span></label>
+            <select formControlName="role">
+              @for (rol of ROLES; track rol) {
+                <option [value]="rol">{{ rol }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre</label>
+            <input formControlName="firstName" type="text" placeholder="Nombre">
+          </div>
+          <div class="form-group">
+            <label>Apellidos</label>
+            <input formControlName="lastName" type="text" placeholder="Apellidos">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Email <span class="required">*</span></label>
+          <input formControlName="email" type="email" placeholder="usuario@ejemplo.com"
+                 [class.input-error]="f['email'].touched && f['email'].invalid">
+          @if (f['email'].touched && f['email'].errors?.['required']) {
+            <span class="field-error">El email es obligatorio</span>
+          }
+          @if (f['email'].touched && f['email'].errors?.['email']) {
+            <span class="field-error">Email no válido</span>
+          }
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>
+              Contraseña
+              @if (!editandoId) { <span class="required">*</span> }
+              @if (editandoId) { <span class="hint">(dejar vacío para no cambiar)</span> }
+            </label>
+            <input formControlName="password" type="password" placeholder="Mínimo 8 caracteres"
+                   [class.input-error]="f['password'].touched && f['password'].invalid">
+            @if (f['password'].touched && f['password'].errors?.['required']) {
+              <span class="field-error">La contraseña es obligatoria</span>
+            }
+            @if (f['password'].touched && f['password'].errors?.['minlength']) {
+              <span class="field-error">Mínimo 8 caracteres</span>
+            }
+          </div>
+          <div class="form-group form-group-check">
+            <label class="checkbox-label">
+              <input formControlName="enabled" type="checkbox">
+              <span>Usuario activo</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" (click)="cerrarModal()" [disabled]="guardando">
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="guardando">
+            @if (guardando) {
+              <span class="spinner-sm"></span> Guardando...
+            } @else {
+              <i class="bi bi-check-lg"></i>
+              {{ editandoId ? 'Guardar cambios' : 'Crear usuario' }}
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

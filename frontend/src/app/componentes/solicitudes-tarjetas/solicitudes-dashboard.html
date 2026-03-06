@@ -1,0 +1,357 @@
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h2>Gestión de Solicitudes de Tarjetas</h2>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="verPlantillas()">
+        <i class="bi bi-gear"></i> Plantillas
+      </button>
+      <!-- <button class="btn btn-secondary" (click)="verTodasSolicitudes()">Ver Todas</button> -->
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading">Cargando estadísticas...</div>
+  }
+  @if (error) {
+    <div class="error">{{ error }}</div>
+  }
+
+  @if (!loading && !error) {
+    <div class="dashboard-toolbar">
+      <!-- Stats compactas -->
+      <div class="stats-inline">
+        <span class="stat-pill stat-warning">
+          <i class="bi bi-hourglass-split"></i> {{ totalPendientes }} Pendientes
+        </span>
+        <span class="stat-pill stat-success">
+          <i class="bi bi-check"></i> {{ completadasHoy }} Hoy
+        </span>
+        <span class="stat-pill stat-info">
+          <i class="bi bi-file-earmark-check"></i> {{ totalCompletadas }} Completadas
+        </span>
+        <span class="stat-pill stat-danger">
+          <i class="bi bi-x"></i> {{ totalRechazadas }} Rechazadas
+        </span>
+      </div>
+      <!-- Botones Nueva Solicitud -->
+      <div class="new-actions">
+        <span class="new-label">Nueva:</span>
+        <button class="btn btn-sm btn-alta" (click)="navegarAFormulario('alta')">+ Alta</button>
+        <button class="btn btn-sm btn-baja" (click)="navegarAFormulario('baja')">− Baja</button>
+        <button class="btn btn-sm btn-duplicado" (click)="navegarAFormulario('duplicado')">
+          <i class="bi bi-file-earmark-plus"></i> Duplicado
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (solicitudesRecientes.length > 0) {
+    <div class="recent-section">
+      <h3>Solicitudes Recientes</h3>
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Matrícula</th>
+              <th>Estado</th>
+              <th>Fecha Solicitud</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (solicitud of solicitudesRecientes; track solicitud.id) {
+              <tr>
+                <td>#{{ solicitud.id }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getTipoBadgeClass(solicitud.tipo)">
+                    {{ solicitud.tipo }}
+                  </span>
+                </td>
+                <td>{{ solicitud.matricula }}</td>
+                <td>
+                  <app-estado-badge [estado]="solicitud.estado" size="small"></app-estado-badge>
+                </td>
+                <td>{{ formatearFecha(solicitud.fechaSolicitud) }}</td>
+                <td>
+                  <button class="btn btn-sm btn-primary" (click)="verDetalleModal(solicitud)">
+                    <i class="bi bi-eye"></i> Ver
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- ===== Modal de detalle de solicitud ===== -->
+@if (solicitudDetalle) {
+  <div class="modal-overlay" (click)="cerrarDetalle()">
+    <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          Solicitud #{{ solicitudDetalle.id }}
+          <span class="badge" [ngClass]="getTipoBadgeClass(solicitudDetalle.tipo)">{{ solicitudDetalle.tipo }}</span>
+        </h2>
+        <button class="btn-close" (click)="cerrarDetalle()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        @if (cargandoDetalle) {
+          <div class="detalle-loading">
+            <i class="bi bi-arrow-repeat"></i> Cargando datos...
+          </div>
+        }
+
+        <!-- Sección Solicitud -->
+        <div class="detail-section">
+          <div class="detail-section-title">Información de la Solicitud</div>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Estado</span>
+              <span class="detail-value">
+                <app-estado-badge [estado]="solicitudDetalle.estado" size="small"></app-estado-badge>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Matrícula</span>
+              <span class="detail-value">{{ solicitudDetalle.matricula }}</span>
+            </div>
+            @if (solicitudDetalle.numeroContrato) {
+              <div class="detail-item">
+                <span class="detail-label">Nº Contrato</span>
+                <span class="detail-value">{{ solicitudDetalle.numeroContrato }}</span>
+              </div>
+            }
+            @if (solicitudDetalle.solicitadoPor) {
+              <div class="detail-item">
+                <span class="detail-label">Solicitado por</span>
+                <span class="detail-value">{{ solicitudDetalle.solicitadoPor }}</span>
+              </div>
+            }
+            @if (solicitudDetalle.procesadoPor) {
+              <div class="detail-item">
+                <span class="detail-label">Procesado por</span>
+                <span class="detail-value">{{ solicitudDetalle.procesadoPor }}</span>
+              </div>
+            }
+            @if (solicitudDetalle.fechaSolicitud) {
+              <div class="detail-item">
+                <span class="detail-label">Fecha Solicitud</span>
+                <span class="detail-value">{{ formatearFecha(solicitudDetalle.fechaSolicitud) }}</span>
+              </div>
+            }
+            @if (solicitudDetalle.fechaProcesado) {
+              <div class="detail-item">
+                <span class="detail-label">Fecha Procesado</span>
+                <span class="detail-value">{{ formatearFecha(solicitudDetalle.fechaProcesado) }}</span>
+              </div>
+            }
+            @if (solicitudDetalle.fechaLlegadaEstimada) {
+              <div class="detail-item">
+                <span class="detail-label">Llegada Estimada</span>
+                <span class="detail-value">{{ solicitudDetalle.fechaLlegadaEstimada }}</span>
+              </div>
+            }
+            @if (solicitudDetalle.fechaEntrega) {
+              <div class="detail-item">
+                <span class="detail-label">Fecha Entrega</span>
+                <span class="detail-value">{{ formatearFecha(solicitudDetalle.fechaEntrega) }}</span>
+              </div>
+            }
+            @if (solicitudDetalle.observaciones) {
+              <div class="detail-item detail-item-full">
+                <span class="detail-label">Observaciones</span>
+                <span class="detail-value">{{ solicitudDetalle.observaciones }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Sección Socio -->
+        @if (socioDetalle) {
+          <div class="detail-section">
+            <div class="detail-section-title">
+              <i class="bi bi-person-circle"></i> Socio
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Nombre</span>
+                <span class="detail-value">{{ socioDetalle.nombre }}</span>
+              </div>
+              @if (socioDetalle.numeroSocio) {
+                <div class="detail-item">
+                  <span class="detail-label">Nº Socio</span>
+                  <span class="detail-value">{{ socioDetalle.numeroSocio }}</span>
+                </div>
+              }
+              @if (socioDetalle.email) {
+                <div class="detail-item">
+                  <span class="detail-label">Email</span>
+                  <span class="detail-value">{{ socioDetalle.email }}</span>
+                </div>
+              }
+              @if (socioDetalle.provincia) {
+                <div class="detail-item">
+                  <span class="detail-label">Provincia</span>
+                  <span class="detail-value">{{ socioDetalle.provincia }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Sección Petrolera -->
+        @if (petroleraDetalle) {
+          <div class="detail-section">
+            <div class="detail-section-title">
+              <i class="bi bi-fuel-pump"></i> Petrolera
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Nombre</span>
+                <span class="detail-value">{{ petroleraDetalle.nombre }}</span>
+              </div>
+              @if (petroleraDetalle.email) {
+                <div class="detail-item">
+                  <span class="detail-label">Email</span>
+                  <span class="detail-value">{{ petroleraDetalle.email }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Correos enviados -->
+        @if (solicitudDetalle.correosEnviados) {
+          <div class="detail-section">
+            <div class="detail-section-title">
+              <i class="bi bi-envelope"></i> Correos Enviados
+            </div>
+            <div class="correos-list">{{ solicitudDetalle.correosEnviados }}</div>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
+        <button class="btn btn-primary" (click)="verDetalle(solicitudDetalle.id!)">
+          <i class="bi bi-box-arrow-up-right"></i> Abrir página completa
+        </button>
+        @if (puedeAprobar) {
+          <button class="btn btn-danger" (click)="abrirModalRechazo()" [disabled]="loadingAccion">
+            <i class="bi bi-x-circle"></i> Rechazar
+          </button>
+          <button class="btn btn-success" (click)="aprobar()" [disabled]="loadingAccion">
+            <i class="bi bi-check-circle"></i> Aprobar
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===== Sub-modal: Rechazo ===== -->
+@if (mostrarModalRechazo) {
+  <div class="modal-overlay" (click)="mostrarModalRechazo = false">
+    <div class="modal-container modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Rechazar Solicitud</h2>
+        <button class="btn-close" (click)="mostrarModalRechazo = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Motivo del rechazo *</label>
+          <textarea
+            class="form-input"
+            [(ngModel)]="motivoRechazo"
+            rows="4"
+            placeholder="Ingrese el motivo del rechazo...">
+          </textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="mostrarModalRechazo = false">Cancelar</button>
+        <button class="btn btn-danger" (click)="confirmarRechazo()" [disabled]="!motivoRechazo.trim() || loadingAccion">
+          <i class="bi bi-x-circle"></i> Confirmar Rechazo
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===== Sub-modal: Aprobar BAJA ===== -->
+@if (mostrarModalBaja) {
+  <div class="modal-overlay" (click)="mostrarModalBaja = false">
+    <div class="modal-container modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Aprobar Solicitud de Baja</h2>
+        <button class="btn-close" (click)="mostrarModalBaja = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Fecha de Baja *</label>
+          <input type="date" class="form-input" [(ngModel)]="fechaBaja">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Procesado por</label>
+          <input type="text" class="form-input" [(ngModel)]="procesadoPorBaja">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observaciones</label>
+          <textarea class="form-input" [(ngModel)]="observacionesBaja" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="mostrarModalBaja = false">Cancelar</button>
+        <button class="btn btn-success" (click)="confirmarBaja()" [disabled]="!fechaBaja || loadingAccion">
+          <i class="bi bi-check-circle"></i> Aprobar Baja
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ===== Sub-modal: Aprobar DUPLICADO ===== -->
+@if (mostrarModalDuplicado) {
+  <div class="modal-overlay" (click)="mostrarModalDuplicado = false">
+    <div class="modal-container modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Aprobar Solicitud de Duplicado</h2>
+        <button class="btn-close" (click)="mostrarModalDuplicado = false">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Fecha de Respuesta *</label>
+          <input type="date" class="form-input" [(ngModel)]="fechaDuplicado">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Procesado por</label>
+          <input type="text" class="form-input" [(ngModel)]="procesadoPorDuplicado">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observaciones</label>
+          <textarea class="form-input" [(ngModel)]="observacionesDuplicado" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="mostrarModalDuplicado = false">Cancelar</button>
+        <button class="btn btn-success" (click)="confirmarDuplicado()" [disabled]="!fechaDuplicado || loadingAccion">
+          <i class="bi bi-check-circle"></i> Aprobar Duplicado
+        </button>
+      </div>
+    </div>
+  </div>
+}

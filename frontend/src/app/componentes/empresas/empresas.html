@@ -1,0 +1,89 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">
+        {{ socioId ? 'Empresas de ' + socioNombre : 'Gestión de Empresas' }}
+      </h1>
+      @if (socioId) {
+        <button class="btn-link" (click)="volverASocios()">← Volver al Socio</button>
+      }
+    </div>
+    <button class="btn-primary" (click)="nuevaEmpresa()">+ Nueva Empresa</button>
+  </header>
+
+  @if (loading) {
+    <div class="loading">Cargando...</div>
+  }
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  @if (!loading && !error) {
+    @if (empresas.length === 0) {
+      <div class="empty-state">
+        <p>No hay empresas registradas{{ socioId ? ' para este socio' : '' }}.</p>
+        <button class="btn-primary" (click)="nuevaEmpresa()">Crear primera empresa</button>
+      </div>
+    } @else {
+      <div class="filters-container">
+        <div class="filter-group">
+          <label for="busquedaEmpresa">Buscar</label>
+          <input
+            id="busquedaEmpresa"
+            type="text"
+            class="form-input"
+            [(ngModel)]="busquedaEmpresa"
+            placeholder="Nombre, CIF, email...">
+        </div>
+      </div>
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              @if (!socioId) {
+                <th>Socio</th>
+              }
+              <th>Nombre Empresa</th>
+              <th>CIF</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Población</th>
+              <th>Fecha Alta</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (empresasFiltradas.length === 0) {
+              <tr><td [attr.colspan]="socioId ? 8 : 9" class="empty-row">No hay empresas que coincidan con la búsqueda.</td></tr>
+            }
+            @for (empresa of empresasFiltradas; track empresa.id) {
+              <tr>
+                @if (!socioId) {
+                  <td>{{ empresa.socioNombre || '-' }}</td>
+                }
+                <td>{{ empresa.nombre }}</td>
+                <td>{{ empresa.cif }}</td>
+                <td>{{ empresa.email }}</td>
+                <td>{{ empresa.telefono }}</td>
+                <td>{{ empresa.poblacion }}</td>
+                <td>{{ empresa.fechaAlta ? (empresa.fechaAlta | date:'dd/MM/yyyy') : '-' }}</td>
+                <td>
+                  <span [class]="empresa.activa ? 'badge-success' : 'badge-danger'">
+                    {{ empresa.activa ? 'Activa' : 'Inactiva' }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <button class="btn-icon" (click)="verDetalle(empresa.id!)">Ver</button>
+                  <button class="btn-icon" (click)="editarEmpresa(empresa.id!)">Editar</button>
+                  <button class="btn-icon-danger" (click)="eliminarEmpresa(empresa.id!)">Eliminar</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</div>

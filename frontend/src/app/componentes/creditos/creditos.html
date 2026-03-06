@@ -1,0 +1,310 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">Gestión de Créditos</h1>
+    <button class="btn-primary" (click)="abrirFormulario()">+ Nuevo Crédito</button>
+  </header>
+
+  <!-- Filtros -->
+  <div class="filters-container">
+    <div class="filter-group">
+      <label for="filtroEstado">Estado</label>
+      <select id="filtroEstado" [(ngModel)]="filtroEstado" (change)="cargarCreditos()">
+        <option value="TODOS">Todos</option>
+        <option [value]="EstadoCredito.PENDIENTE">Pendiente</option>
+        <option [value]="EstadoCredito.ENVIADO_PETROLERA">Enviado a Petrolera</option>
+        <option [value]="EstadoCredito.APROBADO">Aprobado</option>
+        <option [value]="EstadoCredito.DENEGADO">Denegado</option>
+        <option [value]="EstadoCredito.COMPLETADO_APROBADO">Completado (Aprobado)</option>
+        <option [value]="EstadoCredito.COMPLETADO_DENEGADO">Completado (Denegado)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Tabla de créditos -->
+  @if (creditosFiltrados.length === 0) {
+    <div class="empty-state">
+      <p>No hay créditos para mostrar</p>
+    </div>
+  }
+
+  @if (creditosFiltrados.length > 0) {
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tipo</th>
+            <th>Socio</th>
+            <th>Empresa</th>
+            <th>Petrolera</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th>Fecha Creación</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (credito of creditosFiltrados; track credito.id) {
+            <tr>
+              <td>{{ credito.id }}</td>
+              <td>{{ getTipoCreditoLabel(credito.tipoCredito) }}</td>
+              <td>{{ credito.socioNombre }}</td>
+              <td>{{ credito.empresaNombre || 'N/A' }}</td>
+              <td>{{ credito.petroleraNombre }}</td>
+              <td>{{ credito.tipoCredito === TipoCredito.DEVOLUCION_AVAL ? '-' : (credito.monto ? (credito.monto | number:'1.2-2') + ' €' : 'N/A') }}</td>
+              <td>
+                <span class="badge" [ngClass]="getEstadoClass(credito.estado)">
+                  {{ getEstadoTexto(credito.estado) }}
+                </span>
+                @if (credito.programadoEnvio && credito.fechaProgramadaEnvio) {
+                  <span class="badge badge-scheduled"
+                        title="Programado: {{ credito.fechaProgramadaEnvio | date:'dd/MM/yyyy HH:mm' }}">
+                    Programado
+                  </span>
+                }
+              </td>
+              <td>{{ credito.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td class="actions">
+                <button class="btn-action btn-action-view" (click)="verDetalle(credito)" title="Ver detalle">
+                  <i class="bi bi-eye"></i>
+                </button>
+                @if (credito.estado === EstadoCredito.PENDIENTE) {
+                  <button class="btn-action btn-action-send" (click)="enviarAPetrolera(credito)" title="Enviar a petrolera">
+                    <i class="bi bi-send"></i>
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Modal de formulario -->
+  @if (mostrarFormulario) {
+    <div class="modal-overlay" (click)="cerrarFormulario()">
+      <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">Nuevo Crédito</h2>
+          <button class="btn-close" (click)="cerrarFormulario()"></button>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Tipo de Crédito *</label>
+                <select class="form-input" [(ngModel)]="nuevoCredito.tipoCredito" name="tipoCredito" (change)="onTipoCreditoChange()" required>
+                  @for (tipo of tiposCredito; track tipo.value) {
+                    <option [value]="tipo.value">{{ tipo.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group autocomplete-container">
+                <label class="form-label">Socio *</label>
+                <div class="autocomplete-wrapper">
+                  <input
+                    type="text"
+                    class="form-input"
+                    placeholder="Buscar socio por nombre, número..."
+                    [(ngModel)]="busquedaSocio"
+                    (input)="buscarSocios()"
+                    (focus)="buscarSocios()"
+                    name="busquedaSocio"
+                    autocomplete="off">
+                  @if (busquedaSocio) {
+                    <button
+                      type="button"
+                      class="autocomplete-clear"
+                      (click)="limpiarBusquedaSocio()">✕</button>
+                  }
+                  @if (mostrarListaSocios) {
+                    <ul class="autocomplete-list">
+                      @for (socio of sociosFiltrados; track socio.id) {
+                        <li class="autocomplete-item" (click)="seleccionarSocio(socio)">
+                          <div class="autocomplete-item-main">{{ socio.nombre }}</div>
+                          <div class="autocomplete-item-sub">{{ socio.numeroSocio }} - {{ socio.email }}</div>
+                        </li>
+                      }
+                    </ul>
+                  }
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Empresa</label>
+                <select class="form-input" [(ngModel)]="nuevoCredito.empresaId" name="empresaId">
+                  <option [value]="undefined">Sin empresa</option>
+                  @for (empresa of empresas; track empresa.id) {
+                    <option [value]="empresa.id">{{ empresa.nombre }} ({{ empresa.cif }})</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Petrolera *</label>
+                <select class="form-input" [(ngModel)]="nuevoCredito.petroleraId" name="petroleraId" required>
+                  <option value="0">Seleccione una petrolera</option>
+                  @for (petrolera of petroleras; track petrolera.id) {
+                    <option [value]="petrolera.id">{{ petrolera.nombre }}</option>
+                  }
+                </select>
+              </div>
+
+              @if (nuevoCredito.tipoCredito !== TipoCredito.DEVOLUCION_AVAL) {
+                <div class="form-group">
+                  <label class="form-label">Monto (€)</label>
+                  <input type="number" class="form-input" [(ngModel)]="nuevoCredito.monto"
+                         name="monto" step="0.01" min="0">
+                </div>
+              }
+
+              <div class="form-group form-group-full">
+                <label class="form-label">Observaciones</label>
+                <textarea class="form-input form-textarea" [(ngModel)]="nuevoCredito.observaciones"
+                          name="observaciones" rows="3"></textarea>
+              </div>
+
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="cerrarFormulario()">Cancelar</button>
+          <button class="btn-primary" (click)="guardarCredito()">Guardar</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de detalle -->
+  @if (creditoSeleccionado) {
+    <div class="modal-overlay" (click)="creditoSeleccionado = undefined">
+      <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">Detalle del Crédito #{{ creditoSeleccionado.id }}</h2>
+          <button class="btn-close" (click)="creditoSeleccionado = undefined"></button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Tipo</span>
+              <span class="detail-value">{{ getTipoCreditoLabel(creditoSeleccionado.tipoCredito) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Estado</span>
+              <span class="detail-value">
+                <span class="badge" [ngClass]="getEstadoClass(creditoSeleccionado.estado)">
+                  {{ getEstadoTexto(creditoSeleccionado.estado) }}
+                </span>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Socio</span>
+              <span class="detail-value">
+                {{ creditoSeleccionado.socioNombre }}
+                <span class="detail-sub">{{ creditoSeleccionado.socioEmail }}</span>
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Petrolera</span>
+              <span class="detail-value">
+                {{ creditoSeleccionado.petroleraNombre }}
+                <span class="detail-sub">{{ creditoSeleccionado.petroleraEmail }}</span>
+              </span>
+            </div>
+            @if (creditoSeleccionado.empresaNombre) {
+              <div class="detail-item">
+                <span class="detail-label">Empresa</span>
+                <span class="detail-value">{{ creditoSeleccionado.empresaNombre }}</span>
+              </div>
+            }
+            @if (creditoSeleccionado.monto) {
+              <div class="detail-item">
+                <span class="detail-label">Monto</span>
+                <span class="detail-value detail-value-highlight">{{ creditoSeleccionado.monto | number:'1.2-2' }} €</span>
+              </div>
+            }
+            @if (creditoSeleccionado.observaciones) {
+              <div class="detail-item detail-item-full">
+                <span class="detail-label">Observaciones</span>
+                <span class="detail-value">{{ creditoSeleccionado.observaciones }}</span>
+              </div>
+            }
+            <div class="detail-item">
+              <span class="detail-label">Fecha de Creación</span>
+              <span class="detail-value">{{ creditoSeleccionado.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+            </div>
+            @if (creditoSeleccionado.programadoEnvio && creditoSeleccionado.fechaProgramadaEnvio) {
+              <div class="detail-item">
+                <span class="detail-label">Envío Programado</span>
+                <span class="detail-value">
+                  <span class="badge badge-scheduled">
+                    {{ creditoSeleccionado.fechaProgramadaEnvio | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+                </span>
+              </div>
+            }
+            @if (creditoSeleccionado.fechaEnvioPetrolera) {
+              <div class="detail-item">
+                <span class="detail-label">Fecha Envío Petrolera</span>
+                <span class="detail-value">{{ creditoSeleccionado.fechaEnvioPetrolera | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            }
+            @if (creditoSeleccionado.fechaRespuestaPetrolera) {
+              <div class="detail-item">
+                <span class="detail-label">Fecha Respuesta Petrolera</span>
+                <span class="detail-value">{{ creditoSeleccionado.fechaRespuestaPetrolera | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+            }
+            @if (creditoSeleccionado.respuestaPetrolera) {
+              <div class="detail-item detail-item-full">
+                <span class="detail-label">Respuesta de la Petrolera</span>
+                <div class="detail-response">
+                  {{ creditoSeleccionado.respuestaPetrolera }}
+                </div>
+              </div>
+            }
+
+            <!-- Historial de Correos -->
+            <div class="detail-item detail-item-full">
+              <app-email-logs [correosEnviados]="creditoSeleccionado.correosEnviados || ''"></app-email-logs>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="creditoSeleccionado = undefined">Cerrar</button>
+          @if (creditoSeleccionado.estado === EstadoCredito.ENVIADO_PETROLERA) {
+            <button class="btn-primary" (click)="abrirModalRespuesta(creditoSeleccionado, true)">Aprobar</button>
+            <button class="btn-danger" (click)="abrirModalRespuesta(creditoSeleccionado, false)">Denegar</button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Modal de respuesta petrolera -->
+  @if (mostrarModalRespuesta) {
+    <div class="modal-overlay" (click)="cerrarModalRespuesta()">
+      <div class="modal-container" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2 class="modal-title">{{ aprobandoRespuesta ? 'Aprobar' : 'Denegar' }} Crédito #{{ creditoRespondiendo?.id }}</h2>
+          <button class="btn-close" (click)="cerrarModalRespuesta()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Comentarios de la petrolera</label>
+            <textarea class="form-input form-textarea" [(ngModel)]="comentarioRespuesta"
+                      rows="5" placeholder="Ingrese los comentarios de respuesta de la petrolera..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="cerrarModalRespuesta()">Cancelar</button>
+          <button [class]="aprobandoRespuesta ? 'btn-primary' : 'btn-danger'" (click)="confirmarRespuesta()">
+            {{ aprobandoRespuesta ? 'Confirmar Aprobación' : 'Confirmar Denegación' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

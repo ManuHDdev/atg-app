@@ -1,0 +1,175 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">{{ isEditMode ? 'Editar Socio' : 'Nuevo Socio' }}</h1>
+  </header>
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  <form [formGroup]="socioForm" (ngSubmit)="onSubmit()" class="form-container">
+    <div class="form-grid">
+      <!-- Nombre -->
+      <div class="form-group">
+        <label for="nombre">Nombre *</label>
+        <input
+          id="nombre"
+          type="text"
+          formControlName="nombre"
+          class="form-control"
+          [class.error]="f['nombre'].invalid && f['nombre'].touched">
+        @if (f['nombre'].invalid && f['nombre'].touched) {
+          <div class="error-text">
+            @if (f['nombre'].errors?.['required']) {
+              <span>El nombre es obligatorio</span>
+            }
+            @if (f['nombre'].errors?.['maxlength']) {
+              <span>Máximo 200 caracteres</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Número Socio -->
+      <div class="form-group">
+        <label for="numeroSocio">Número de Socio *</label>
+        <input
+          id="numeroSocio"
+          type="text"
+          formControlName="numeroSocio"
+          class="form-control"
+          [class.error]="f['numeroSocio'].invalid && f['numeroSocio'].touched">
+        @if (f['numeroSocio'].invalid && f['numeroSocio'].touched) {
+          <div class="error-text">
+            @if (f['numeroSocio'].errors?.['required']) {
+              <span>El número de socio es obligatorio</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          class="form-control"
+          [class.error]="f['email'].invalid && f['email'].touched">
+        @if (f['email'].invalid && f['email'].touched) {
+          <div class="error-text">
+            @if (f['email'].errors?.['email']) {
+              <span>Email inválido</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Teléfono -->
+      <div class="form-group">
+        <label for="telefono">Teléfono</label>
+        <input
+          id="telefono"
+          type="tel"
+          formControlName="telefono"
+          class="form-control">
+      </div>
+
+      <!-- Dirección -->
+      <div class="form-group full-width">
+        <label for="direccion">Dirección</label>
+        <input
+          id="direccion"
+          type="text"
+          formControlName="direccion"
+          class="form-control">
+      </div>
+
+      <!-- Población -->
+      <div class="form-group">
+        <label for="poblacion">Población</label>
+        <input
+          id="poblacion"
+          type="text"
+          formControlName="poblacion"
+          class="form-control">
+      </div>
+
+      <!-- Provincia -->
+      <div class="form-group">
+        <label for="provincia">Provincia</label>
+        <input
+          id="provincia"
+          type="text"
+          formControlName="provincia"
+          class="form-control">
+      </div>
+
+      <!-- Código Postal -->
+      <div class="form-group">
+        <label for="codigoPostal">Código Postal</label>
+        <input
+          id="codigoPostal"
+          type="text"
+          formControlName="codigoPostal"
+          class="form-control">
+      </div>
+
+      <!-- Agrupación -->
+      <div class="form-group">
+        <label for="agrupacion">Agrupación *</label>
+        <select
+          id="agrupacion"
+          formControlName="agrupacion"
+          class="form-control">
+          <option value="ATG">ATG</option>
+          <option value="ATT">ATT</option>
+        </select>
+      </div>
+
+      <!-- Fecha de Alta (solo lectura en modo edición) -->
+      @if (isEditMode && fechaAlta) {
+        <div class="form-group">
+          <label for="fechaAlta">Fecha de Alta</label>
+          <input
+            id="fechaAlta"
+            type="text"
+            [value]="fechaAlta"
+            class="form-control"
+            readonly
+            disabled>
+        </div>
+      }
+
+      <!-- Es Autónomo -->
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            formControlName="esAutonomo">
+          <span>Es Autónomo</span>
+        </label>
+      </div>
+
+      <!-- Activo -->
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            formControlName="activo">
+          <span>Activo</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-secondary" (click)="cancelar()" [disabled]="loading">
+        Cancelar
+      </button>
+      <button type="submit" class="btn-primary" [disabled]="loading || socioForm.invalid">
+        {{ loading ? 'Guardando...' : (isEditMode ? 'Actualizar' : 'Crear') }}
+      </button>
+    </div>
+  </form>
+</div>

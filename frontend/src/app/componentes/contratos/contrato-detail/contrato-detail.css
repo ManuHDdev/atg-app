@@ -1,0 +1,449 @@
+/* ========== Detail Cards ========== */
+.detail-card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.detail-card h2 {
+  margin: 0 0 1.25rem 0;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-weight: 700;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+/* ========== Info Grid ========== */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.info-item label {
+  font-weight: 600;
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.info-item .value {
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.observations {
+  background: var(--bg-secondary);
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-lg);
+  border-left: 3px solid var(--primary-color);
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* ========== Badge Large ========== */
+.badge-large {
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ========== Workflow Steps ========== */
+.workflow-step {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.workflow-step.active {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-secondary);
+}
+
+.step-header h3 {
+  margin: 0;
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.step-number {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.step-content {
+  padding: 1.25rem;
+}
+
+.step-content p {
+  margin: 0 0 0.75rem 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* ========== Action Box ========== */
+.action-box {
+  background: var(--info-light);
+  border: 1px solid rgba(37, 99, 235, 0.15);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-top: 0.75rem;
+}
+
+.action-box > p {
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+  color: var(--primary-dark);
+  font-size: 0.875rem;
+}
+
+/* ========== Button Group ========== */
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+/* ========== Upload Section ========== */
+.upload-section {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  margin-top: 0.75rem;
+}
+
+.upload-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.625rem 0;
+  font-size: 0.875rem;
+}
+
+.file-input-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.file-input-group input[type="file"] {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  cursor: pointer;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: border-color var(--transition-fast);
+}
+
+.file-input-group input[type="file"]:hover {
+  border-color: var(--primary-color);
+}
+
+.file-name {
+  color: var(--success-color);
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.help-text {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--text-tertiary);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.error-text {
+  color: var(--danger-color) !important;
+}
+
+/* ========== Send Action ========== */
+.send-action {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ========== Completed Info ========== */
+.completed-info {
+  background: var(--success-light);
+  border: 1px solid rgba(5, 150, 105, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  margin-top: 0.75rem;
+}
+
+.completed-info p {
+  color: var(--success-dark);
+  font-weight: 500;
+  margin: 0 0 0.75rem 0;
+}
+
+.pending-text {
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* ========== Form Control (textarea for rejection) ========== */
+.form-control {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* ========== Rejection Box ========== */
+.rejection-box {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  background-color: var(--danger-light);
+  border: 1px solid rgba(220, 38, 38, 0.2);
+  border-radius: var(--radius-lg);
+}
+
+.rejection-box p {
+  color: var(--danger-dark) !important;
+}
+
+/* ========== PDF File Info ========== */
+.pdf-file-info {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  margin: 0.75rem 0;
+}
+
+.pdf-file-info .file-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.375rem 0;
+  font-size: 0.875rem;
+}
+
+.pdf-file-info .file-name {
+  color: var(--text-primary);
+  font-family: 'SF Mono', SFMono-Regular, ui-monospace, 'Cascadia Code', Menlo, Consolas, monospace;
+  background: var(--bg-primary);
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-md);
+  margin: 0 0 0.75rem 0;
+  word-break: break-all;
+  font-size: 0.8125rem;
+  border: 1px solid var(--border-color);
+  display: block;
+}
+
+.pdf-file-info .help-text {
+  color: var(--success-color);
+  font-weight: 500;
+  font-style: normal;
+}
+
+/* ========== Documents Grid ========== */
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.document-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  text-align: center;
+  transition: all var(--transition-fast);
+  background: var(--bg-primary);
+}
+
+.document-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.document-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.document-card h4 {
+  margin: 0 0 0.375rem 0;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.document-card p {
+  margin: 0 0 1rem 0;
+  color: var(--text-tertiary);
+  font-size: 0.8125rem;
+}
+
+.document-card button {
+  width: 100%;
+}
+
+.button-group-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* ========== Badges ========== */
+.badge-info,
+.badge-primary,
+.badge-warning,
+.badge-success,
+.badge-secondary,
+.badge-danger {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-info {
+  background-color: var(--info-light);
+  color: var(--info-dark);
+}
+
+.badge-primary {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
+.badge-warning {
+  background-color: var(--warning-light);
+  color: var(--warning-dark);
+}
+
+.badge-success {
+  background-color: var(--success-light);
+  color: var(--success-dark);
+}
+
+.badge-secondary {
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.badge-danger {
+  background-color: var(--danger-light);
+  color: var(--danger-dark);
+}
+
+/* ========== Back Link ========== */
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0;
+  transition: color var(--transition-fast);
+}
+
+.btn-link:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+  .detail-card {
+    padding: 1.25rem;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .button-group button,
+  .send-action button {
+    width: 100%;
+  }
+
+  .file-input-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .step-header {
+    flex-wrap: wrap;
+  }
+}

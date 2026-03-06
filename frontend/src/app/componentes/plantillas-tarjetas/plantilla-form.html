@@ -1,0 +1,102 @@
+<div class="form-container">
+  <div class="form-header">
+    <h2>Editar Plantilla: {{ getTipoLabel() }}</h2>
+    <p class="form-description">Personaliza el asunto y contenido del correo que se enviará automáticamente</p>
+  </div>
+
+  <div *ngIf="success" class="alert alert-success">
+    Plantilla actualizada exitosamente. Redirigiendo...
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">
+    {{ error }}
+  </div>
+
+  <div class="content-layout">
+    <div class="form-section">
+      <form [formGroup]="formulario" (ngSubmit)="onSubmit()" class="form">
+        <div class="form-group">
+          <label for="asunto">Asunto del Correo *</label>
+          <input
+            type="text"
+            id="asunto"
+            formControlName="asunto"
+            class="form-control"
+            placeholder="Ej: Tu tarjeta está disponible"
+            maxlength="255"
+          >
+          <div *ngIf="formulario.get('asunto')?.invalid && formulario.get('asunto')?.touched" class="error-message">
+            El asunto es obligatorio (máximo 255 caracteres)
+          </div>
+          <small class="form-text">Puedes usar variables como &#123;nombre&#125;, &#123;matricula&#125;, etc.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="cuerpo">Contenido del Correo (HTML) *</label>
+          <textarea
+            id="cuerpo"
+            formControlName="cuerpo"
+            class="form-control form-control-large"
+            rows="15"
+            placeholder="Escribe el contenido del correo aquí. Puedes usar HTML y variables."
+          ></textarea>
+          <div *ngIf="formulario.get('cuerpo')?.invalid && formulario.get('cuerpo')?.touched" class="error-message">
+            El contenido es obligatorio
+          </div>
+          <small class="form-text">Soporta HTML. Usa las variables del panel derecho.</small>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" formControlName="activa">
+            <span>Plantilla activa</span>
+          </label>
+          <small class="form-text">Si está desactivada, no se enviará este correo</small>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="cancelar()" [disabled]="loading">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="loading || formulario.invalid">
+            {{ loading ? 'Guardando...' : 'Guardar Cambios' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="variables-panel">
+      <div class="panel-sticky">
+        <h3>Variables Disponibles</h3>
+        <p class="panel-description">Haz clic para insertar en el contenido</p>
+
+        <div class="variables-list">
+          <button
+            type="button"
+            class="variable-btn"
+            *ngFor="let variable of variablesDisponibles"
+            (click)="insertarVariable(variable.variable)"
+          >
+            <code>{{ variable.variable }}</code>
+            <span>{{ variable.descripcion }}</span>
+          </button>
+        </div>
+
+        <div class="info-tip">
+          <strong>💡 Consejo:</strong>
+          <p>Las variables se reemplazarán automáticamente con los datos reales cuando se envíe el correo.</p>
+        </div>
+
+        <div class="html-tips">
+          <strong>📝 Tags HTML útiles:</strong>
+          <ul>
+            <li><code>&lt;strong&gt;</code> - Texto en negrita</li>
+            <li><code>&lt;p&gt;</code> - Párrafo</li>
+            <li><code>&lt;br&gt;</code> - Salto de línea</li>
+            <li><code>&lt;ul&gt;&lt;li&gt;</code> - Lista</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

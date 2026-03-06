@@ -1,0 +1,38 @@
+# ─── Secretos y configuración local ──────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── Artefactos de compilación ────────────────────────────────────────────────
+backend/*/target/
+backend/*/app.jar
+frontend/dist/
+frontend/.angular/
+frontend/node_modules/
+
+# ─── Claude Code ──────────────────────────────────────────────────────────────
+.claude/
+
+# ─── IDEs ─────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# ─── SO ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ─── Maven wrapper binario (se descarga automáticamente) ──────────────────────
+.mvn/wrapper/maven-wrapper.jar

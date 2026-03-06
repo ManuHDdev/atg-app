@@ -1,0 +1,35 @@
+<div class="autocomplete-container">
+  <div class="search-box">
+    <input
+      type="text"
+      class="form-control"
+      [placeholder]="placeholder"
+      [(ngModel)]="searchText"
+      (input)="onSearchChange()"
+      (focus)="onFocus()"
+      (blur)="onBlur()"
+      [disabled]="loading"
+    >
+    <span class="search-icon" *ngIf="!loading && !selectedSocio">🔍</span>
+    <span class="loading-icon" *ngIf="loading">⏳</span>
+    <span class="selected-icon" *ngIf="selectedSocio">✓</span>
+  </div>
+
+  <div class="dropdown" *ngIf="showDropdown && filteredSocios.length > 0">
+    <div
+      *ngFor="let socio of filteredSocios"
+      class="dropdown-item"
+      (mousedown)="selectSocio(socio)"
+    >
+      <div class="socio-name">{{ socio.nombre }}</div>
+      <div class="socio-details">
+        <span class="socio-numero">{{ socio.numeroSocio }}</span>
+        <span class="socio-email" *ngIf="socio.email">{{ socio.email }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="no-results" *ngIf="searchText && !showDropdown && !loading && filteredSocios.length === 0">
+    No se encontraron socios
+  </div>
+</div>

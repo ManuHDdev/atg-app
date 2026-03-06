@@ -1,0 +1,104 @@
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.badge-small {
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  gap: 0.25rem;
+}
+
+.badge-medium {
+  padding: 0.375rem 0.875rem;
+  font-size: 0.875rem;
+  gap: 0.375rem;
+}
+
+.badge-large {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  gap: 0.5rem;
+}
+
+.badge-icon {
+  font-size: 1em;
+  display: inline-block;
+}
+
+.badge-label {
+  display: inline-block;
+}
+
+/* Estado: PENDIENTE */
+.badge-pendiente {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+/* Estado: APROBADA */
+.badge-aprobada {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+/* Estado: RECHAZADA */
+.badge-rechazada {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Estado: TARJETA_LLEGADA */
+.badge-tarjeta-llegada {
+  background: #e7e3ff;
+  color: #5a4a9f;
+  border: 1px solid #d4ccff;
+}
+
+/* Estado: ENTREGADA */
+.badge-entregada {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+/* Estado: COMPLETADA */
+.badge-completada {
+  background: #28a745;
+  color: white;
+  border: 1px solid #1e7e34;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}
+
+/* Hover effects */
+.estado-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.badge-completada:hover {
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+@media (max-width: 768px) {
+  .estado-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.625rem;
+  }
+
+  .badge-large {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+  }
+}

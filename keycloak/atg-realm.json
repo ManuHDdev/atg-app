@@ -1,0 +1,99 @@
+{
+  "realm": "atg",
+  "enabled": true,
+  "displayName": "ATG",
+  "displayNameHtml": "<b>ATG</b>",
+  "loginTheme": "keycloak",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": false,
+  "rememberMe": true,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "sslRequired": "external",
+  "accessTokenLifespan": 3600,
+  "ssoSessionIdleTimeout": 28800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "Administrador del sistema. Acceso completo."
+      },
+      {
+        "name": "GESTOR",
+        "description": "Gestor. Acceso CRUD a todas las entidades del dominio."
+      },
+      {
+        "name": "USUARIO",
+        "description": "Usuario de consulta. Solo lectura (GET)."
+      },
+      {
+        "name": "DEVELOPER",
+        "description": "Desarrollador de la aplicación. Gestiona incidencias y estados."
+      }
+    ]
+  },
+  "defaultRoles": ["USUARIO"],
+  "clients": [
+    {
+      "clientId": "atg-app",
+      "name": "ATG Aplicación",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:4200/*",
+        "https://manuhd.duckdns.org/atg/*",
+        "https://manuhd.duckdns.org/*"
+      ],
+      "webOrigins": [
+        "http://localhost:4200",
+        "https://manuhd.duckdns.org"
+      ],
+      "protocol": "openid-connect",
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:4200/*##https://manuhd.duckdns.org/atg/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@atg.es",
+      "firstName": "Administrador",
+      "lastName": "ATG",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin1234!",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["ADMIN", "DEVELOPER"]
+    }
+  ]
+}
