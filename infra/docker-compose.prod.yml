@@ -54,7 +54,7 @@ services:
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED=${MAIL_STARTTLS:-false}
       - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
-      - DEVELOPER_EMAIL=${DEVELOPER_EMAIL:-manu@localhost}
+      - APP_DEVELOPER_EMAIL=${DEVELOPER_EMAIL:-manu@localhost}
     depends_on:
       mysql:
         condition: service_healthy
