@@ -84,6 +84,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [build-backend, build-frontend]
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
@@ -91,27 +94,35 @@ jobs:
           - service: auth
             artifact: jar-auth
             context: backend/auth
+            dist_path: backend/auth
           - service: socios
             artifact: jar-socios
             context: backend/socios
+            dist_path: backend/socios
           - service: petroleras
             artifact: jar-petroleras
             context: backend/petroleras
+            dist_path: backend/petroleras
           - service: tarjetas
             artifact: jar-tarjetas
             context: backend/tarjetas
+            dist_path: backend/tarjetas
           - service: contratos
             artifact: jar-contratos
             context: backend/contratos
+            dist_path: backend/contratos
           - service: creditos
             artifact: jar-creditos
             context: backend/creditos
+            dist_path: backend/creditos
           - service: dispositivos
             artifact: jar-dispositivos
             context: backend/dispositivos
+            dist_path: backend/dispositivos
           - service: frontend
             artifact: frontend-dist
             context: frontend
+            dist_path: frontend/dist/frontend/browser
     steps:
       - uses: actions/checkout@v4
 
@@ -119,7 +130,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.context }}
+          path: ${{ matrix.dist_path }}
 
       - name: Copy nginx config (frontend only)
         if: matrix.service == 'frontend'
@@ -152,6 +163,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [docker-build-push]
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
 
