@@ -206,5 +206,11 @@ jobs:
 
       - name: Deploy
         run: |
-          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            'cd ~/atg-app && docker compose -f docker-compose.prod.yml up -d'
+          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+            cd ~/atg-app
+            # Bajar stack viejo si sigue corriendo con el compose de desarrollo
+            if docker compose -f docker-compose.yml ps -q 2>/dev/null | grep -q .; then
+              docker compose -f docker-compose.yml down
+            fi
+            docker compose -f docker-compose.prod.yml up -d
+          ENDSSH
