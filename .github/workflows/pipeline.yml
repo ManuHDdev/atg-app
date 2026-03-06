@@ -193,13 +193,16 @@ jobs:
       - name: Copy compose and config files
         run: |
           ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            'mkdir -p ~/atg-app/keycloak'
+            'mkdir -p ~/atg-app/keycloak ~/atg-app/backend/sql'
           scp -P ${{ secrets.SSH_PORT }} \
             infra/docker-compose.prod.yml \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/atg-app/docker-compose.prod.yml
           scp -P ${{ secrets.SSH_PORT }} -r \
             keycloak/ \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/atg-app/keycloak/
+          scp -P ${{ secrets.SSH_PORT }} \
+            backend/sql/docker-init.sql \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/atg-app/backend/sql/docker-init.sql
 
       - name: Deploy
         run: |
