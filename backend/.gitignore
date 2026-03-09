@@ -11,9 +11,6 @@ buildNumber.properties
 .mvn/wrapper/maven-wrapper.jar
 
 # Spring Boot
-application.properties
-application-prod.properties
-application-dev.properties
 
 # IDE
 .idea
