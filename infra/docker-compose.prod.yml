@@ -26,6 +26,8 @@ services:
     image: ghcr.io/manuhddev/atg-auth:latest
     restart: unless-stopped
     environment:
+      # Puerto interno (sobreescribe application.properties)
+      - SERVER_PORT=8080
       # Datasource
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=admin_contratos
@@ -65,6 +67,7 @@ services:
     image: ghcr.io/manuhddev/atg-socios:latest
     restart: unless-stopped
     environment:
+      - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=admin_contratos
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
@@ -88,6 +91,7 @@ services:
     image: ghcr.io/manuhddev/atg-petroleras:latest
     restart: unless-stopped
     environment:
+      - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=admin_contratos
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
@@ -116,6 +120,7 @@ services:
     image: ghcr.io/manuhddev/atg-tarjetas:latest
     restart: unless-stopped
     environment:
+      - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=admin_contratos
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
@@ -127,7 +132,7 @@ services:
       - KEYCLOAK_REALM=atg
       - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
       - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
-      - APP_SOCIOS_URL=http://socios:8081
+      - APP_SOCIOS_URL=http://socios:8080
       - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
       - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
       - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
@@ -145,6 +150,7 @@ services:
     image: ghcr.io/manuhddev/atg-contratos:latest
     restart: unless-stopped
     environment:
+      - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=admin_contratos
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
@@ -160,7 +166,7 @@ services:
       - KEYCLOAK_REALM=atg
       - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
       - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
-      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8082
+      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8080
       - STORAGE_PLANTILLAS=/app/storage/plantillas/originales
       - STORAGE_CONTRATOS=/app/storage/contratos/solicitudes
       - STORAGE_BORRADORES=/app/storage/contratos/borradores
@@ -183,6 +189,7 @@ services:
     image: ghcr.io/manuhddev/atg-creditos:latest
     restart: unless-stopped
     environment:
+      - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=admin_creditos
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CREDITOS}
@@ -194,8 +201,8 @@ services:
       - KEYCLOAK_REALM=atg
       - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
       - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
-      - MICROSERVICES_SOCIOS_URL=http://socios:8081
-      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8082
+      - MICROSERVICES_SOCIOS_URL=http://socios:8080
+      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8080
       - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
       - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
       - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
@@ -213,6 +220,7 @@ services:
     image: ghcr.io/manuhddev/atg-dispositivos:latest
     restart: unless-stopped
     environment:
+      - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/atg?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=admin_contratos
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_CONTRATOS}
@@ -224,8 +232,8 @@ services:
       - KEYCLOAK_REALM=atg
       - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
       - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
-      - MICROSERVICES_SOCIOS_URL=http://socios:8081
-      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8082
+      - MICROSERVICES_SOCIOS_URL=http://socios:8080
+      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8080
       - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
       - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
       - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
