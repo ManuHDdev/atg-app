@@ -54,6 +54,7 @@ jobs:
           path: backend/${{ matrix.service }}/app.jar
           retention-days: 1
           if-no-files-found: error
+          overwrite: true
 
   # ──────────────────────────────────────────────
   # JOB 2: Build frontend
@@ -83,6 +84,7 @@ jobs:
           path: frontend/dist/frontend/browser/
           retention-days: 1
           if-no-files-found: error
+          overwrite: true
 
   # ──────────────────────────────────────────────
   # JOB 3: Build & push Docker images (matrix x8)
