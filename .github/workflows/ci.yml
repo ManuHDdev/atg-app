@@ -95,7 +95,8 @@ jobs:
   notify-incidencia:
     name: Sincronizar estado incidencia
     runs-on: ubuntu-latest
-    # Solo cuando el título sigue el patrón fix(INC-NNN):
+    continue-on-error: true  # job auxiliar — no debe bloquear el pipeline principal
+    # Solo cuando el título/commit sigue el patrón fix(INC-NNN):
     if: |
       (github.event_name == 'pull_request' &&
        startsWith(github.event.pull_request.title, 'fix(INC-')) ||
@@ -111,54 +112,52 @@ jobs:
           else
             TITLE="${{ github.event.head_commit.message }}"
           fi
-          INC_ID=$(echo "$TITLE" | grep -oP '(?<=INC-)\d+' | head -1)
+          INC_ID=$(echo "$TITLE" | grep -oP '(?<=INC-)\d+' | head -1 || true)
           if [[ -z "$INC_ID" ]]; then
-            echo "No se encontró ID de incidencia en: $TITLE"
-            exit 0
+            echo "No se encontró ID de incidencia en el título. Nada que hacer."
+            echo "INC_ID=" >> "$GITHUB_OUTPUT"
+          else
+            echo "INC_ID=$INC_ID" >> "$GITHUB_OUTPUT"
+            echo "Incidencia detectada: INC-$INC_ID"
           fi
-          echo "INC_ID=$INC_ID" >> "$GITHUB_OUTPUT"
-          echo "Incidencia detectada: INC-$INC_ID"
 
       - name: Obtener JWT de Keycloak
         id: jwt
         if: steps.extract.outputs.INC_ID != ''
         run: |
-          TOKEN_RESPONSE=$(curl -s -f -X POST \
+          TOKEN_RESPONSE=$(curl -s -X POST \
             "${{ secrets.KEYCLOAK_URL }}/realms/${{ secrets.KEYCLOAK_REALM }}/protocol/openid-connect/token" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             -d "grant_type=client_credentials" \
             -d "client_id=${{ secrets.KEYCLOAK_CLIENT_ID }}" \
             -d "client_secret=${{ secrets.KEYCLOAK_CLIENT_SECRET }}")
-          JWT=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
-          if [[ -z "$JWT" || "$JWT" == "null" ]]; then
-            echo "ERROR: No se pudo obtener JWT"
-            exit 1
+          JWT=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token // empty')
+          if [[ -z "$JWT" ]]; then
+            echo "WARN: No se pudo obtener JWT de Keycloak. Saltando notificación."
+            echo "JWT=" >> "$GITHUB_OUTPUT"
+          else
+            echo "::add-mask::$JWT"
+            echo "JWT=$JWT" >> "$GITHUB_OUTPUT"
           fi
-          echo "JWT=$JWT" >> "$GITHUB_OUTPUT"
 
       - name: Actualizar estado → PENDIENTE_DEPLOY (PR abierta/sync)
-        if: |
-          steps.extract.outputs.INC_ID != '' &&
-          github.event_name == 'pull_request'
+        if: steps.extract.outputs.INC_ID != '' && steps.jwt.outputs.JWT != '' && github.event_name == 'pull_request'
         run: |
           PR_URL="${{ github.event.pull_request.html_url }}"
-          curl -s -f -X PATCH \
+          curl -s -o /dev/null -w "HTTP %{http_code}" -X PATCH \
             "${{ secrets.API_BASE_URL }}/api/incidencias/${{ steps.extract.outputs.INC_ID }}/estado" \
             -H "Authorization: Bearer ${{ steps.jwt.outputs.JWT }}" \
             -H "Content-Type: application/json" \
-            -d "{\"estado\":\"PENDIENTE_DEPLOY\",\"notasDeveloper\":\"PR lista para revisión: ${PR_URL}\"}"
+            -d "{\"estado\":\"PENDIENTE_DEPLOY\",\"notasDeveloper\":\"PR lista para revisión: ${PR_URL}\"}" || true
           echo "INC-${{ steps.extract.outputs.INC_ID }} → PENDIENTE_DEPLOY"
 
       - name: Actualizar estado → EN_PRODUCCION (merge a main)
-        if: |
-          steps.extract.outputs.INC_ID != '' &&
-          github.event_name == 'push' &&
-          github.ref == 'refs/heads/main'
+        if: steps.extract.outputs.INC_ID != '' && steps.jwt.outputs.JWT != '' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
-          curl -s -f -X PATCH \
+          curl -s -o /dev/null -w "HTTP %{http_code}" -X PATCH \
             "${{ secrets.API_BASE_URL }}/api/incidencias/${{ steps.extract.outputs.INC_ID }}/estado" \
             -H "Authorization: Bearer ${{ steps.jwt.outputs.JWT }}" \
             -H "Content-Type: application/json" \
-            -d "{\"estado\":\"EN_PRODUCCION\",\"notasDeveloper\":\"Desplegado en producción. Commit: ${COMMIT_URL}\"}"
+            -d "{\"estado\":\"EN_PRODUCCION\",\"notasDeveloper\":\"Desplegado en producción. Commit: ${COMMIT_URL}\"}" || true
           echo "INC-${{ steps.extract.outputs.INC_ID }} → EN_PRODUCCION"

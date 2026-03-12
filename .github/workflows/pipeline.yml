@@ -38,8 +38,14 @@ jobs:
 
       - name: Rename JAR
         run: |
-          JAR=$(ls backend/${{ matrix.service }}/target/*.jar | grep -v original | head -1)
+          JAR=$(find backend/${{ matrix.service }}/target -maxdepth 1 -name "*.jar" ! -name "*original*" | head -1)
+          if [[ -z "$JAR" ]]; then
+            echo "ERROR: No JAR found in backend/${{ matrix.service }}/target/"
+            ls backend/${{ matrix.service }}/target/ || true
+            exit 1
+          fi
           cp "$JAR" backend/${{ matrix.service }}/app.jar
+          echo "JAR copiado: $JAR → app.jar"
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
@@ -47,6 +53,7 @@ jobs:
           name: jar-${{ matrix.service }}
           path: backend/${{ matrix.service }}/app.jar
           retention-days: 1
+          if-no-files-found: error
 
   # ──────────────────────────────────────────────
   # JOB 2: Build frontend
@@ -75,6 +82,7 @@ jobs:
           name: frontend-dist
           path: frontend/dist/frontend/browser/
           retention-days: 1
+          if-no-files-found: error
 
   # ──────────────────────────────────────────────
   # JOB 3: Build & push Docker images (matrix x8)
