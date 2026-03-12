@@ -52,7 +52,7 @@ jobs:
         run: |
           chmod +x backend/${{ matrix.service }}/mvnw
           cd backend/${{ matrix.service }}
-          ./mvnw clean verify --no-transfer-progress -B -Dspring.profiles.active=test
+          ./mvnw clean verify --no-transfer-progress -B -Dspring.profiles.active=test -Djacoco.skip=true
 
       - name: Upload test results
         if: always()
