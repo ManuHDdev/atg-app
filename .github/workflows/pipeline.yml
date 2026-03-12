@@ -12,10 +12,14 @@ env:
 
 jobs:
   # ──────────────────────────────────────────────
-  # JOB 1: Build backend JARs (matrix x7)
+  # JOB 1: Build backend + push Docker (matrix x7)
+  # Build always (verifica PRs); Docker solo en push a main
   # ──────────────────────────────────────────────
   build-backend:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
@@ -47,20 +51,37 @@ jobs:
           cp "$JAR" backend/${{ matrix.service }}/app.jar
           echo "JAR copiado: $JAR → app.jar"
 
-      - name: Upload JAR artifact
-        uses: actions/upload-artifact@v4
+      - name: Set up Docker Buildx
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
         with:
-          name: jar-${{ matrix.service }}
-          path: backend/${{ matrix.service }}/app.jar
-          retention-days: 1
-          if-no-files-found: error
-          overwrite: true
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.service }}
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/${{ matrix.service }}
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:latest
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
   # ──────────────────────────────────────────────
-  # JOB 2: Build frontend
+  # JOB 2: Build frontend + push Docker
+  # Build siempre (verifica PRs); Docker solo en push a main
   # ──────────────────────────────────────────────
   build-frontend:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -77,102 +98,40 @@ jobs:
       - name: Build Angular
         run: cd frontend && npx ng build --base-href /atg/ --configuration=production
 
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist/frontend/browser/
-          retention-days: 1
-          if-no-files-found: error
-          overwrite: true
-
-  # ──────────────────────────────────────────────
-  # JOB 3: Build & push Docker images (matrix x8)
-  # Only on push to main
-  # ──────────────────────────────────────────────
-  docker-build-push:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [build-backend, build-frontend]
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - service: auth
-            artifact: jar-auth
-            context: backend/auth
-            dist_path: backend/auth
-          - service: socios
-            artifact: jar-socios
-            context: backend/socios
-            dist_path: backend/socios
-          - service: petroleras
-            artifact: jar-petroleras
-            context: backend/petroleras
-            dist_path: backend/petroleras
-          - service: tarjetas
-            artifact: jar-tarjetas
-            context: backend/tarjetas
-            dist_path: backend/tarjetas
-          - service: contratos
-            artifact: jar-contratos
-            context: backend/contratos
-            dist_path: backend/contratos
-          - service: creditos
-            artifact: jar-creditos
-            context: backend/creditos
-            dist_path: backend/creditos
-          - service: dispositivos
-            artifact: jar-dispositivos
-            context: backend/dispositivos
-            dist_path: backend/dispositivos
-          - service: frontend
-            artifact: frontend-dist
-            context: frontend
-            dist_path: frontend/dist/frontend/browser
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.dist_path }}
-
-      - name: Copy nginx config (frontend only)
-        if: matrix.service == 'frontend'
+      - name: Copy nginx config
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: cp nginx/nginx-ssl.conf frontend/nginx.conf
 
       - name: Set up Docker Buildx
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push ${{ matrix.service }}
+      - name: Build and push frontend
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
+          context: frontend
           push: true
-          tags: ${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:latest
-          cache-from: type=gha,scope=${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          tags: ${{ env.IMAGE_PREFIX }}-frontend:latest
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
 
   # ──────────────────────────────────────────────
-  # JOB 4: Deploy to production server
+  # JOB 3: Deploy to production server
   # Only on push to main
   # ──────────────────────────────────────────────
   deploy:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [docker-build-push]
+    needs: [build-backend, build-frontend]
     permissions:
       contents: read
       packages: read
