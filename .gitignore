@@ -36,3 +36,7 @@ logs/
 
 # ─── Maven wrapper binario (se descarga automáticamente) ──────────────────────
 .mvn/wrapper/maven-wrapper.jar
+
+# ─── Scripts de automatización ────────────────────────────────────────────────
+scripts/.env
+/tmp/atg_*

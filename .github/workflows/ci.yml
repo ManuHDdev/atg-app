@@ -1,0 +1,164 @@
+# ============================================================
+# ci.yml — Tests + notificación de estado de incidencias
+#
+# NOTA: El build y deploy está en pipeline.yml.
+# Este workflow añade: tests (que pipeline.yml omite) y el
+# job de sincronización de estado con el módulo de incidencias.
+#
+# SECRETS REQUERIDOS EN GITHUB (Settings → Secrets → Actions):
+# SSH_PRIVATE_KEY      → clave SSH privada para acceder al servidor (87.216.88.165:2269)
+# SSH_HOST             → 87.216.88.165
+# SSH_PORT             → 2269
+# SSH_USER             → manu
+# DEPLOY_PATH          → /home/manu/atg-app
+# KEYCLOAK_URL         → https://manuhd.duckdns.org/auth
+# KEYCLOAK_REALM       → atg
+# KEYCLOAK_CLIENT_ID   → atg-service-account
+# KEYCLOAK_CLIENT_SECRET
+# API_BASE_URL         → https://manuhd.duckdns.org
+# ============================================================
+name: CI — Tests & Incidencias
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  # JOB 1: Tests de backend (matrix x7 microservicios)
+  # ──────────────────────────────────────────────────────────
+  test-backend:
+    name: Tests backend — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [auth, socios, petroleras, tarjetas, contratos, creditos, dispositivos]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run tests — ${{ matrix.service }}
+        run: |
+          chmod +x backend/${{ matrix.service }}/mvnw
+          cd backend/${{ matrix.service }}
+          ./mvnw clean verify --no-transfer-progress -B
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.service }}
+          path: backend/${{ matrix.service }}/target/surefire-reports/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────
+  # JOB 2: Tests de frontend
+  # ──────────────────────────────────────────────────────────
+  test-frontend:
+    name: Tests frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci --legacy-peer-deps
+
+      - name: Build Angular (production)
+        run: cd frontend && npx ng build --base-href /atg/ --configuration=production
+
+      - name: Run unit tests
+        run: cd frontend && npx ng test --watch=false --browsers=ChromeHeadless
+
+  # ──────────────────────────────────────────────────────────
+  # JOB 3: Notificar estado de incidencia en el módulo ATG
+  # Solo para PRs/merges cuyo título sea "fix(INC-NNN): ..."
+  # ──────────────────────────────────────────────────────────
+  notify-incidencia:
+    name: Sincronizar estado incidencia
+    runs-on: ubuntu-latest
+    # Solo cuando el título sigue el patrón fix(INC-NNN):
+    if: |
+      (github.event_name == 'pull_request' &&
+       startsWith(github.event.pull_request.title, 'fix(INC-')) ||
+      (github.event_name == 'push' &&
+       contains(github.event.head_commit.message, 'fix(INC-'))
+
+    steps:
+      - name: Extraer ID de incidencia
+        id: extract
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            TITLE="${{ github.event.pull_request.title }}"
+          else
+            TITLE="${{ github.event.head_commit.message }}"
+          fi
+          INC_ID=$(echo "$TITLE" | grep -oP '(?<=INC-)\d+' | head -1)
+          if [[ -z "$INC_ID" ]]; then
+            echo "No se encontró ID de incidencia en: $TITLE"
+            exit 0
+          fi
+          echo "INC_ID=$INC_ID" >> "$GITHUB_OUTPUT"
+          echo "Incidencia detectada: INC-$INC_ID"
+
+      - name: Obtener JWT de Keycloak
+        id: jwt
+        if: steps.extract.outputs.INC_ID != ''
+        run: |
+          TOKEN_RESPONSE=$(curl -s -f -X POST \
+            "${{ secrets.KEYCLOAK_URL }}/realms/${{ secrets.KEYCLOAK_REALM }}/protocol/openid-connect/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials" \
+            -d "client_id=${{ secrets.KEYCLOAK_CLIENT_ID }}" \
+            -d "client_secret=${{ secrets.KEYCLOAK_CLIENT_SECRET }}")
+          JWT=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token')
+          if [[ -z "$JWT" || "$JWT" == "null" ]]; then
+            echo "ERROR: No se pudo obtener JWT"
+            exit 1
+          fi
+          echo "JWT=$JWT" >> "$GITHUB_OUTPUT"
+
+      - name: Actualizar estado → PENDIENTE_DEPLOY (PR abierta/sync)
+        if: |
+          steps.extract.outputs.INC_ID != '' &&
+          github.event_name == 'pull_request'
+        run: |
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          curl -s -f -X PATCH \
+            "${{ secrets.API_BASE_URL }}/api/incidencias/${{ steps.extract.outputs.INC_ID }}/estado" \
+            -H "Authorization: Bearer ${{ steps.jwt.outputs.JWT }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"estado\":\"PENDIENTE_DEPLOY\",\"notasDeveloper\":\"PR lista para revisión: ${PR_URL}\"}"
+          echo "INC-${{ steps.extract.outputs.INC_ID }} → PENDIENTE_DEPLOY"
+
+      - name: Actualizar estado → EN_PRODUCCION (merge a main)
+        if: |
+          steps.extract.outputs.INC_ID != '' &&
+          github.event_name == 'push' &&
+          github.ref == 'refs/heads/main'
+        run: |
+          COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          curl -s -f -X PATCH \
+            "${{ secrets.API_BASE_URL }}/api/incidencias/${{ steps.extract.outputs.INC_ID }}/estado" \
+            -H "Authorization: Bearer ${{ steps.jwt.outputs.JWT }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"estado\":\"EN_PRODUCCION\",\"notasDeveloper\":\"Desplegado en producción. Commit: ${COMMIT_URL}\"}"
+          echo "INC-${{ steps.extract.outputs.INC_ID }} → EN_PRODUCCION"

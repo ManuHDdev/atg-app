@@ -1,0 +1,26 @@
+Estás en el repositorio atg-app (ManuHDdev/atg-app).
+Lee el fichero CLAUDE.md en la raíz antes de hacer cualquier cosa.
+
+Incidencia asignada:
+ID: $INC_ID
+TÍTULO: $INC_TITULO
+TIPO: $INC_TIPO
+PRIORIDAD: $INC_PRIORIDAD
+DESCRIPCIÓN:
+$INC_DESCRIPCION
+
+INSTRUCCIONES:
+1. Lee CLAUDE.md primero.
+2. Analiza la descripción e identifica los ficheros implicados.
+3. Lee esos ficheros antes de modificar nada.
+4. Si es BUG: corrige la causa raíz con el cambio mínimo necesario. No refactorices código no relacionado.
+5. Si es MEJORA: impleméntala siguiendo las convenciones del CLAUDE.md.
+6. Si es SUGERENCIA: evalúa si es seguro implementarla. Si no lo es, escribe el motivo en /tmp/atg_inc_${INC_ID}_no_implementable.txt y no toques el código.
+7. Después de cada cambio: ejecuta los tests del módulo afectado.
+8. Si algún test falla: corrígelo antes de terminar.
+9. NO hagas git commit ni git push (el orquestador lo hace).
+10. NO modifiques CLAUDE.md, docker-compose.yml ni ficheros de configuración de Keycloak.
+11. Al terminar escribe un resumen con formato:
+    FICHEROS MODIFICADOS:
+    - [ruta]: [motivo]
+    TESTS: [resultado]
