@@ -61,6 +61,7 @@ jobs:
           name: test-results-${{ matrix.service }}
           path: backend/${{ matrix.service }}/target/surefire-reports/
           retention-days: 7
+          if-no-files-found: ignore
 
   # ──────────────────────────────────────────────────────────
   # JOB 2: Tests de frontend
