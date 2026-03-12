@@ -17,6 +17,7 @@ import java.util.*;
 public class KeycloakAdminService {
 
     private static final List<String> APP_ROLES = List.of("ADMIN", "GESTOR", "USUARIO");
+    private static final List<String> SYSTEM_USERNAMES = List.of("claude-bot");
 
     @Value("${keycloak.internal-url}")
     private String keycloakUrl;
@@ -77,7 +78,10 @@ public class KeycloakAdminService {
                 usersUrl() + "?max=200", HttpMethod.GET, new HttpEntity<>(authHeaders()),
                 (Class<List<Map<String, Object>>>) (Class<?>) List.class);
         List<Map<String, Object>> users = Objects.requireNonNull(response.getBody());
-        return users.stream().map(this::toUsuarioDto).toList();
+        return users.stream()
+                .filter(u -> !SYSTEM_USERNAMES.contains(u.get("username")))
+                .map(this::toUsuarioDto)
+                .toList();
     }
 
     public UsuarioDto obtenerUsuario(String id) {
