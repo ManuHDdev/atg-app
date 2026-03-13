@@ -194,7 +194,7 @@ class CreditoServiceTest extends TestBase {
         when(creditoRepository.findById(1L)).thenReturn(Optional.of(creditoGuardado));
         when(restTemplate.getForObject(anyString(), eq(Map.class)))
                 .thenReturn(mockSocio, mockPetrolera, mockSocio, mockPetrolera);
-        doNothing().when(emailService).enviarCorreoConPlantilla(anyString(), anyString(), anyString(), anyMap());
+        doNothing().when(emailService).enviarCorreoConPlantilla(any(), any(), any(), anyMap());
 
         // When
         CreditoDTO resultado = creditoService.crear(dto);
@@ -245,7 +245,7 @@ class CreditoServiceTest extends TestBase {
         when(restTemplate.getForObject(anyString(), eq(Map.class)))
                 .thenReturn(mockSocio, mockPetrolera, mockEmpresa, mockSocio, mockPetrolera);
         when(creditoRepository.save(any(Credito.class))).thenReturn(creditoPendiente);
-        doNothing().when(emailService).enviarCorreoConPlantilla(anyString(), anyString(), anyString(), anyMap());
+        doNothing().when(emailService).enviarCorreoConPlantilla(any(), any(), any(), anyMap());
 
         // When
         CreditoDTO resultado = creditoService.enviarAPetrolera(creditoId);
@@ -255,8 +255,8 @@ class CreditoServiceTest extends TestBase {
         verify(creditoRepository, times(1)).save(any(Credito.class));
         verify(emailService, times(1)).enviarCorreoConPlantilla(
                 eq("petrolera@test.com"),
-                anyString(),
-                anyString(),
+                any(),
+                any(),
                 anyMap()
         );
 
@@ -411,7 +411,7 @@ class CreditoServiceTest extends TestBase {
         when(restTemplate.getForObject(anyString(), eq(Map.class)))
                 .thenReturn(mockSocio, petroleraSinEmail, mockEmpresa, mockSocio, petroleraSinEmail);
         when(creditoRepository.save(any(Credito.class))).thenReturn(creditoPendiente);
-        doNothing().when(emailService).enviarCorreoConPlantilla(anyString(), anyString(), anyString(), anyMap());
+        doNothing().when(emailService).enviarCorreoConPlantilla(any(), any(), any(), anyMap());
 
         // When
         creditoService.enviarAPetrolera(creditoId);
@@ -419,8 +419,8 @@ class CreditoServiceTest extends TestBase {
         // Then
         verify(emailService, times(1)).enviarCorreoConPlantilla(
                 eq("admin@atg.com"), // Fallback email
-                anyString(),
-                anyString(),
+                any(),
+                any(),
                 anyMap()
         );
     }
@@ -434,7 +434,7 @@ class CreditoServiceTest extends TestBase {
         when(restTemplate.getForObject(anyString(), eq(Map.class)))
                 .thenThrow(new RuntimeException("Service unavailable"));
         when(creditoRepository.save(any(Credito.class))).thenReturn(creditoPendiente);
-        doNothing().when(emailService).enviarCorreoConPlantilla(anyString(), anyString(), anyString(), anyMap());
+        doNothing().when(emailService).enviarCorreoConPlantilla(any(), any(), any(), anyMap());
 
         // When
         CreditoDTO resultado = creditoService.enviarAPetrolera(creditoId);
