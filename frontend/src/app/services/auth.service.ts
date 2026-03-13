@@ -13,7 +13,7 @@ export class AuthService {
   async init(): Promise<boolean> {
     return this.kc.init({
       onLoad: 'check-sso',
-      silentCheckSsoRedirectUri: window.location.origin + '/assets/silent-check-sso.html',
+      silentCheckSsoRedirectUri: document.baseURI + 'silent-check-sso.html',
       pkceMethod: 'S256',
     });
   }

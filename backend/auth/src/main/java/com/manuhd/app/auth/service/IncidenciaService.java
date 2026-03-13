@@ -8,6 +8,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -97,6 +98,10 @@ public class IncidenciaService {
 
     private String usuarioActual() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth instanceof JwtAuthenticationToken jwt) {
+            String preferred = jwt.getToken().getClaimAsString("preferred_username");
+            if (preferred != null && !preferred.isBlank()) return preferred;
+        }
         return auth != null ? auth.getName() : "desconocido";
     }
 
