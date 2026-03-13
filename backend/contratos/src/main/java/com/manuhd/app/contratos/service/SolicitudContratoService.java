@@ -587,6 +587,11 @@ public class SolicitudContratoService {
         validarCambioEstado(solicitud.getEstado(), nuevoEstado);
 
         solicitud.setEstado(nuevoEstado);
+        if (nuevoEstado == EstadoSolicitud.ENVIADO_SOCIO) {
+            solicitud.setFechaEnvioSocio(LocalDateTime.now());
+        } else if (nuevoEstado == EstadoSolicitud.ENVIADO_PETROLERA) {
+            solicitud.setFechaEnvioPetrolera(LocalDateTime.now());
+        }
         SolicitudContrato updated = solicitudRepository.save(solicitud);
 
         log.info("Estado cambiado exitosamente");
