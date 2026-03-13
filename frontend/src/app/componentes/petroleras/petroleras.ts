@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { PetroleraService } from '../../services/petrolera.service';
 import { Petrolera } from '../../models/petrolera.model';
@@ -7,7 +8,7 @@ import { Petrolera } from '../../models/petrolera.model';
 @Component({
   selector: 'app-petroleras',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './petroleras.html',
   styleUrl: './petroleras.css'
 })

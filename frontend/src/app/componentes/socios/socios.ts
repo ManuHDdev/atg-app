@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { SocioService } from '../../services/socio.service';
 import { Socio } from '../../models/socio.model';
@@ -8,7 +9,7 @@ import { Socio } from '../../models/socio.model';
 @Component({
   selector: 'app-socios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './socios.html',
   styleUrl: './socios.css'
 })

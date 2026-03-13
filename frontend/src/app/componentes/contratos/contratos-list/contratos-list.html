@@ -1,7 +1,7 @@
 <div class="content-wrapper">
   <header class="page-header">
     <h1 class="page-title">Gestión de Solicitudes de Contratos</h1>
-    <button class="btn-primary" (click)="nuevaSolicitud()">+ Nueva Solicitud</button>
+    <a class="btn-primary" routerLink="/contratos/nuevo">+ Nueva Solicitud</a>
   </header>
 
   <!-- Filtros -->
@@ -51,7 +51,7 @@
   @if (!loading && solicitudes.length === 0) {
     <div class="empty-state">
       <p>No hay solicitudes de contratos registradas.</p>
-      <button class="btn-primary" (click)="nuevaSolicitud()">Crear primera solicitud</button>
+      <a class="btn-primary" routerLink="/contratos/nuevo">Crear primera solicitud</a>
     </div>
   }
 
@@ -85,9 +85,9 @@
                 </span>
               </td>
               <td class="actions">
-                <button class="btn-action" (click)="verDetalle(solicitud.id!)" title="Ver detalle">
+                <a class="btn-action" [routerLink]="['/contratos', solicitud.id]" title="Ver detalle">
                   <i class="bi bi-eye"></i>
-                </button>
+                </a>
                 @if (puedeDescargarFinal(solicitud)) {
                   <button
                     class="btn-action"

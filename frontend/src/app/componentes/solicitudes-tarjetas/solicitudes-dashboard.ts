@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { SolicitudTarjetaService } from '../../services/solicitud-tarjeta.service';
 import { SocioService } from '../../services/socio.service';
@@ -13,7 +14,7 @@ import { EstadoBadge } from './estado-badge/estado-badge';
 @Component({
   selector: 'app-solicitudes-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, EstadoBadge],
+  imports: [CommonModule, FormsModule, RouterLink, EstadoBadge],
   templateUrl: './solicitudes-dashboard.html',
   styleUrl: './solicitudes-dashboard.css'
 })

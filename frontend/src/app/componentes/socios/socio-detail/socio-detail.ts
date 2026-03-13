@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { SocioService } from '../../../services/socio.service';
@@ -27,7 +28,7 @@ type TabType = 'general' | 'solicitudes' | 'activos';
 @Component({
   selector: 'app-socio-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './socio-detail.html',
   styleUrl: './socio-detail.css',
 })

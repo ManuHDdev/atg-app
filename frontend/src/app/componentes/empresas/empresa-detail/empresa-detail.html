@@ -11,10 +11,10 @@
     <header class="page-header">
       <div>
         <h1 class="page-title">{{ empresa.nombre }}</h1>
-        <button class="btn-link" (click)="volver()">← Volver a la lista</button>
+        <a class="btn-link" [routerLink]="['/empresas']" [queryParams]="empresa.socioId ? {socioId: empresa.socioId} : null">← Volver a la lista</a>
       </div>
       <div class="header-actions">
-        <button class="btn-secondary" (click)="editarEmpresa()">Editar</button>
+        <a class="btn-secondary" [routerLink]="['/empresas', empresaId, 'editar']">Editar</a>
         <button class="btn-danger" (click)="eliminarEmpresa()">Eliminar</button>
       </div>
     </header>
@@ -112,7 +112,7 @@
           <section class="detail-section">
             <div class="section-header">
               <h2 class="section-title">Socio Propietario</h2>
-              <button class="btn-secondary btn-sm" (click)="verSocio()">Ver Perfil Completo</button>
+              <a class="btn-secondary btn-sm" [routerLink]="['/socios', empresa!.socioId]">Ver Perfil Completo</a>
             </div>
 
             <div class="empresa-card">
@@ -246,9 +246,9 @@
                           <span class="badge">{{ solicitud.estado }}</span>
                         </td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleContrato(solicitud.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/contratos', solicitud.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }
@@ -308,9 +308,9 @@
                           </span>
                         </td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleTarjeta(tarjeta.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/tarjetas', tarjeta.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }
@@ -347,9 +347,9 @@
                         </td>
                         <td>{{ credito.createdAt ? (credito.createdAt | date:'dd/MM/yyyy') : '-' }}</td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleCredito(credito.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/creditos', credito.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }
@@ -457,9 +457,9 @@
                         <td>{{ tarjeta.matricula || '-' }}</td>
                         <td>{{ tarjeta.cantidad }} tarjeta(s)</td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleTarjeta(tarjeta.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/tarjetas', tarjeta.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }
@@ -492,9 +492,9 @@
                         <td>{{ credito.monto | currency:'EUR' }}</td>
                         <td>{{ credito.fechaRespuestaPetrolera ? (credito.fechaRespuestaPetrolera | date:'dd/MM/yyyy') : '-' }}</td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleCredito(credito.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/creditos', credito.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }

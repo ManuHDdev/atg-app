@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { IncidenciaService } from '../../services/incidencia.service';
 import { AuthService } from '../../services/auth.service';
@@ -8,7 +9,7 @@ import { IncidenciaResumen, EstadoIncidencia, ESTADOS_INCIDENCIA, ESTADO_LABELS,
 @Component({
   selector: 'app-incidencias',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   templateUrl: './incidencias.html',
   styleUrl: './incidencias.css'
 })

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { SolicitudContratoService } from '../../../services/solicitud-contrato.service';
 import { TipoContratoService } from '../../../services/tipo-contrato.service';
@@ -17,7 +18,7 @@ import { Socio } from '../../../models/socio.model';
 @Component({
   selector: 'app-contratos-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './contratos-list.html',
   styleUrl: './contratos-list.css'
 })

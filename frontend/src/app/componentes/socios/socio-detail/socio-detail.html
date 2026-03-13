@@ -11,10 +11,10 @@
     <header class="page-header">
       <div>
         <h1 class="page-title">{{ socio.nombre }}</h1>
-        <button class="btn-link" (click)="volver()">← Volver a la lista</button>
+        <a class="btn-link" routerLink="/socios">← Volver a la lista</a>
       </div>
       <div class="header-actions">
-        <button class="btn-secondary" (click)="editarSocio()">Editar</button>
+        <a class="btn-secondary" [routerLink]="['/socios', socioId, 'editar']">Editar</a>
         <button class="btn-danger" (click)="eliminarSocio()">Eliminar</button>
       </div>
     </header>
@@ -125,7 +125,7 @@
         <section class="detail-section">
           <div class="section-header">
             <h2 class="section-title">Empresas ({{ empresas.length }})</h2>
-            <button class="btn-primary btn-sm" (click)="nuevaEmpresa()">+ Nueva Empresa</button>
+            <a class="btn-primary btn-sm" [routerLink]="['/empresas/nuevo']" [queryParams]="{socioId: socioId}">+ Nueva Empresa</a>
           </div>
 
           @if (empresas.length === 0) {
@@ -133,7 +133,7 @@
           } @else {
             <div class="empresas-list">
               @for (empresa of empresas; track empresa.id) {
-                <div class="empresa-card" (click)="verEmpresa(empresa.id!)">
+                <a class="empresa-card" [routerLink]="['/empresas', empresa.id]">
                   <div class="empresa-header">
                     <h3 class="empresa-name">{{ empresa.nombre }}</h3>
                     <span [class]="empresa.activa ? 'badge-success' : 'badge-danger'">
@@ -145,14 +145,14 @@
                     <span><strong>Email:</strong> {{ empresa.email || '-' }}</span>
                     <span><strong>Teléfono:</strong> {{ empresa.telefono || '-' }}</span>
                   </div>
-                </div>
+                </a>
               }
             </div>
 
             @if (empresas.length > 0) {
-              <button class="btn-secondary btn-block" (click)="gestionarEmpresas()">
+              <a class="btn-secondary btn-block" [routerLink]="['/empresas']" [queryParams]="{socioId: socioId}">
                 Ver todas las empresas
-              </button>
+              </a>
             }
           }
         </section>
@@ -282,9 +282,9 @@
                           }
                         </td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleContrato(solicitud.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/contratos', solicitud.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }
@@ -344,9 +344,9 @@
                           <span class="badge">{{ solicitud.estado }}</span>
                         </td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleSolicitudTarjeta(solicitud.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/solicitudes-tarjetas/detalle', solicitud.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }
@@ -393,9 +393,9 @@
                           }
                         </td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleCredito(credito.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/creditos', credito.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }
@@ -457,9 +457,9 @@
                           <span class="badge">{{ solicitud.estado }}</span>
                         </td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleSolicitudDispositivo(solicitud.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/dispositivos/solicitudes', solicitud.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }
@@ -517,9 +517,9 @@
                           }
                         </td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleSolicitudContrato(contrato)" title="Ver solicitud">
+                          <a class="btn-icon" [routerLink]="contrato.solicitudId ? ['/contratos', contrato.solicitudId] : null" title="Ver solicitud">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }
@@ -603,9 +603,9 @@
                           <span class="badge-info">Socio</span>
                         </td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleTarjeta(tarjeta.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/tarjetas', tarjeta.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }
@@ -642,9 +642,9 @@
                           <span class="badge-secondary">Socio</span>
                         </td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleTarjeta(tarjeta.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/tarjetas', tarjeta.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }
@@ -687,9 +687,9 @@
                           }
                         </td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleCredito(credito.id!)" title="Ver detalle">
+                          <a class="btn-icon" [routerLink]="['/creditos', credito.id]" title="Ver detalle">
                             👁️
-                          </button>
+                          </a>
                         </td>
                       </tr>
                     }

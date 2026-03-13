@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Router, ActivatedRoute } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { EmpresaService } from '../../../services/empresa.service';
@@ -22,7 +23,7 @@ type TabType = 'general' | 'solicitudes' | 'activos';
 @Component({
   selector: 'app-empresa-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './empresa-detail.html',
   styleUrl: './empresa-detail.css'
 })

@@ -5,10 +5,10 @@
         {{ socioId ? 'Empresas de ' + socioNombre : 'Gestión de Empresas' }}
       </h1>
       @if (socioId) {
-        <button class="btn-link" (click)="volverASocios()">← Volver al Socio</button>
+        <a class="btn-link" [routerLink]="['/socios', socioId]">← Volver al Socio</a>
       }
     </div>
-    <button class="btn-primary" (click)="nuevaEmpresa()">+ Nueva Empresa</button>
+    <a class="btn-primary" [routerLink]="['/empresas/nuevo']" [queryParams]="socioId ? {socioId: socioId} : null">+ Nueva Empresa</a>
   </header>
 
   @if (loading) {
@@ -23,7 +23,7 @@
     @if (empresas.length === 0) {
       <div class="empty-state">
         <p>No hay empresas registradas{{ socioId ? ' para este socio' : '' }}.</p>
-        <button class="btn-primary" (click)="nuevaEmpresa()">Crear primera empresa</button>
+        <a class="btn-primary" [routerLink]="['/empresas/nuevo']" [queryParams]="socioId ? {socioId: socioId} : null">Crear primera empresa</a>
       </div>
     } @else {
       <div class="filters-container">
@@ -75,8 +75,8 @@
                   </span>
                 </td>
                 <td class="actions">
-                  <button class="btn-icon" (click)="verDetalle(empresa.id!)">Ver</button>
-                  <button class="btn-icon" (click)="editarEmpresa(empresa.id!)">Editar</button>
+                  <a class="btn-icon" [routerLink]="['/empresas', empresa.id]">Ver</a>
+                  <a class="btn-icon" [routerLink]="['/empresas', empresa.id, 'editar']">Editar</a>
                   <button class="btn-icon-danger" (click)="eliminarEmpresa(empresa.id!)">Eliminar</button>
                 </td>
               </tr>

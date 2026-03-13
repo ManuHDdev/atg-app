@@ -1,7 +1,7 @@
 <div class="content-wrapper">
   <header class="page-header">
     <h1 class="page-title">Gestión de Petroleras</h1>
-    <button class="btn-primary" (click)="nuevaPetrolera()">+ Nueva Petrolera</button>
+    <a class="btn-primary" routerLink="/petroleras/nuevo">+ Nueva Petrolera</a>
   </header>
 
   @if (loading) {
@@ -32,8 +32,8 @@
                 </span>
               </td>
               <td class="actions">
-                <button class="btn-icon" (click)="verDetalle(petrolera.id!, $event)">Ver</button>
-                <button class="btn-icon" (click)="editarPetrolera(petrolera.id!)">Editar</button>
+                <a class="btn-icon" [routerLink]="['/petroleras/tipos-solicitud']" [queryParams]="{petroleraId: petrolera.id}">Ver</a>
+                <a class="btn-icon" [routerLink]="['/petroleras', petrolera.id, 'editar']">Editar</a>
                 <button class="btn-icon-danger" (click)="eliminarPetrolera(petrolera.id!)">Eliminar</button>
               </td>
             </tr>

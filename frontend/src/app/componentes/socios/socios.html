@@ -1,7 +1,7 @@
 <div class="content-wrapper">
   <header class="page-header">
     <h1 class="page-title">Gestión de Socios</h1>
-    <button class="btn-primary" (click)="nuevoSocio()">+ Nuevo Socio</button>
+    <a class="btn-primary" routerLink="/socios/nuevo">+ Nuevo Socio</a>
   </header>
 
   @if (loading) {
@@ -60,8 +60,8 @@
                 </span>
               </td>
               <td class="actions">
-                <button class="btn-icon" (click)="verDetalle(socio.id!)">Ver</button>
-                <button class="btn-icon" (click)="editarSocio(socio.id!)">Editar</button>
+                <a class="btn-icon" [routerLink]="['/socios', socio.id]">Ver</a>
+                <a class="btn-icon" [routerLink]="['/socios', socio.id, 'editar']">Editar</a>
                 <button class="btn-icon-danger" (click)="eliminarSocio(socio.id!)">Eliminar</button>
               </td>
             </tr>
