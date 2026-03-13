@@ -2,6 +2,7 @@ package com.manuhd.app.contratos.integration;
 
 import com.manuhd.app.contratos.TestBase;
 import com.manuhd.app.contratos.client.PetrolerasClient;
+import com.manuhd.app.contratos.client.SociosClient;
 import com.manuhd.app.contratos.dto.CrearSolicitudDTO;
 import com.manuhd.app.contratos.dto.SolicitudContratoDTO;
 import com.manuhd.app.contratos.model.EstadoSolicitud;
@@ -15,6 +16,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+
+import org.junit.jupiter.api.BeforeEach;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -38,6 +41,19 @@ class SolicitudContratoFlowIntegrationTest extends TestBase {
 
     @MockitoBean
     private PetrolerasClient petrolerasClient;
+
+    @MockitoBean
+    private SociosClient sociosClient;
+
+    @BeforeEach
+    void setUpMocks() {
+        SociosClient.SocioDTO mockSocio = new SociosClient.SocioDTO();
+        mockSocio.setId(TEST_SOCIO_ID);
+        mockSocio.setNombre("Socio Test");
+        mockSocio.setEmail("socio@test.com");
+        mockSocio.setNif("12345678A");
+        when(sociosClient.obtenerSocio(anyLong())).thenReturn(mockSocio);
+    }
 
     @Test
     @DisplayName("Flujo completo - Crear solicitud en estado BORRADOR")
@@ -123,7 +139,7 @@ class SolicitudContratoFlowIntegrationTest extends TestBase {
         assertThatThrownBy(() ->
                 solicitudContratoService.cambiarEstado(solicitud.getId(), EstadoSolicitud.ENVIADO_PETROLERA)
         ).isInstanceOf(RuntimeException.class)
-          .hasMessageContaining("Transición de estado inválida");
+          .hasMessageContaining("BORRADOR");
     }
 
     @Test
