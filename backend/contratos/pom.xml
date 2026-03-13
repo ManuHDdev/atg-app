@@ -76,6 +76,12 @@
 			<scope>test</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 		<!-- Spring Boot 4.0 modular test slices -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
