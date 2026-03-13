@@ -69,6 +69,11 @@ com.manuhd.app.[microservicio]
 - Directorio deploy: ~/atg-app
 - Containers ATG en producción: auth, socios, petroleras, tarjetas, contratos, creditos, dispositivos, mysql, nginx, keycloak, mailhog, certbot
 
+## Workflow de ramas (obligatorio)
+- Cada fix o feature se desarrolla en una rama propia: `fix/descripcion` o `feat/descripcion`
+- Al mergear a `main` usar siempre `--no-ff` para preservar trazabilidad de ramas
+- Ejemplo: `git checkout -b fix/tipos-solicitud-orden && ... && git checkout main && git merge --no-ff fix/tipos-solicitud-orden`
+
 ## Instrucción permanente para Claude Code
 ANTES de generar cualquier fichero, lee los ficheros existentes de la misma capa
 para seguir exactamente el mismo patrón. Nunca asumas convenciones: verifícalas
