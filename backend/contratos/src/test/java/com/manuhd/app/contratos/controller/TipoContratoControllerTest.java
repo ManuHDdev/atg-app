@@ -123,7 +123,7 @@ class TipoContratoControllerTest {
 
         // When & Then
         mockMvc.perform(get("/api/tipos-contrato/{id}", id))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
 
         verify(tipoContratoService, times(1)).obtenerPorId(id);
     }
@@ -141,7 +141,7 @@ class TipoContratoControllerTest {
         mockMvc.perform(post("/api/tipos-contrato")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(inputDTO)))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.codigo", is("NUEVO_TIPO")))
                 .andExpect(jsonPath("$.nombre", is("Nuevo Tipo")));
@@ -162,7 +162,7 @@ class TipoContratoControllerTest {
         mockMvc.perform(post("/api/tipos-contrato")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(inputDTO)))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
 
         verify(tipoContratoService, times(1)).crear(any(TipoContratoDTO.class));
     }
@@ -198,34 +198,34 @@ class TipoContratoControllerTest {
 
         // When & Then
         mockMvc.perform(delete("/api/tipos-contrato/{id}", id))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         verify(tipoContratoService, times(1)).eliminar(id);
     }
 
     @Test
-    @DisplayName("POST /api/tipos-contrato/{id}/activar - Debe activar tipo")
+    @DisplayName("PATCH /api/tipos-contrato/{id}/activar - Debe activar tipo")
     void activarTipoContrato_DebeActivarTipo() throws Exception {
         // Given
         Long id = 1L;
         doNothing().when(tipoContratoService).activar(id);
 
         // When & Then
-        mockMvc.perform(post("/api/tipos-contrato/{id}/activar", id))
+        mockMvc.perform(patch("/api/tipos-contrato/{id}/activar", id))
                 .andExpect(status().isOk());
 
         verify(tipoContratoService, times(1)).activar(id);
     }
 
     @Test
-    @DisplayName("POST /api/tipos-contrato/{id}/desactivar - Debe desactivar tipo")
+    @DisplayName("PATCH /api/tipos-contrato/{id}/desactivar - Debe desactivar tipo")
     void desactivarTipoContrato_DebeDesactivarTipo() throws Exception {
         // Given
         Long id = 1L;
         doNothing().when(tipoContratoService).desactivar(id);
 
         // When & Then
-        mockMvc.perform(post("/api/tipos-contrato/{id}/desactivar", id))
+        mockMvc.perform(patch("/api/tipos-contrato/{id}/desactivar", id))
                 .andExpect(status().isOk());
 
         verify(tipoContratoService, times(1)).desactivar(id);
