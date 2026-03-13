@@ -1,16 +1,10 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-inicio',
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './inicio.html',
   styleUrl: './inicio.css',
 })
-export class Inicio {
-  constructor(private router: Router) {}
-
-  navegarA(ruta: string): void {
-    this.router.navigate([`/${ruta}`]);
-  }
-}
+export class Inicio {}

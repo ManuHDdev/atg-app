@@ -7,31 +7,31 @@
       </a>
     </div>
     <nav class="sidebar-nav">
-      <a class="sidebar-link" (click)="navegarA('dispositivos')">
+      <a class="sidebar-link" routerLink="/dispositivos" routerLinkActive="active">
         <i class="bi bi-cpu sidebar-icon"></i>
         <span>Dispositivos</span>
       </a>
-      <a class="sidebar-link" (click)="navegarA('solicitudes-tarjetas/dashboard')">
+      <a class="sidebar-link" routerLink="/solicitudes-tarjetas/dashboard" routerLinkActive="active">
         <i class="bi bi-credit-card-2-front sidebar-icon"></i>
         <span>Solicitudes de Tarjetas</span>
       </a>
-      <a class="sidebar-link" (click)="navegarA('contratos')">
+      <a class="sidebar-link" routerLink="/contratos" routerLinkActive="active">
         <i class="bi bi-file-earmark-text sidebar-icon"></i>
         <span>Contratos</span>
       </a>
-      <a class="sidebar-link" (click)="navegarA('creditos')">
+      <a class="sidebar-link" routerLink="/creditos" routerLinkActive="active">
         <i class="bi bi-coin sidebar-icon"></i>
         <span>Créditos</span>
       </a>
-      <a class="sidebar-link" (click)="navegarA('socios')">
+      <a class="sidebar-link" routerLink="/socios" routerLinkActive="active">
         <i class="bi bi-people sidebar-icon"></i>
         <span>Socios</span>
       </a>
-      <a class="sidebar-link" (click)="navegarA('empresas')">
+      <a class="sidebar-link" routerLink="/empresas" routerLinkActive="active">
         <i class="bi bi-buildings sidebar-icon"></i>
         <span>Empresas</span>
       </a>
-      <a class="sidebar-link" (click)="navegarA('petroleras')">
+      <a class="sidebar-link" routerLink="/petroleras" routerLinkActive="active">
         <i class="bi bi-fuel-pump sidebar-icon"></i>
         <span>Petroleras</span>
       </a>
@@ -39,12 +39,12 @@
       @if (auth.isAdmin() || auth.isDeveloper()) {
         <div class="sidebar-divider"></div>
         @if (auth.isAdmin()) {
-          <a class="sidebar-link sidebar-link-admin" (click)="navegarA('usuarios')">
+          <a class="sidebar-link sidebar-link-admin" routerLink="/usuarios" routerLinkActive="active">
             <i class="bi bi-shield-lock sidebar-icon"></i>
             <span>Gestión de Usuarios</span>
           </a>
         }
-        <a class="sidebar-link sidebar-link-admin" (click)="navegarA('incidencias')">
+        <a class="sidebar-link sidebar-link-admin" routerLink="/incidencias" routerLinkActive="active">
           <i class="bi bi-bug sidebar-icon"></i>
           <span>Incidencias</span>
         </a>
