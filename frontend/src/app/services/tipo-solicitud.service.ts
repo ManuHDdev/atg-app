@@ -53,4 +53,8 @@ export class TipoSolicitudService {
   obtenerUrlPlantillaPdf(id: string): string {
     return `${this.apiUrl}/${id}/plantilla`;
   }
+
+  descargarPlantillaPdfBlob(id: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${id}/plantilla`, { responseType: 'blob' });
+  }
 }

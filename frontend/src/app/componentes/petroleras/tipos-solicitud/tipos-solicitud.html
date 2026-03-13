@@ -80,7 +80,12 @@
               (change)="onArchivoSeleccionado($event)"
             />
             @if (nombreArchivoMostrar) {
-              <small class="archivo-actual-badge">📄 Archivo actual: {{ nombreArchivoMostrar }}</small>
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+                <small class="archivo-actual-badge">📄 Archivo actual: {{ nombreArchivoMostrar }}</small>
+                @if (editandoId) {
+                  <button type="button" class="btn-icon btn-small" (click)="previsualizarPlantillaPdf(editandoId)" title="Ver PDF actual">👁️ Ver</button>
+                }
+              </div>
             }
             <small class="help-text">
               Seleccione un archivo PDF que se usará como plantilla editable para este tipo de solicitud.
@@ -157,3 +162,15 @@
     </div>
   }
 </div>
+
+@if (mostrarModalPdf) {
+  <div class="modal-overlay" (click)="cerrarModalPdf()">
+    <div class="modal-pdf" (click)="$event.stopPropagation()">
+      <div class="modal-pdf-header">
+        <span>Previsualización de plantilla PDF</span>
+        <button class="btn-icon" (click)="cerrarModalPdf()">✕</button>
+      </div>
+      <iframe [src]="urlPdfModal" class="modal-pdf-iframe" title="Plantilla PDF"></iframe>
+    </div>
+  </div>
+}

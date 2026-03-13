@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { TipoSolicitudService } from '../../../services/tipo-solicitud.service';
 import { PetroleraService } from '../../../services/petrolera.service';
 import { NotificationService } from '../../../services/notification.service';
@@ -25,17 +26,24 @@ export class TiposSolicitud implements OnInit {
   // Formulario para añadir/editar tipo de solicitud
   tipoSolicitudForm: FormGroup;
   editandoId: string | null = null;
+  editandoOrden: number | null = null;
   mostrarFormulario = false;
 
   // Manejo de archivo PDF
   archivoSeleccionado: File | null = null;
   nombreArchivoMostrar = '';
 
+  // Modal previsualización PDF
+  mostrarModalPdf = false;
+  urlPdfModal: SafeResourceUrl | null = null;
+  private _blobUrlPdf: string | null = null;
+
   constructor(
     private fb: FormBuilder,
     private tipoSolicitudService: TipoSolicitudService,
     private petroleraService: PetroleraService,
     private notificationService: NotificationService,
+    private sanitizer: DomSanitizer,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -112,6 +120,7 @@ export class TiposSolicitud implements OnInit {
 
   editarTipoSolicitud(tipoSolicitud: TipoSolicitud): void {
     this.editandoId = tipoSolicitud.id!;
+    this.editandoOrden = tipoSolicitud.orden ?? null;
     this.archivoSeleccionado = null;
     this.nombreArchivoMostrar = tipoSolicitud.nombreArchivoPlantilla || '';
     this.tipoSolicitudForm.patchValue({
@@ -146,7 +155,8 @@ export class TiposSolicitud implements OnInit {
 
     const tipoSolicitudData: TipoSolicitud = {
       ...this.tipoSolicitudForm.value,
-      petroleraId: this.petroleraId
+      petroleraId: this.petroleraId,
+      orden: this.editandoId ? (this.editandoOrden ?? undefined) : (this.tiposSolicitud.length + 1)
     };
 
     const operation = this.editandoId
@@ -214,6 +224,7 @@ export class TiposSolicitud implements OnInit {
   cancelarFormulario(): void {
     this.mostrarFormulario = false;
     this.editandoId = null;
+    this.editandoOrden = null;
     this.archivoSeleccionado = null;
     this.nombreArchivoMostrar = '';
     this.tipoSolicitudForm.reset();
@@ -239,8 +250,29 @@ export class TiposSolicitud implements OnInit {
   }
 
   previsualizarPlantillaPdf(id: string): void {
-    const url = this.tipoSolicitudService.obtenerUrlPlantillaPdf(id);
-    window.open(url, '_blank');
+    this.tipoSolicitudService.descargarPlantillaPdfBlob(id).subscribe({
+      next: (blob) => {
+        if (this._blobUrlPdf) {
+          URL.revokeObjectURL(this._blobUrlPdf);
+        }
+        this._blobUrlPdf = URL.createObjectURL(blob);
+        this.urlPdfModal = this.sanitizer.bypassSecurityTrustResourceUrl(this._blobUrlPdf);
+        this.mostrarModalPdf = true;
+      },
+      error: (err) => {
+        this.notificationService.error('Error al cargar la previsualización del PDF');
+        console.error(err);
+      }
+    });
+  }
+
+  cerrarModalPdf(): void {
+    this.mostrarModalPdf = false;
+    if (this._blobUrlPdf) {
+      URL.revokeObjectURL(this._blobUrlPdf);
+      this._blobUrlPdf = null;
+    }
+    this.urlPdfModal = null;
   }
 
   volver(): void {

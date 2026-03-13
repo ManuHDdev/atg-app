@@ -30,7 +30,6 @@ public class TipoSolicitudDTO {
 
     private String descripcion;
 
-    @NotNull(message = "El orden es obligatorio")
     private Integer orden;
 
     @NotNull(message = "El estado activo es obligatorio")

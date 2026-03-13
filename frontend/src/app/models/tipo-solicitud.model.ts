@@ -4,7 +4,7 @@ export interface TipoSolicitud {
   petroleraNombre?: string;
   nombre: string;
   codigo: string;
-  orden: number;
+  orden?: number;
   activa: boolean;
   rutaPlantillaPdf?: string;
   nombreArchivoPlantilla?: string;

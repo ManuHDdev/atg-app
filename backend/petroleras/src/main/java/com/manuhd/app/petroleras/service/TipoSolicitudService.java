@@ -104,7 +104,9 @@ public class TipoSolicitudService {
         tipoSolicitud.setNombre(dto.getNombre());
         tipoSolicitud.setCodigo(dto.getCodigo());
         tipoSolicitud.setDescripcion(dto.getDescripcion());
-        tipoSolicitud.setOrden(dto.getOrden());
+        if (dto.getOrden() != null) {
+            tipoSolicitud.setOrden(dto.getOrden());
+        }
         tipoSolicitud.setActiva(dto.getActiva());
 
         TipoSolicitud actualizado = tipoSolicitudRepository.save(tipoSolicitud);
