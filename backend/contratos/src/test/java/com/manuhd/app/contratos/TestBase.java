@@ -108,6 +108,7 @@ public abstract class TestBase {
         credito.setMonto(new BigDecimal("5000.00"));
         credito.setObservaciones("Crédito de prueba");
         credito.setProgramadoEnvio(false);
+        credito.setCreatedAt(LocalDateTime.now());
         return credito;
     }
 

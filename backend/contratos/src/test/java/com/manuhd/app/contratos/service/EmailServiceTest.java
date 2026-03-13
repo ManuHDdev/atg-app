@@ -36,7 +36,7 @@ class EmailServiceTest extends TestBase {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(emailService, "emailEnabled", true);
-        ReflectionTestUtils.setField(emailService, "fromEmail", "test@contratos.com");
+        ReflectionTestUtils.setField(emailService, "emailFrom", "test@contratos.com");
     }
 
     @Test
