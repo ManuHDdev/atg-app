@@ -129,7 +129,7 @@ class EmailServiceTest extends TestBase {
         // When & Then
         assertThatThrownBy(() -> emailService.enviarCorreoSimple(destinatario, asunto, mensaje))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Error al enviar email");
+                .hasMessageContaining("Error al enviar correo");
 
         verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }
