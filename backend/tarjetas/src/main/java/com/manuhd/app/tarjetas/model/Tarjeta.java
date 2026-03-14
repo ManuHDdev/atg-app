@@ -51,6 +51,9 @@ public class Tarjeta {
 
     @Column(nullable = false)
     private Boolean activa = true;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

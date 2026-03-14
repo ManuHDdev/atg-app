@@ -121,13 +121,10 @@ public class TipoSolicitudService {
         TipoSolicitud tipoSolicitud = tipoSolicitudRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tipo de solicitud no encontrado con ID: " + id));
 
-        // Eliminar archivo PDF si existe
-        if (tipoSolicitud.getRutaPlantillaPdf() != null) {
-            eliminarArchivoPdf(tipoSolicitud.getRutaPlantillaPdf());
-        }
-
-        tipoSolicitudRepository.delete(tipoSolicitud);
-        log.info("Tipo de solicitud eliminado ID: {}", id);
+        tipoSolicitud.setActiva(false);
+        tipoSolicitud.setDeletedAt(java.time.LocalDateTime.now());
+        tipoSolicitudRepository.save(tipoSolicitud);
+        log.info("Tipo de solicitud eliminado (soft delete) ID: {}", id);
     }
 
     @Transactional

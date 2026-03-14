@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,11 +23,11 @@ import java.io.IOException;
 @RequestMapping("/api/solicitudes")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:4200")
 public class SolicitudContratoController {
 
     private final SolicitudContratoService solicitudService;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping
     public ResponseEntity<SolicitudContratoDTO> crearSolicitud(@Valid @RequestBody CrearSolicitudDTO dto) {
         log.info("POST /api/solicitudes - Crear nueva solicitud");
@@ -39,6 +40,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping
     public ResponseEntity<Page<SolicitudContratoDTO>> listarSolicitudes(
             @RequestParam(required = false) Long socioId,
@@ -67,18 +69,21 @@ public class SolicitudContratoController {
         return ResponseEntity.ok(solicitudService.listarSolicitudes(filtros));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}")
     public ResponseEntity<SolicitudContratoDTO> obtenerPorId(@PathVariable Long id) {
         log.info("GET /api/solicitudes/{} - Obtener por ID", id);
         return ResponseEntity.ok(solicitudService.obtenerPorId(id));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/numero/{numeroSolicitud}")
     public ResponseEntity<SolicitudContratoDTO> obtenerPorNumero(@PathVariable String numeroSolicitud) {
         log.info("GET /api/solicitudes/numero/{} - Obtener por número", numeroSolicitud);
         return ResponseEntity.ok(solicitudService.obtenerPorNumeroSolicitud(numeroSolicitud));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}/pdf/editable")
     public ResponseEntity<byte[]> descargarPdfEditable(@PathVariable Long id) {
         log.info("GET /api/solicitudes/{}/pdf/editable - Descargar PDF editable", id);
@@ -94,6 +99,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}/pdf/plantilla-original")
     public ResponseEntity<byte[]> descargarPlantillaOriginal(@PathVariable Long id) {
         log.info("GET /api/solicitudes/{}/pdf/plantilla-original - Descargar plantilla original", id);
@@ -109,6 +115,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping("/{id}/pdf/editable")
     public ResponseEntity<Void> guardarPdfEditado(@PathVariable Long id,
                                                   @RequestParam("file") MultipartFile file) {
@@ -122,6 +129,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping("/{id}/enviar-socio")
     public ResponseEntity<SolicitudContratoDTO> enviarASocio(@PathVariable Long id) {
         log.info("POST /api/solicitudes/{}/enviar-socio - Enviar a socio", id);
@@ -134,6 +142,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping("/{id}/pdf/firmado")
     public ResponseEntity<SolicitudContratoDTO> subirPdfFirmado(@PathVariable Long id,
                                                                 @RequestParam("file") MultipartFile file) {
@@ -147,6 +156,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping("/{id}/enviar-petrolera")
     public ResponseEntity<SolicitudContratoDTO> enviarAPetrolera(@PathVariable Long id) {
         log.info("POST /api/solicitudes/{}/enviar-petrolera - Enviar a petrolera", id);
@@ -159,6 +169,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping("/{id}/aceptar-firma")
     public ResponseEntity<SolicitudContratoDTO> aceptarFirmaSocio(@PathVariable Long id) {
         log.info("POST /api/solicitudes/{}/aceptar-firma - Aceptar firma del socio", id);
@@ -166,6 +177,7 @@ public class SolicitudContratoController {
         return ResponseEntity.ok(actualizada);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping("/{id}/aceptar-petrolera")
     public ResponseEntity<SolicitudContratoDTO> aceptarPorPetrolera(@PathVariable Long id) {
         log.info("POST /api/solicitudes/{}/aceptar-petrolera - Aceptar por petrolera", id);
@@ -173,6 +185,7 @@ public class SolicitudContratoController {
         return ResponseEntity.ok(actualizada);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping("/{id}/rechazar-petrolera")
     public ResponseEntity<SolicitudContratoDTO> rechazarPorPetrolera(@PathVariable Long id,
                                                                       @RequestBody java.util.Map<String, String> body) {
@@ -182,6 +195,7 @@ public class SolicitudContratoController {
         return ResponseEntity.ok(actualizada);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping("/{id}/procesar-baja")
     public ResponseEntity<SolicitudContratoDTO> procesarBaja(@PathVariable Long id) {
         log.info("POST /api/solicitudes/{}/procesar-baja - Procesar solicitud de BAJA", id);
@@ -189,6 +203,7 @@ public class SolicitudContratoController {
         return ResponseEntity.ok(actualizada);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}/pdf/{tipo}")
     public ResponseEntity<byte[]> descargarPdf(@PathVariable Long id,
                                                @PathVariable String tipo) {
@@ -210,6 +225,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}/estado")
     public ResponseEntity<SolicitudContratoDTO> cambiarEstado(@PathVariable Long id,
                                                               @RequestParam EstadoSolicitud estado) {
@@ -218,6 +234,7 @@ public class SolicitudContratoController {
         return ResponseEntity.ok(actualizada);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}/pdf/campos")
     public ResponseEntity<?> obtenerCamposPdf(@PathVariable Long id) {
         log.info("GET /api/solicitudes/{}/pdf/campos - Obtener campos del PDF", id);
@@ -229,6 +246,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping("/{id}/pdf/rellenar")
     public ResponseEntity<byte[]> rellenarPdf(@PathVariable Long id,
                                               @RequestBody java.util.Map<String, String> campos) {
@@ -244,6 +262,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}/pdf/preview")
     public ResponseEntity<?> obtenerPdfPreview(@PathVariable Long id) {
         log.info("GET /api/solicitudes/{}/pdf/preview - Obtener PDF en base64 para preview", id);
@@ -255,6 +274,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/plantilla/{tipoSolicitudId}/campos")
     public ResponseEntity<?> obtenerCamposPlantilla(@PathVariable Long tipoSolicitudId) {
         log.info("GET /api/solicitudes/plantilla/{}/campos - Obtener campos de la plantilla PDF", tipoSolicitudId);
@@ -266,6 +286,7 @@ public class SolicitudContratoController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/plantilla/{tipoSolicitudId}/preview")
     public ResponseEntity<?> obtenerPlantillaPreview(@PathVariable Long tipoSolicitudId) {
         log.info("GET /api/solicitudes/plantilla/{}/preview - Obtener plantilla PDF en base64", tipoSolicitudId);

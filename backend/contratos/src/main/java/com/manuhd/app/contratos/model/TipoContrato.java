@@ -41,6 +41,9 @@ public class TipoContrato {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @CreationTimestamp
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;

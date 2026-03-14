@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,35 +18,39 @@ import java.util.List;
 @RequestMapping("/api/tipos-solicitud")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:4200")
 public class TipoSolicitudController {
 
     private final TipoSolicitudService tipoSolicitudService;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping
     public ResponseEntity<List<TipoSolicitudDTO>> listarTodos() {
         log.info("GET /api/tipos-solicitud - Listar todos");
         return ResponseEntity.ok(tipoSolicitudService.listarTodos());
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/petrolera/{petroleraId}")
     public ResponseEntity<List<TipoSolicitudDTO>> listarPorPetrolera(@PathVariable Long petroleraId) {
         log.info("GET /api/tipos-solicitud/petrolera/{} - Listar por petrolera", petroleraId);
         return ResponseEntity.ok(tipoSolicitudService.listarPorPetrolera(petroleraId));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/petrolera/{petroleraId}/activas")
     public ResponseEntity<List<TipoSolicitudDTO>> listarActivasPorPetrolera(@PathVariable Long petroleraId) {
         log.info("GET /api/tipos-solicitud/petrolera/{}/activas - Listar activas por petrolera", petroleraId);
         return ResponseEntity.ok(tipoSolicitudService.listarActivasPorPetrolera(petroleraId));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}")
     public ResponseEntity<TipoSolicitudDTO> obtenerPorId(@PathVariable Long id) {
         log.info("GET /api/tipos-solicitud/{} - Obtener por ID", id);
         return ResponseEntity.ok(tipoSolicitudService.obtenerPorId(id));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping
     public ResponseEntity<TipoSolicitudDTO> crear(@Valid @RequestBody TipoSolicitudDTO dto) {
         log.info("POST /api/tipos-solicitud - Crear nuevo tipo de solicitud");
@@ -53,6 +58,7 @@ public class TipoSolicitudController {
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}")
     public ResponseEntity<TipoSolicitudDTO> actualizar(@PathVariable Long id,
                                                         @Valid @RequestBody TipoSolicitudDTO dto) {
@@ -60,6 +66,7 @@ public class TipoSolicitudController {
         return ResponseEntity.ok(tipoSolicitudService.actualizar(id, dto));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         log.info("DELETE /api/tipos-solicitud/{} - Eliminar", id);
@@ -67,6 +74,7 @@ public class TipoSolicitudController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping("/{id}/plantilla")
     public ResponseEntity<TipoSolicitudDTO> subirPlantillaPdf(@PathVariable Long id,
                                                                @RequestParam("archivo") MultipartFile archivo) {
@@ -90,6 +98,7 @@ public class TipoSolicitudController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @DeleteMapping("/{id}/plantilla")
     public ResponseEntity<Void> eliminarPlantillaPdf(@PathVariable Long id) {
         log.info("DELETE /api/tipos-solicitud/{}/plantilla - Eliminar plantilla PDF", id);
@@ -97,6 +106,7 @@ public class TipoSolicitudController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}/plantilla")
     public ResponseEntity<byte[]> descargarPlantillaPdf(@PathVariable Long id) {
         log.info("GET /api/tipos-solicitud/{}/plantilla - Descargar plantilla PDF", id);

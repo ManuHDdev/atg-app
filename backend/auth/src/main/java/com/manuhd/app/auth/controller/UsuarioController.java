@@ -5,12 +5,14 @@ import com.manuhd.app.auth.dto.UpdateUsuarioRequest;
 import com.manuhd.app.auth.dto.UsuarioDto;
 import com.manuhd.app.auth.service.KeycloakAdminService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/usuarios")
+@PreAuthorize("hasRole('ADMIN')")
 public class UsuarioController {
 
     private final KeycloakAdminService keycloakAdminService;

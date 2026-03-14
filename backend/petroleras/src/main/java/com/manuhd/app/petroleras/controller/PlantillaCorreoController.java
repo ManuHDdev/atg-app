@@ -7,37 +7,41 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/plantillas-correo")
-@CrossOrigin(origins = "*")
 @Slf4j
 public class PlantillaCorreoController {
 
     @Autowired
     private PlantillaCorreoService plantillaCorreoService;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping
     public ResponseEntity<List<PlantillaCorreoDTO>> listarTodas() {
         log.info("GET /api/plantillas-correo - Listar todas las plantillas");
         return ResponseEntity.ok(plantillaCorreoService.listarTodas());
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/petrolera/{petroleraId}")
     public ResponseEntity<List<PlantillaCorreoDTO>> listarPorPetrolera(@PathVariable Long petroleraId) {
         log.info("GET /api/plantillas-correo/petrolera/{} - Listar plantillas por petrolera", petroleraId);
         return ResponseEntity.ok(plantillaCorreoService.listarPorPetrolera(petroleraId));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}")
     public ResponseEntity<PlantillaCorreoDTO> obtenerPorId(@PathVariable Long id) {
         log.info("GET /api/plantillas-correo/{}", id);
         return ResponseEntity.ok(plantillaCorreoService.obtenerPorId(id));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping
     public ResponseEntity<PlantillaCorreoDTO> crear(@Valid @RequestBody PlantillaCorreoDTO dto) {
         log.info("POST /api/plantillas-correo - Crear plantilla");
@@ -45,6 +49,7 @@ public class PlantillaCorreoController {
                 .body(plantillaCorreoService.crear(dto));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}")
     public ResponseEntity<PlantillaCorreoDTO> actualizar(
             @PathVariable Long id,
@@ -53,6 +58,7 @@ public class PlantillaCorreoController {
         return ResponseEntity.ok(plantillaCorreoService.actualizar(id, dto));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PatchMapping("/{id}/estado")
     public ResponseEntity<PlantillaCorreoDTO> cambiarEstado(
             @PathVariable Long id,
@@ -63,6 +69,7 @@ public class PlantillaCorreoController {
         return ResponseEntity.ok(plantillaCorreoService.actualizar(id, plantilla));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         log.info("DELETE /api/plantillas-correo/{}", id);

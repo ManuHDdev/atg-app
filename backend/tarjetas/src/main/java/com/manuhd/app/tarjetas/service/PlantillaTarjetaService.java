@@ -86,12 +86,12 @@ public class PlantillaTarjetaService {
     public void delete(Long id) {
         log.info("Eliminando plantilla con id: {}", id);
 
-        if (!repository.existsById(id)) {
-            throw new RuntimeException("Plantilla no encontrada con id: " + id);
-        }
-
-        repository.deleteById(id);
-        log.info("Plantilla eliminada con id: {}", id);
+        PlantillaTarjeta plantilla = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Plantilla no encontrada con id: " + id));
+        plantilla.setActiva(false);
+        plantilla.setDeletedAt(java.time.LocalDateTime.now());
+        repository.save(plantilla);
+        log.info("Plantilla eliminada (soft delete) con id: {}", id);
     }
 
     private PlantillaTarjetaDTO convertToDTO(PlantillaTarjeta entity) {

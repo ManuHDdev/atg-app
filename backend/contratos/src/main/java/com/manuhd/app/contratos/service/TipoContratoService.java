@@ -93,12 +93,13 @@ public class TipoContratoService {
     public void eliminar(Long id) {
         log.info("Eliminando tipo de contrato con ID: {}", id);
 
-        if (!tipoContratoRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Tipo de contrato", "ID", id);
-        }
+        TipoContrato tipoContrato = tipoContratoRepository.findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Tipo de contrato", "ID", id));
 
-        tipoContratoRepository.deleteById(id);
-        log.info("Tipo de contrato eliminado exitosamente");
+        tipoContrato.setActivo(false);
+        tipoContrato.setDeletedAt(java.time.LocalDateTime.now());
+        tipoContratoRepository.save(tipoContrato);
+        log.info("Tipo de contrato eliminado (soft delete) exitosamente");
     }
 
     @Transactional

@@ -4,6 +4,7 @@ import com.manuhd.app.auth.dto.*;
 import com.manuhd.app.auth.service.IncidenciaService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,11 +20,13 @@ public class IncidenciaController {
         this.incidenciaService = incidenciaService;
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'DEVELOPER')")
     @GetMapping
     ResponseEntity<List<IncidenciaResumenDto>> listar() {
         return ResponseEntity.ok(incidenciaService.listar());
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'DEVELOPER')")
     @GetMapping("/{id}")
     ResponseEntity<IncidenciaDto> obtener(@PathVariable Long id) {
         try {
@@ -33,11 +36,13 @@ public class IncidenciaController {
         }
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping
     ResponseEntity<IncidenciaDto> crear(@RequestBody CreateIncidenciaRequest req) {
         return ResponseEntity.status(HttpStatus.CREATED).body(incidenciaService.crear(req));
     }
 
+    @PreAuthorize("hasRole('DEVELOPER')")
     @PutMapping("/{id}/estado")
     ResponseEntity<IncidenciaDto> cambiarEstado(@PathVariable Long id,
                                                 @RequestBody CambiarEstadoRequest req) {
@@ -48,6 +53,7 @@ public class IncidenciaController {
         }
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/{id}/comentarios")
     ResponseEntity<ComentarioDto> addComentario(@PathVariable Long id,
                                                 @RequestBody AddComentarioRequest req) {
@@ -59,6 +65,7 @@ public class IncidenciaController {
         }
     }
 
+    @PreAuthorize("hasRole('DEVELOPER')")
     @DeleteMapping("/{id}/comentarios/{comentarioId}")
     ResponseEntity<Void> eliminarComentario(@PathVariable Long id,
                                             @PathVariable Long comentarioId) {
@@ -70,6 +77,7 @@ public class IncidenciaController {
         }
     }
 
+    @PreAuthorize("hasRole('DEVELOPER')")
     @DeleteMapping("/{id}")
     ResponseEntity<Void> eliminar(@PathVariable Long id) {
         try {

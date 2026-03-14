@@ -2,6 +2,8 @@ package com.manuhd.app.contratos.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -37,4 +39,7 @@ public class MapeoPlantillaCampos {
     
     @Column(nullable = false)
     private Boolean activo = true;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

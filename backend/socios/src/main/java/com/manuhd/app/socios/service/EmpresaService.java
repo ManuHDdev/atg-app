@@ -114,7 +114,10 @@ public class EmpresaService {
     @Transactional
     public void delete(Long id) {
         log.info("Eliminando empresa con id: {}", id);
-        empresaRepository.deleteById(id);
+        Empresa empresa = findById(id);
+        empresa.setActiva(false);
+        empresa.setDeletedAt(LocalDateTime.now());
+        empresaRepository.save(empresa);
     }
 
     @Transactional
