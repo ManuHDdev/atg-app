@@ -40,6 +40,9 @@ public class TipoSolicitud {
     @Builder.Default
     private Boolean activa = true;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @Column(name = "ruta_plantilla_pdf", length = 500)
     private String rutaPlantillaPdf;
 

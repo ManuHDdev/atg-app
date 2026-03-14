@@ -69,6 +69,9 @@ public class ContratoSocio {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @Column(name = "fecha_vigencia_desde")
     private LocalDate fechaVigenciaDesde;
 

@@ -53,6 +53,9 @@ public class SocioService {
     }
     
     public void delete(Long id) {
-        socioRepository.deleteById(id);
+        Socio socio = findById(id);
+        socio.setActivo(false);
+        socio.setDeletedAt(LocalDateTime.now());
+        socioRepository.save(socio);
     }
 }

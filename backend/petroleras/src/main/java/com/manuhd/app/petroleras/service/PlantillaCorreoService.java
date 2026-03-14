@@ -99,11 +99,12 @@ public class PlantillaCorreoService {
 
     @Transactional
     public void eliminar(Long id) {
-        if (!plantillaCorreoRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Plantilla no encontrada con id: " + id);
-        }
-        plantillaCorreoRepository.deleteById(id);
-        log.info("Plantilla de correo eliminada con ID: {}", id);
+        PlantillaCorreo plantilla = plantillaCorreoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Plantilla no encontrada con id: " + id));
+        plantilla.setActiva(false);
+        plantilla.setDeletedAt(java.time.LocalDateTime.now());
+        plantillaCorreoRepository.save(plantilla);
+        log.info("Plantilla de correo eliminada (soft delete) con ID: {}", id);
     }
 
     public String procesarPlantilla(String cuerpo, java.util.Map<String, String> variables) {

@@ -243,7 +243,10 @@ public class ContratoSocioService {
     @Transactional
     public void delete(Long id) {
         log.info("Eliminando contrato con id: {}", id);
-        contratoRepository.deleteById(id);
+        ContratoSocio contrato = findById(id);
+        contrato.setActivo(false);
+        contrato.setDeletedAt(LocalDateTime.now());
+        contratoRepository.save(contrato);
     }
 
     @Transactional

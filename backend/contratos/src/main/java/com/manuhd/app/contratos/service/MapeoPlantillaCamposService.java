@@ -80,6 +80,7 @@ public class MapeoPlantillaCamposService {
         log.info("Eliminando mapeo con id: {}", id);
         MapeoPlantillaCampos mapeo = findById(id);
         mapeo.setActivo(false);
+        mapeo.setDeletedAt(java.time.LocalDateTime.now());
         mapeoRepository.save(mapeo);
     }
 

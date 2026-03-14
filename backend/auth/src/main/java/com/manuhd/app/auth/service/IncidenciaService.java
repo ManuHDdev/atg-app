@@ -86,7 +86,10 @@ public class IncidenciaService {
 
     public void eliminar(Long id) {
         requireDeveloper();
-        incidenciaRepository.delete(findOrThrow(id));
+        Incidencia incidencia = findOrThrow(id);
+        incidencia.setActivo(false);
+        incidencia.setDeletedAt(java.time.LocalDateTime.now());
+        incidenciaRepository.save(incidencia);
     }
 
     // ─── helpers ─────────────────────────────────────────────────────────────

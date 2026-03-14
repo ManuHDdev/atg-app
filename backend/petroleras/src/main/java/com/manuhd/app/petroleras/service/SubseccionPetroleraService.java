@@ -94,7 +94,11 @@ public class SubseccionPetroleraService {
     @Transactional
     public void delete(Long id) {
         log.info("Eliminando subsección con id: {}", id);
-        subseccionRepository.deleteById(id);
+        SubseccionPetrolera subseccion = subseccionRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Subsección no encontrada con id: " + id));
+        subseccion.setActiva(false);
+        subseccion.setDeletedAt(java.time.LocalDateTime.now());
+        subseccionRepository.save(subseccion);
     }
 
     private SubseccionPetroleraDTO convertToDTO(SubseccionPetrolera subseccion) {

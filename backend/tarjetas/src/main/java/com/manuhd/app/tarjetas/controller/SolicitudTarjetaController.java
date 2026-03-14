@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,13 +21,13 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/solicitudes-tarjetas")
-@CrossOrigin(origins = "http://localhost:4200")
 @RequiredArgsConstructor
 @Slf4j
 public class SolicitudTarjetaController {
 
     private final SolicitudTarjetaService service;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping
     public ResponseEntity<List<SolicitudTarjetaDTO>> listarTodas() {
         log.info("GET /api/solicitudes-tarjetas - Listar todas las solicitudes");
@@ -34,6 +35,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.ok(solicitudes);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}")
     public ResponseEntity<SolicitudTarjetaDTO> obtenerPorId(@PathVariable Long id) {
         log.info("GET /api/solicitudes-tarjetas/{} - Obtener solicitud por ID", id);
@@ -41,6 +43,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.ok(solicitud);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/socio/{socioId}")
     public ResponseEntity<List<SolicitudTarjetaDTO>> listarPorSocio(@PathVariable Long socioId) {
         log.info("GET /api/solicitudes-tarjetas/socio/{} - Listar por socio", socioId);
@@ -48,6 +51,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.ok(solicitudes);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/estado/{estado}")
     public ResponseEntity<List<SolicitudTarjetaDTO>> listarPorEstado(@PathVariable EstadoSolicitud estado) {
         log.info("GET /api/solicitudes-tarjetas/estado/{} - Listar por estado", estado);
@@ -55,6 +59,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.ok(solicitudes);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping
     public ResponseEntity<SolicitudTarjetaDTO> crear(@Valid @RequestBody CrearSolicitudDTO dto) {
         log.info("POST /api/solicitudes-tarjetas - Crear nueva solicitud de tipo: {}", dto.getTipo());
@@ -62,6 +67,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}/completar")
     public ResponseEntity<SolicitudTarjetaDTO> completar(
             @PathVariable Long id,
@@ -72,6 +78,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.ok(completed);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}/rechazar")
     public ResponseEntity<SolicitudTarjetaDTO> rechazar(
             @PathVariable Long id,
@@ -83,6 +90,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.ok(rejected);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}/aprobar")
     public ResponseEntity<SolicitudTarjetaDTO> aprobar(
             @PathVariable Long id,
@@ -93,6 +101,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.ok(approved);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}/aprobar-baja")
     public ResponseEntity<SolicitudTarjetaDTO> aprobarBaja(
             @PathVariable Long id,
@@ -102,6 +111,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.ok(approved);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}/aprobar-duplicado")
     public ResponseEntity<SolicitudTarjetaDTO> aprobarDuplicado(
             @PathVariable Long id,
@@ -111,6 +121,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.ok(approved);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}/registrar-llegada")
     public ResponseEntity<SolicitudTarjetaDTO> registrarLlegada(
             @PathVariable Long id,
@@ -120,6 +131,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.ok(updated);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}/marcar-entregada")
     public ResponseEntity<SolicitudTarjetaDTO> marcarEntregada(
             @PathVariable Long id,
@@ -129,6 +141,7 @@ public class SolicitudTarjetaController {
         return ResponseEntity.ok(updated);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}/finalizar")
     public ResponseEntity<SolicitudTarjetaDTO> finalizar(@PathVariable Long id) {
         log.info("PUT /api/solicitudes-tarjetas/{}/finalizar - Finalizar solicitud", id);

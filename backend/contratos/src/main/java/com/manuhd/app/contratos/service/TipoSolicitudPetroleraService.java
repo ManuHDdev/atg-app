@@ -95,12 +95,13 @@ public class TipoSolicitudPetroleraService {
     public void eliminar(Long id) {
         log.info("Eliminando tipo de solicitud petrolera con ID: {}", id);
 
-        if (!tipoSolicitudPetroleraRepository.existsById(id)) {
-            throw new RuntimeException("Tipo de solicitud petrolera no encontrado con ID: " + id);
-        }
+        TipoSolicitudPetrolera tipo = tipoSolicitudPetroleraRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Tipo de solicitud petrolera no encontrado con ID: " + id));
 
-        tipoSolicitudPetroleraRepository.deleteById(id);
-        log.info("Tipo de solicitud petrolera eliminado exitosamente");
+        tipo.setActivo(false);
+        tipo.setDeletedAt(java.time.LocalDateTime.now());
+        tipoSolicitudPetroleraRepository.save(tipo);
+        log.info("Tipo de solicitud petrolera eliminado (soft delete) exitosamente");
     }
 
     @Transactional

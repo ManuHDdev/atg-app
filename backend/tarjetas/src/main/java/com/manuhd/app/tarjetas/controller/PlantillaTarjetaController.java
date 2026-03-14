@@ -8,19 +8,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/plantillas-tarjetas")
-@CrossOrigin(origins = "http://localhost:4200")
 @RequiredArgsConstructor
 @Slf4j
 public class PlantillaTarjetaController {
 
     private final PlantillaTarjetaService service;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping
     public ResponseEntity<List<PlantillaTarjetaDTO>> listarTodas() {
         log.info("GET /api/plantillas-tarjetas - Listar todas las plantillas");
@@ -28,6 +29,7 @@ public class PlantillaTarjetaController {
         return ResponseEntity.ok(plantillas);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}")
     public ResponseEntity<PlantillaTarjetaDTO> obtenerPorId(@PathVariable Long id) {
         log.info("GET /api/plantillas-tarjetas/{} - Obtener plantilla por ID", id);
@@ -35,6 +37,7 @@ public class PlantillaTarjetaController {
         return ResponseEntity.ok(plantilla);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/tipo/{tipo}")
     public ResponseEntity<PlantillaTarjetaDTO> obtenerPorTipo(@PathVariable TipoPlantilla tipo) {
         log.info("GET /api/plantillas-tarjetas/tipo/{} - Obtener plantilla por tipo", tipo);
@@ -42,6 +45,7 @@ public class PlantillaTarjetaController {
         return ResponseEntity.ok(plantilla);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping
     public ResponseEntity<PlantillaTarjetaDTO> crear(@Valid @RequestBody PlantillaTarjetaDTO dto) {
         log.info("POST /api/plantillas-tarjetas - Crear nueva plantilla de tipo: {}", dto.getTipo());
@@ -49,6 +53,7 @@ public class PlantillaTarjetaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}")
     public ResponseEntity<PlantillaTarjetaDTO> actualizar(
             @PathVariable Long id,
@@ -58,6 +63,7 @@ public class PlantillaTarjetaController {
         return ResponseEntity.ok(updated);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         log.info("DELETE /api/plantillas-tarjetas/{} - Eliminar plantilla", id);

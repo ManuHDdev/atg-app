@@ -8,10 +8,12 @@
 # ============================================================
 set -uo pipefail
 
-# ─── Lockfile ────────────────────────────────────────────────
+# ─── Lockfile (solo en Linux donde flock está disponible) ────
 LOCKFILE=/tmp/atg_audit.lock
-exec 201>"$LOCKFILE"
-flock -n 201 || { echo "[$(date -Is)] Ya hay una auditoría en curso. Abortando."; exit 1; }
+if command -v flock &>/dev/null; then
+  exec 201>"$LOCKFILE"
+  flock -n 201 || { echo "[$(date -Is)] Ya hay una auditoría en curso. Abortando."; exit 1; }
+fi
 
 # ─── Rutas ───────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

@@ -91,7 +91,9 @@ public class TarjetaService {
     @Transactional
     public void delete(Long id) {
         log.info("Eliminando tarjeta con id: {}", id);
-        findById(id); // valida que existe
-        tarjetaRepository.deleteById(id);
+        Tarjeta tarjeta = findById(id);
+        tarjeta.setActiva(false);
+        tarjeta.setDeletedAt(LocalDateTime.now());
+        tarjetaRepository.save(tarjeta);
     }
 }

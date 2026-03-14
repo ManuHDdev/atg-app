@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,29 +16,32 @@ import java.util.List;
 @RequestMapping("/api/tipos-solicitud-petrolera")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "http://localhost:4200")
 public class TipoSolicitudPetroleraController {
 
     private final TipoSolicitudPetroleraService tipoSolicitudPetroleraService;
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping
     public ResponseEntity<List<TipoSolicitudPetroleraDTO>> listarTodos() {
         log.info("GET /api/tipos-solicitud-petrolera - Listar todos");
         return ResponseEntity.ok(tipoSolicitudPetroleraService.listarTodos());
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/{id}")
     public ResponseEntity<TipoSolicitudPetroleraDTO> obtenerPorId(@PathVariable Long id) {
         log.info("GET /api/tipos-solicitud-petrolera/{} - Obtener por ID", id);
         return ResponseEntity.ok(tipoSolicitudPetroleraService.obtenerPorId(id));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/petrolera/{petroleraId}")
     public ResponseEntity<List<TipoSolicitudPetroleraDTO>> listarPorPetrolera(@PathVariable Long petroleraId) {
         log.info("GET /api/tipos-solicitud-petrolera/petrolera/{} - Listar por petrolera", petroleraId);
         return ResponseEntity.ok(tipoSolicitudPetroleraService.listarPorPetrolera(petroleraId));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/petrolera/{petroleraId}/tipo/{tipoContratoId}")
     public ResponseEntity<List<TipoSolicitudPetroleraDTO>> listarPorPetroleraYTipo(
             @PathVariable Long petroleraId,
@@ -47,6 +51,7 @@ public class TipoSolicitudPetroleraController {
         return ResponseEntity.ok(tipoSolicitudPetroleraService.listarPorPetroleraYTipo(petroleraId, tipoContratoId));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
     @GetMapping("/petrolera/{petroleraId}/tipo/{tipoContratoId}/activas")
     public ResponseEntity<List<TipoSolicitudPetroleraDTO>> listarActivasPorPetroleraYTipo(
             @PathVariable Long petroleraId,
@@ -56,6 +61,7 @@ public class TipoSolicitudPetroleraController {
         return ResponseEntity.ok(tipoSolicitudPetroleraService.listarActivasPorPetroleraYTipo(petroleraId, tipoContratoId));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping
     public ResponseEntity<TipoSolicitudPetroleraDTO> crear(@Valid @RequestBody TipoSolicitudPetroleraDTO dto) {
         log.info("POST /api/tipos-solicitud-petrolera - Crear nuevo tipo");
@@ -63,6 +69,7 @@ public class TipoSolicitudPetroleraController {
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}")
     public ResponseEntity<TipoSolicitudPetroleraDTO> actualizar(@PathVariable Long id,
                                                                 @Valid @RequestBody TipoSolicitudPetroleraDTO dto) {
@@ -70,6 +77,7 @@ public class TipoSolicitudPetroleraController {
         return ResponseEntity.ok(tipoSolicitudPetroleraService.actualizar(id, dto));
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         log.info("DELETE /api/tipos-solicitud-petrolera/{} - Eliminar", id);
@@ -77,6 +85,7 @@ public class TipoSolicitudPetroleraController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PatchMapping("/{id}/activar")
     public ResponseEntity<Void> activar(@PathVariable Long id) {
         log.info("PATCH /api/tipos-solicitud-petrolera/{}/activar", id);
@@ -84,6 +93,7 @@ public class TipoSolicitudPetroleraController {
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PatchMapping("/{id}/desactivar")
     public ResponseEntity<Void> desactivar(@PathVariable Long id) {
         log.info("PATCH /api/tipos-solicitud-petrolera/{}/desactivar", id);
