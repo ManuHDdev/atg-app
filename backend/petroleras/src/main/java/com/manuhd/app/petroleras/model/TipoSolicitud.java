@@ -1,5 +1,6 @@
 package com.manuhd.app.petroleras.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -40,6 +41,7 @@ public class TipoSolicitud {
     @Builder.Default
     private Boolean activa = true;
 
+    @JsonIgnore
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 

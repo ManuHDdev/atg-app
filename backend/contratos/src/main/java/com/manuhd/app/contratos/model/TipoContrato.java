@@ -1,5 +1,6 @@
 package com.manuhd.app.contratos.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -41,6 +42,7 @@ public class TipoContrato {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    @JsonIgnore
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 

@@ -40,6 +40,7 @@ public class MapeoPlantillaCampos {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    @JsonIgnore
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 }
