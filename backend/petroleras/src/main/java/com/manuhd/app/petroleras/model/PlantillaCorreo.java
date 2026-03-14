@@ -1,5 +1,6 @@
 package com.manuhd.app.petroleras.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -46,6 +47,7 @@ public class PlantillaCorreo {
     @Column(nullable = false)
     private Boolean activa = true;
 
+    @JsonIgnore
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 

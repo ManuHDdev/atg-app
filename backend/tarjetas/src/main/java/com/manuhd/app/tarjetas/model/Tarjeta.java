@@ -1,5 +1,6 @@
 package com.manuhd.app.tarjetas.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -52,6 +53,7 @@ public class Tarjeta {
     @Column(nullable = false)
     private Boolean activa = true;
 
+    @JsonIgnore
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
     

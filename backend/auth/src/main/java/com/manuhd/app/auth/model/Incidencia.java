@@ -1,5 +1,6 @@
 package com.manuhd.app.auth.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -60,6 +61,7 @@ public class Incidencia {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    @JsonIgnore
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 

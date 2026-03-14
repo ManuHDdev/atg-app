@@ -1,5 +1,6 @@
 package com.manuhd.app.socios.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -73,6 +74,7 @@ public class Socio {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    @JsonIgnore
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
     
