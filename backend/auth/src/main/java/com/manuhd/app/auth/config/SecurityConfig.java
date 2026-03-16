@@ -71,6 +71,7 @@ public class SecurityConfig {
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                 .collect(Collectors.toList());
         });
+        converter.setPrincipalClaimName("preferred_username");
         return converter;
     }
 }
