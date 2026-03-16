@@ -299,19 +299,22 @@ class TipoContratoServiceTest extends TestBase {
     }
 
     @Test
-    @DisplayName("eliminar - Debe eliminar tipo exitosamente")
+    @DisplayName("eliminar - Debe eliminar tipo exitosamente (borrado lógico)")
     void eliminar_DebeEliminarTipoExitosamente() {
         // Given
         Long id = 1L;
-        when(tipoContratoRepository.existsById(id)).thenReturn(true);
-        doNothing().when(tipoContratoRepository).deleteById(id);
+        when(tipoContratoRepository.findById(id)).thenReturn(Optional.of(tipoContratoActivo));
+        when(tipoContratoRepository.save(any(TipoContrato.class))).thenReturn(tipoContratoActivo);
 
         // When
         tipoContratoService.eliminar(id);
 
         // Then
-        verify(tipoContratoRepository, times(1)).existsById(id);
-        verify(tipoContratoRepository, times(1)).deleteById(id);
+        verify(tipoContratoRepository, times(1)).findById(id);
+        ArgumentCaptor<TipoContrato> captor = ArgumentCaptor.forClass(TipoContrato.class);
+        verify(tipoContratoRepository, times(1)).save(captor.capture());
+        assertThat(captor.getValue().getActivo()).isFalse();
+        assertThat(captor.getValue().getDeletedAt()).isNotNull();
     }
 
     @Test
@@ -319,15 +322,15 @@ class TipoContratoServiceTest extends TestBase {
     void eliminar_DebeLanzarExcepcionCuandoTipoNoExiste() {
         // Given
         Long id = 999L;
-        when(tipoContratoRepository.existsById(id)).thenReturn(false);
+        when(tipoContratoRepository.findById(id)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> tipoContratoService.eliminar(id))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Tipo de contrato")
                 .hasMessageContaining("ID");
-        verify(tipoContratoRepository, times(1)).existsById(id);
-        verify(tipoContratoRepository, never()).deleteById(anyLong());
+        verify(tipoContratoRepository, times(1)).findById(id);
+        verify(tipoContratoRepository, never()).save(any());
     }
 
     @Test
