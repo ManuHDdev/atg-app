@@ -1,5 +1,23 @@
 name: CI/CD Pipeline
 
+# ============================================================
+# Pipeline unificado: Tests → Build → Deploy
+#
+# Flujo completo en push a main:
+#   test-backend (x7) ─┐
+#                       ├─► build-backend (x7) ─┐
+#   test-frontend ──────┘                        ├─► deploy
+#                       ├─► build-frontend ──────┘
+#                                                └─► notify-incidencia (auxiliar)
+#
+# En pull_request: solo test-* y build-* (sin deploy ni notify)
+#
+# SECRETS REQUERIDOS (Settings → Secrets → Actions):
+#   SSH_PRIVATE_KEY, SSH_HOST, SSH_PORT, SSH_USER
+#   KEYCLOAK_URL, KEYCLOAK_REALM, KEYCLOAK_CLIENT_ID, KEYCLOAK_CLIENT_SECRET
+#   API_BASE_URL
+# ============================================================
+
 on:
   push:
     branches: [main]
@@ -11,12 +29,63 @@ env:
   IMAGE_PREFIX: ghcr.io/manuhddev/atg
 
 jobs:
-  # ──────────────────────────────────────────────
-  # JOB 1: Build backend + push Docker (matrix x7)
-  # Build always (verifica PRs); Docker solo en push a main
-  # ──────────────────────────────────────────────
-  build-backend:
+  # ──────────────────────────────────────────────────────────
+  # FASE 1 — TESTS
+  # ──────────────────────────────────────────────────────────
+  test-backend:
+    name: Tests backend — ${{ matrix.service }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [auth, socios, petroleras, tarjetas, contratos, creditos, dispositivos]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run tests — ${{ matrix.service }}
+        run: |
+          chmod +x backend/${{ matrix.service }}/mvnw
+          cd backend/${{ matrix.service }}
+          ./mvnw clean verify --no-transfer-progress -B -Dspring.profiles.active=test -Djacoco.skip=true
+
+  test-frontend:
+    name: Tests frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci --legacy-peer-deps
+
+      - name: Build Angular (verifica compilación)
+        run: cd frontend && npx ng build --base-href /atg/ --configuration=production
+        # ng test deshabilitado: specs usan dependencias reales (Keycloak, HttpClient)
+        # sin mockear. Habilitar cuando los tests tengan mocks adecuados.
+
+  # ──────────────────────────────────────────────────────────
+  # FASE 2 — BUILD + PUSH DOCKER (solo push a main, tras tests)
+  # ──────────────────────────────────────────────────────────
+  build-backend:
+    name: Build backend — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-backend, test-frontend]
     permissions:
       contents: read
       packages: write
@@ -24,6 +93,7 @@ jobs:
       fail-fast: false
       matrix:
         service: [auth, socios, petroleras, tarjetas, contratos, creditos, dispositivos]
+
     steps:
       - uses: actions/checkout@v4
 
@@ -49,14 +119,11 @@ jobs:
             exit 1
           fi
           cp "$JAR" backend/${{ matrix.service }}/app.jar
-          echo "JAR copiado: $JAR → app.jar"
 
       - name: Set up Docker Buildx
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GHCR
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -64,7 +131,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push ${{ matrix.service }}
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
           context: backend/${{ matrix.service }}
@@ -73,15 +139,15 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
-  # ──────────────────────────────────────────────
-  # JOB 2: Build frontend + push Docker
-  # Build siempre (verifica PRs); Docker solo en push a main
-  # ──────────────────────────────────────────────
   build-frontend:
+    name: Build frontend
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [test-backend, test-frontend]
     permissions:
       contents: read
       packages: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -99,15 +165,12 @@ jobs:
         run: cd frontend && npx ng build --base-href /atg/ --configuration=production
 
       - name: Copy nginx config
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: cp nginx/nginx-ssl.conf frontend/nginx.conf
 
       - name: Set up Docker Buildx
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GHCR
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -115,7 +178,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push frontend
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
           context: frontend
@@ -124,17 +186,18 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
 
-  # ──────────────────────────────────────────────
-  # JOB 3: Deploy to production server
-  # Only on push to main
-  # ──────────────────────────────────────────────
+  # ──────────────────────────────────────────────────────────
+  # FASE 3 — DEPLOY A PRODUCCIÓN (tras build exitoso)
+  # ──────────────────────────────────────────────────────────
   deploy:
+    name: Deploy to production
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: [build-backend, build-frontend]
     permissions:
       contents: read
       packages: read
+
     steps:
       - uses: actions/checkout@v4
 
@@ -191,9 +254,67 @@ jobs:
         run: |
           ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             cd ~/atg-app
-            # Bajar stack viejo si sigue corriendo con el compose de desarrollo
             if docker compose -f docker-compose.yml ps -q 2>/dev/null | grep -q .; then
               docker compose -f docker-compose.yml down
             fi
             docker compose -f docker-compose.prod.yml up -d
           ENDSSH
+
+  # ──────────────────────────────────────────────────────────
+  # JOB AUXILIAR — Sincronizar estado incidencia en módulo ATG
+  # Solo para commits/PRs con patrón "fix(INC-NNN):"
+  # continue-on-error: no bloquea el pipeline principal
+  # ──────────────────────────────────────────────────────────
+  notify-incidencia:
+    name: Sincronizar estado incidencia
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    continue-on-error: true
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      contains(github.event.head_commit.message, 'fix(INC-')
+
+    steps:
+      - name: Extraer ID de incidencia
+        id: extract
+        run: |
+          TITLE="${{ github.event.head_commit.message }}"
+          INC_ID=$(echo "$TITLE" | grep -oP '(?<=INC-)\d+' | head -1 || true)
+          if [[ -z "$INC_ID" ]]; then
+            echo "No se encontró ID de incidencia. Nada que hacer."
+            echo "INC_ID=" >> "$GITHUB_OUTPUT"
+          else
+            echo "INC_ID=$INC_ID" >> "$GITHUB_OUTPUT"
+            echo "Incidencia detectada: INC-$INC_ID"
+          fi
+
+      - name: Obtener JWT de Keycloak
+        id: jwt
+        if: steps.extract.outputs.INC_ID != ''
+        run: |
+          TOKEN_RESPONSE=$(curl -s -X POST \
+            "${{ secrets.KEYCLOAK_URL }}/realms/${{ secrets.KEYCLOAK_REALM }}/protocol/openid-connect/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "grant_type=client_credentials" \
+            -d "client_id=${{ secrets.KEYCLOAK_CLIENT_ID }}" \
+            -d "client_secret=${{ secrets.KEYCLOAK_CLIENT_SECRET }}")
+          JWT=$(echo "$TOKEN_RESPONSE" | jq -r '.access_token // empty')
+          if [[ -z "$JWT" ]]; then
+            echo "WARN: No se pudo obtener JWT de Keycloak. Saltando notificación."
+            echo "JWT=" >> "$GITHUB_OUTPUT"
+          else
+            echo "::add-mask::$JWT"
+            echo "JWT=$JWT" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Actualizar estado → EN_PRODUCCION
+        if: steps.extract.outputs.INC_ID != '' && steps.jwt.outputs.JWT != ''
+        run: |
+          COMMIT_URL="${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          curl -s -o /dev/null -w "HTTP %{http_code}" -X PUT \
+            "${{ secrets.API_BASE_URL }}/auth/api/incidencias/${{ steps.extract.outputs.INC_ID }}/estado" \
+            -H "Authorization: Bearer ${{ steps.jwt.outputs.JWT }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"nuevoEstado\":\"EN_PRODUCCION\",\"notasDeveloper\":\"Desplegado en producción. Commit: ${COMMIT_URL}\"}" || true
+          echo "INC-${{ steps.extract.outputs.INC_ID }} → EN_PRODUCCION"
