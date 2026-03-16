@@ -5,17 +5,31 @@
 # ============================================================
 set -euo pipefail
 
-# ─── Lockfile ────────────────────────────────────────────────
+# ─── PATH — incluir herramientas en ubicaciones no estándar de Windows ───────
+# jq (Anaconda)
+[[ -d "/c/Users/Manu/anaconda3/Library/mingw-w64/bin" ]] && \
+  export PATH="/c/Users/Manu/anaconda3/Library/mingw-w64/bin:$PATH"
+# claude (extensión VS Code)
+CLAUDE_BIN=$(find "/c/Users/Manu/.vscode/extensions" -name "claude.exe" 2>/dev/null | head -1)
+[[ -n "$CLAUDE_BIN" ]] && export PATH="$(dirname "$CLAUDE_BIN"):$PATH"
+# gh (GitHub CLI — copiado junto a jq en Anaconda mingw-w64)
+[[ -f "/c/Users/Manu/anaconda3/Library/mingw-w64/bin/gh.exe" ]] && \
+  export PATH="/c/Users/Manu/anaconda3/Library/mingw-w64/bin:$PATH"
+
+# ─── Lockfile (compatible con Linux y Git Bash/Windows) ──────
 LOCKFILE=/tmp/atg_incidencias.lock
-exec 200>"$LOCKFILE"
-flock -n 200 || { echo "[$(date -Is)] Ya hay una ejecución en curso. Abortando."; exit 1; }
+if [[ -f "$LOCKFILE" ]]; then
+  echo "Ya hay una ejecución en curso (lockfile existe). Abortando."
+  exit 1
+fi
+touch "$LOCKFILE"
+trap 'rm -f "$LOCKFILE"' EXIT
 
 # ─── Logging ─────────────────────────────────────────────────
-LOG_FILE=/var/log/atg_incidencias.log
-mkdir -p "$(dirname "$LOG_FILE")"
+LOG_FILE=/tmp/atg_incidencias.log
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-log() { echo "[$(date -Is)] $*"; }
+log() { echo "[$(date '+%Y-%m-%dT%H:%M:%S')] $*"; }
 log "=== Inicio de ejecución ==="
 
 # ─── Cargar .env ─────────────────────────────────────────────
@@ -68,10 +82,10 @@ log "JWT obtenido."
 # ─────────────────────────────────────────────────────────────
 log "Consultando incidencias con estado=NUEVA..."
 INCIDENCIAS_JSON=$(curl -s -f \
-  "${API_BASE_URL}/api/incidencias?estado=NUEVA&size=10&sort=prioridad,desc" \
+  "${API_BASE_URL}/auth/api/incidencias?estado=NUEVA&size=10&sort=prioridad,desc" \
   -H "Authorization: Bearer ${JWT_TOKEN}")
 
-TOTAL=$(echo "$INCIDENCIAS_JSON" | jq '.content | length')
+TOTAL=$(echo "$INCIDENCIAS_JSON" | jq '. | length')
 if [[ "$TOTAL" -eq 0 ]]; then
   log "Sin incidencias nuevas. Fin."
   exit 0
@@ -84,7 +98,7 @@ log "Encontradas $TOTAL incidencias nuevas."
 WORK_DIR=/tmp/atg_work
 if [[ ! -d "$WORK_DIR/.git" ]]; then
   log "Clonando repo en $WORK_DIR..."
-  git clone git@github.com:ManuHDdev/atg-app.git "$WORK_DIR"
+  git clone https://${GITHUB_TOKEN}@github.com/ManuHDdev/atg-app.git "$WORK_DIR"
 else
   log "Actualizando repo en $WORK_DIR..."
   git -C "$WORK_DIR" fetch origin
@@ -105,29 +119,31 @@ while IFS= read -r incidencia; do
   (
     INC_ID=$(echo "$incidencia" | jq -r '.id')
     INC_TITULO=$(echo "$incidencia" | jq -r '.titulo')
-    INC_DESCRIPCION=$(echo "$incidencia" | jq -r '.descripcion')
     INC_TIPO=$(echo "$incidencia" | jq -r '.tipo')
     INC_PRIORIDAD=$(echo "$incidencia" | jq -r '.prioridad')
+    # El listado usa ResumenDto sin descripcion — hay que pedir el detalle
+    INC_DETAIL=$(curl -s "${API_BASE_URL}/auth/api/incidencias/${INC_ID}" \
+      -H "Authorization: Bearer ${JWT_TOKEN}")
+    INC_DESCRIPCION=$(echo "$INC_DETAIL" | jq -r '.descripcion // ""')
 
     log "--- Procesando INC-${INC_ID}: ${INC_TITULO} [${INC_TIPO}/${INC_PRIORIDAD}]"
 
-    # a) Verificar si ya existe PR abierta
-    EXISTING_PRS=$(gh pr list \
-      --repo ManuHDdev/atg-app \
-      --search "INC-${INC_ID}" \
-      --state open \
-      --json number | jq length)
+    # a) Verificar si ya existe PR abierta (GitHub REST API)
+    EXISTING_PRS=$(curl -s \
+      "https://api.github.com/repos/ManuHDdev/atg-app/pulls?state=open&head=ManuHDdev:feature/INC-${INC_ID}" \
+      -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+      -H "Accept: application/vnd.github+json" | jq 'length')
     if [[ "$EXISTING_PRS" -gt 0 ]]; then
       log "INC-${INC_ID} ya tiene PR abierta. Saltando."
       exit 0
     fi
 
     # b) Cambiar estado a EN_REVISION
-    curl -s -f -X PATCH \
-      "${API_BASE_URL}/api/incidencias/${INC_ID}/estado" \
+    curl -s -f -X PUT \
+      "${API_BASE_URL}/auth/api/incidencias/${INC_ID}/estado" \
       -H "Authorization: Bearer ${JWT_TOKEN}" \
       -H "Content-Type: application/json" \
-      -d '{"estado":"EN_REVISION"}' > /dev/null
+      -d '{"nuevoEstado":"EN_REVISION"}' > /dev/null
     log "INC-${INC_ID} → EN_REVISION"
 
     # c) Crear rama
@@ -152,11 +168,11 @@ while IFS= read -r incidencia; do
     CHANGED_FILES=$(git -C "$WORK_DIR" diff --name-only HEAD)
     if [[ -z "$CHANGED_FILES" ]]; then
       log "INC-${INC_ID}: Claude Code no aplicó cambios. Requiere revisión manual."
-      curl -s -f -X PATCH \
-        "${API_BASE_URL}/api/incidencias/${INC_ID}/estado" \
+      curl -s -f -X PUT \
+        "${API_BASE_URL}/auth/api/incidencias/${INC_ID}/estado" \
         -H "Authorization: Bearer ${JWT_TOKEN}" \
         -H "Content-Type: application/json" \
-        -d "{\"estado\":\"EN_REVISION\",\"notasDeveloper\":\"Claude Code: sin cambios aplicables automáticamente. Requiere revisión manual.\"}" \
+        -d "{\"nuevoEstado\":\"EN_REVISION\",\"notasDeveloper\":\"Claude Code: sin cambios aplicables automáticamente. Requiere revisión manual.\"}" \
         > /dev/null
       git -C "$WORK_DIR" checkout main
       git -C "$WORK_DIR" branch -D "$BRANCH_NAME"
@@ -168,29 +184,23 @@ while IFS= read -r incidencia; do
     git -C "$WORK_DIR" commit -m "fix(INC-${INC_ID}): ${INC_TITULO} [automated]"
     git -C "$WORK_DIR" push origin "$BRANCH_NAME"
 
-    # h) Crear PR
-    PR_URL=$(gh pr create \
-      --repo ManuHDdev/atg-app \
-      --title "fix(INC-${INC_ID}): ${INC_TITULO}" \
-      --body "## Incidencia #${INC_ID}
-**Tipo:** ${INC_TIPO} | **Prioridad:** ${INC_PRIORIDAD}
-
-**Descripción:**
-${INC_DESCRIPCION}
-
----
-*PR generada automáticamente por Claude Code*
-Ver log completo: /tmp/atg_claude_inc_${INC_ID}.log" \
-      --base main \
-      --head "$BRANCH_NAME")
+    # h) Crear PR (GitHub REST API)
+    PR_BODY="## Incidencia #${INC_ID}\n**Tipo:** ${INC_TIPO} | **Prioridad:** ${INC_PRIORIDAD}\n\n**Descripción:**\n${INC_DESCRIPCION}\n\n---\n*PR generada automáticamente por Claude Code*"
+    PR_RESPONSE=$(curl -s -X POST \
+      "https://api.github.com/repos/ManuHDdev/atg-app/pulls" \
+      -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+      -H "Accept: application/vnd.github+json" \
+      -H "Content-Type: application/json" \
+      -d "{\"title\":\"fix(INC-${INC_ID}): ${INC_TITULO}\",\"body\":\"${PR_BODY}\",\"head\":\"${BRANCH_NAME}\",\"base\":\"main\"}")
+    PR_URL=$(echo "$PR_RESPONSE" | jq -r '.html_url')
     log "INC-${INC_ID}: PR creada → $PR_URL"
 
     # i) Actualizar estado a EN_DESARROLLO con URL de la PR
-    curl -s -f -X PATCH \
-      "${API_BASE_URL}/api/incidencias/${INC_ID}/estado" \
+    curl -s -f -X PUT \
+      "${API_BASE_URL}/auth/api/incidencias/${INC_ID}/estado" \
       -H "Authorization: Bearer ${JWT_TOKEN}" \
       -H "Content-Type: application/json" \
-      -d "{\"estado\":\"EN_DESARROLLO\",\"notasDeveloper\":\"PR automática: ${PR_URL}\"}" \
+      -d "{\"nuevoEstado\":\"EN_DESARROLLO\",\"notasDeveloper\":\"PR automática: ${PR_URL}\"}" \
       > /dev/null
     log "INC-${INC_ID} → EN_DESARROLLO"
 
@@ -204,7 +214,7 @@ Ver log completo: /tmp/atg_claude_inc_${INC_ID}.log" \
     git -C "$WORK_DIR" checkout main 2>/dev/null || true
   }
 
-done < <(echo "$INCIDENCIAS_JSON" | jq -c '.content[]')
+done < <(echo "$INCIDENCIAS_JSON" | jq -c '.[]')
 
 # ─────────────────────────────────────────────────────────────
 # PASO 3.5 — Resumen final
