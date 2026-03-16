@@ -1,0 +1,7 @@
+# Force LF line endings for shell scripts (prevent CRLF on Windows checkouts)
+*.sh text eol=lf
+
+# Force LF for other Unix-targeted files
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
