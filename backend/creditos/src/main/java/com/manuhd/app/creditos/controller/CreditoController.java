@@ -2,6 +2,7 @@ package com.manuhd.app.creditos.controller;
 
 import com.manuhd.app.creditos.dto.CreditoDTO;
 import com.manuhd.app.creditos.dto.CrearCreditoDTO;
+import com.manuhd.app.creditos.dto.ResponderPetroleraDTO;
 import com.manuhd.app.creditos.model.EstadoCredito;
 import com.manuhd.app.creditos.service.CreditoService;
 import jakarta.validation.Valid;
@@ -13,7 +14,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/creditos")
@@ -77,11 +77,9 @@ public class CreditoController {
     @PostMapping("/{id}/responder")
     public ResponseEntity<CreditoDTO> responderPetrolera(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> respuesta) {
+            @Valid @RequestBody ResponderPetroleraDTO dto) {
         log.info("POST /api/creditos/{}/responder", id);
-        boolean aprobado = (boolean) respuesta.get("aprobado");
-        String comentario = (String) respuesta.get("respuesta");
-        return ResponseEntity.ok(creditoService.responderPetrolera(id, aprobado, comentario));
+        return ResponseEntity.ok(creditoService.responderPetrolera(id, dto.getAprobado(), dto.getRespuesta()));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")

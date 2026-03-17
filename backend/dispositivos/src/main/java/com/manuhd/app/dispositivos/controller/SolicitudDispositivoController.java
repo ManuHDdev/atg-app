@@ -1,6 +1,7 @@
 package com.manuhd.app.dispositivos.controller;
 
 import com.manuhd.app.dispositivos.dto.CrearSolicitudDTO;
+import com.manuhd.app.dispositivos.dto.ResponderPetroleraDTO;
 import com.manuhd.app.dispositivos.dto.SolicitudDispositivoDTO;
 import com.manuhd.app.dispositivos.model.EstadoSolicitud;
 import com.manuhd.app.dispositivos.service.SolicitudDispositivoService;
@@ -13,7 +14,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/solicitudes-dispositivo")
@@ -77,11 +77,9 @@ public class SolicitudDispositivoController {
     @PostMapping("/{id}/responder")
     public ResponseEntity<SolicitudDispositivoDTO> responderPetrolera(
             @PathVariable Long id,
-            @RequestBody Map<String, Object> respuesta) {
+            @Valid @RequestBody ResponderPetroleraDTO dto) {
         log.info("POST /api/solicitudes-dispositivo/{}/responder", id);
-        boolean aprobado = (boolean) respuesta.get("aprobado");
-        String comentario = (String) respuesta.get("respuesta");
-        return ResponseEntity.ok(solicitudService.responderPetrolera(id, aprobado, comentario));
+        return ResponseEntity.ok(solicitudService.responderPetrolera(id, dto.getAprobado(), dto.getRespuesta()));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
