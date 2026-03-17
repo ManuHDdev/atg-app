@@ -110,6 +110,9 @@ services:
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
       - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+      - APP_STORAGE_PLANTILLAS_PATH=/app/storage/plantillas
+    volumes:
+      - petroleras_storage:/app/storage
     depends_on:
       mysql:
         condition: service_healthy
@@ -314,6 +317,7 @@ volumes:
   mysql_data:
   certbot_certs:
   certbot_www:
+  petroleras_storage:
   contratos_storage:
   keycloak_data:
 
