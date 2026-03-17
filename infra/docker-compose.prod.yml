@@ -265,6 +265,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
     volumes:
       - ./keycloak:/opt/keycloak/data/import
+      - ./keycloak-theme:/opt/keycloak/themes
       - keycloak_data:/opt/keycloak/data
     restart: unless-stopped
     networks:
