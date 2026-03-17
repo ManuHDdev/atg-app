@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PdfEditorService, CampoPdf } from '../../../services/pdf-editor.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 
 @Component({
   selector: 'app-pdf-editor-modal',
@@ -31,6 +32,7 @@ export class PdfEditorModal implements OnInit {
   constructor(
     private pdfEditorService: PdfEditorService,
     private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService,
     private sanitizer: DomSanitizer
   ) {}
 
@@ -91,7 +93,7 @@ export class PdfEditorModal implements OnInit {
       this.loading = false;
     }).catch((err) => {
       console.error('Error al cargar PDF', err);
-      this.notificationService.error('Error al cargar el PDF');
+      this.notificationService.error(this.errorHandler.getMensaje(err));
       this.loading = false;
     });
   }
@@ -166,7 +168,7 @@ export class PdfEditorModal implements OnInit {
       },
       error: (err) => {
         console.error('Error al guardar campos en el PDF', err);
-        this.notificationService.error('Error al guardar los campos en el PDF');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         this.guardandoCampos = false;
       }
     });

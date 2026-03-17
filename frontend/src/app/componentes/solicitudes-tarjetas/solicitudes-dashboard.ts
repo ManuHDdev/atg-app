@@ -10,6 +10,7 @@ import { SolicitudTarjeta } from '../../models/solicitud-tarjeta.model';
 import { Socio } from '../../models/socio.model';
 import { Petrolera } from '../../models/petrolera.model';
 import { EstadoBadge } from './estado-badge/estado-badge';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-solicitudes-dashboard',
@@ -58,7 +59,8 @@ export class SolicitudesDashboard implements OnInit {
     private solicitudService: SolicitudTarjetaService,
     private socioService: SocioService,
     private petroleraService: PetroleraService,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -80,7 +82,7 @@ export class SolicitudesDashboard implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar solicitudes:', err);
-        this.error = 'Error al cargar las solicitudes';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });

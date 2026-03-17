@@ -5,6 +5,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 import { AuthService } from './services/auth.service';
 import { authInterceptor } from './interceptors/auth.interceptor';
+import { errorInterceptor } from './interceptors/error.interceptor';
 
 function initKeycloak(auth: AuthService) {
   return () => auth.init();
@@ -15,7 +16,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     {
       provide: APP_INITIALIZER,
       useFactory: initKeycloak,

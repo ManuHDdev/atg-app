@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { PlantillaEmailService } from '../../services/plantilla-email.service';
 import { PlantillaEmail, TipoEventoEmail } from '../../models/plantilla-email.model';
+import { NotificationService } from '../../services/notification.service';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-plantillas-email',
@@ -46,7 +48,9 @@ export class PlantillasEmail implements OnInit {
 
   constructor(
     private plantillaEmailService: PlantillaEmailService,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -62,7 +66,7 @@ export class PlantillasEmail implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Error al cargar plantillas';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
         console.error(err);
       }
@@ -105,7 +109,7 @@ export class PlantillasEmail implements OnInit {
         plantilla.activa = nuevoEstado;
       },
       error: (err) => {
-        alert('Error al cambiar el estado de la plantilla');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         console.error(err);
       }
     });
@@ -118,7 +122,7 @@ export class PlantillasEmail implements OnInit {
           this.cargarPlantillas();
         },
         error: (err) => {
-          alert('Error al eliminar plantilla');
+          this.notificationService.error(this.errorHandler.getMensaje(err));
           console.error(err);
         }
       });

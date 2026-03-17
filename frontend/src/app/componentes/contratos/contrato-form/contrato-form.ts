@@ -9,6 +9,7 @@ import { PetroleraService } from '../../../services/petrolera.service';
 import { SocioService } from '../../../services/socio.service';
 import { EmpresaService } from '../../../services/empresa.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 import { TipoContrato } from '../../../models/tipo-contrato.model';
 import { TipoSolicitud } from '../../../models/tipo-solicitud.model';
 import { Petrolera } from '../../../models/petrolera.model';
@@ -56,6 +57,7 @@ export class ContratoForm implements OnInit {
     private empresaService: EmpresaService,
     private contratoSocioService: ContratoSocioService,
     private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -92,7 +94,7 @@ export class ContratoForm implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar tipos de contrato', err);
-        this.notificationService.error('Error al cargar tipos de contrato');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
 
@@ -104,7 +106,7 @@ export class ContratoForm implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar petroleras', err);
-        this.notificationService.error('Error al cargar petroleras');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
 
@@ -271,7 +273,7 @@ export class ContratoForm implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar contratos activos', err);
-        this.notificationService.error('Error al cargar contratos activos');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         this.contratosActivos = [];
       }
     });
@@ -350,9 +352,7 @@ export class ContratoForm implements OnInit {
       error: (err) => {
         this.loading = false;
         console.error('Error al crear contrato', err);
-        this.notificationService.error(
-          err.error?.message || 'Error al crear el contrato. Verifique que existe una plantilla configurada.'
-        );
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -370,7 +370,7 @@ export class ContratoForm implements OnInit {
       error: (err) => {
         this.loading = false;
         console.error('Error al subir PDF editado', err);
-        this.notificationService.error('El contrato se creó pero hubo un error al guardar el PDF editado');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         // Aún así navegamos al contrato
         this.router.navigate(['/contratos', solicitudId]);
       }

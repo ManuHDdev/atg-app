@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router, ActivatedRoute } from '@angular/router';
 import { SocioService } from '../../../services/socio.service';
 import { Socio } from '../../../models/socio.model';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 
 @Component({
   selector: 'app-socio-form',
@@ -24,7 +25,8 @@ export class SocioForm implements OnInit {
     private fb: FormBuilder,
     private socioService: SocioService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private errorHandler: ErrorHandlerService
   ) {
     this.socioForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(200)]],
@@ -63,7 +65,7 @@ export class SocioForm implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Error al cargar el socio';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
         console.error(err);
       }
@@ -88,7 +90,7 @@ export class SocioForm implements OnInit {
         this.router.navigate(['/socios']);
       },
       error: (err) => {
-        this.error = 'Error al guardar el socio';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
         console.error(err);
       }

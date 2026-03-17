@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PlantillaEmailService } from '../../../services/plantilla-email.service';
 import { PetroleraService } from '../../../services/petrolera.service';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 import { Petrolera } from '../../../models/petrolera.model';
 import { PlantillaEmail, TipoEventoEmail, CrearPlantillaEmailDTO, VARIABLES_POR_TIPO } from '../../../models/plantilla-email.model';
 
@@ -58,7 +59,8 @@ export class PlantillaEmailForm implements OnInit {
     private plantillaEmailService: PlantillaEmailService,
     private petroleraService: PetroleraService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -100,7 +102,7 @@ export class PlantillaEmailForm implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar plantilla:', error);
-        this.error = 'Error al cargar la plantilla';
+        this.error = this.errorHandler.getMensaje(error);
         this.loading = false;
       }
     });
@@ -206,7 +208,7 @@ export class PlantillaEmailForm implements OnInit {
       },
       error: (error) => {
         console.error('Error al guardar plantilla:', error);
-        this.error = 'Error al guardar la plantilla';
+        this.error = this.errorHandler.getMensaje(error);
         this.loading = false;
       }
     });

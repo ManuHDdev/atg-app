@@ -8,6 +8,7 @@ import { PetroleraService } from '../../../services/petrolera.service';
 import { Tarjeta } from '../../../models/tarjeta.model';
 import { Socio } from '../../../models/socio.model';
 import { Petrolera } from '../../../models/petrolera.model';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 
 @Component({
   selector: 'app-tarjeta-form',
@@ -40,7 +41,8 @@ export class TarjetaForm implements OnInit {
     private socioService: SocioService,
     private petroleraService: PetroleraService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private errorHandler: ErrorHandlerService
   ) {
     this.tarjetaForm = this.fb.group({
       socioId: ['', Validators.required],
@@ -114,7 +116,7 @@ export class TarjetaForm implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Error al cargar la tarjeta';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
         console.error(err);
       }
@@ -173,7 +175,7 @@ export class TarjetaForm implements OnInit {
         this.router.navigate(['/tarjetas']);
       },
       error: (err) => {
-        this.error = 'Error al guardar la tarjeta';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
         console.error(err);
       }

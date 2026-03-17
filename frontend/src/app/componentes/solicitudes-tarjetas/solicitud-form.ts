@@ -10,6 +10,7 @@ import { Socio } from '../../models/socio.model';
 import { Petrolera } from '../../models/petrolera.model';
 import { Tarjeta } from '../../models/tarjeta.model';
 import { SocioAutocomplete } from '../shared/socio-autocomplete/socio-autocomplete';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-solicitud-form',
@@ -39,7 +40,8 @@ export class SolicitudForm implements OnInit {
     private petroleraService: PetroleraService,
     private tarjetaService: TarjetaService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -142,7 +144,7 @@ export class SolicitudForm implements OnInit {
       },
       error: (err) => {
         console.error('Error al crear solicitud:', err);
-        this.error = 'Error al crear la solicitud. Por favor, intente nuevamente.';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });
@@ -198,7 +200,7 @@ export class SolicitudForm implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar tarjetas:', err);
-        this.error = 'Error al cargar las tarjetas del socio';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });

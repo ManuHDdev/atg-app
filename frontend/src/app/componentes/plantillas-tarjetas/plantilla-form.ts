@@ -4,6 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Router, ActivatedRoute } from '@angular/router';
 import { PlantillaTarjetaService } from '../../services/plantilla-tarjeta.service';
 import { PlantillaTarjeta, VARIABLES_DISPONIBLES } from '../../models/plantilla-tarjeta.model';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-plantilla-form',
@@ -26,7 +27,8 @@ export class PlantillaForm implements OnInit {
     private fb: FormBuilder,
     private plantillaService: PlantillaTarjetaService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -59,7 +61,7 @@ export class PlantillaForm implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar plantilla:', err);
-        this.error = 'Error al cargar la plantilla';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });
@@ -98,7 +100,7 @@ export class PlantillaForm implements OnInit {
       },
       error: (err) => {
         console.error('Error al actualizar plantilla:', err);
-        this.error = 'Error al actualizar la plantilla. Por favor, intente nuevamente.';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });
