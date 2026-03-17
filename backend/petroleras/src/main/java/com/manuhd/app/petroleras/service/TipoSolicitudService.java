@@ -179,7 +179,7 @@ public class TipoSolicitudService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public byte[] descargarPlantillaPdf(Long id) throws IOException {
         log.info("Descargando plantilla PDF de tipo de solicitud ID: {}", id);
 
@@ -192,7 +192,11 @@ public class TipoSolicitudService {
 
         Path path = Paths.get(tipoSolicitud.getRutaPlantillaPdf());
         if (!Files.exists(path)) {
-            throw new IOException("Archivo de plantilla PDF no encontrado: " + tipoSolicitud.getRutaPlantillaPdf());
+            log.warn("Archivo PDF no encontrado en disco, limpiando referencia para ID {}: {}", id, tipoSolicitud.getRutaPlantillaPdf());
+            tipoSolicitud.setRutaPlantillaPdf(null);
+            tipoSolicitud.setNombreArchivoPlantilla(null);
+            tipoSolicitudRepository.save(tipoSolicitud);
+            throw new ResourceNotFoundException("La plantilla PDF de este tipo de solicitud no está disponible. Por favor, vuelva a subirla.");
         }
 
         return Files.readAllBytes(path);

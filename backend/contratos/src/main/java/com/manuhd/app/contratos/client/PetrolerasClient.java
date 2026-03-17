@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -36,6 +37,11 @@ public class PetrolerasClient {
             } else {
                 throw new IOException("No se pudo obtener la plantilla PDF, status: " + response.getStatusCode());
             }
+        } catch (HttpClientErrorException.NotFound e) {
+            log.warn("Plantilla PDF no encontrada para tipo de solicitud {}", tipoSolicitudId);
+            throw new IOException("PLANTILLA_NO_CONFIGURADA: El tipo de solicitud seleccionado no tiene una plantilla PDF configurada. Contacte con un administrador.", e);
+        } catch (IOException e) {
+            throw e;
         } catch (Exception e) {
             log.error("Error al obtener plantilla PDF del tipo de solicitud {}", tipoSolicitudId, e);
             throw new IOException("Error al comunicarse con el microservicio de Petroleras: " + e.getMessage(), e);

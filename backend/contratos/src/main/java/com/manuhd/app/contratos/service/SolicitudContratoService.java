@@ -3,6 +3,8 @@ package com.manuhd.app.contratos.service;
 import com.manuhd.app.contratos.client.PetrolerasClient;
 import com.manuhd.app.contratos.client.SociosClient;
 import com.manuhd.app.contratos.dto.CrearSolicitudDTO;
+import com.manuhd.app.contratos.exception.BusinessValidationException;
+import com.manuhd.app.contratos.exception.ExternalServiceException;
 import com.manuhd.app.contratos.dto.EnvioCorreoResult;
 import com.manuhd.app.contratos.dto.FiltroSolicitudesDTO;
 import com.manuhd.app.contratos.dto.SolicitudContratoDTO;
@@ -77,8 +79,10 @@ public class SolicitudContratoService {
 
             } catch (IOException e) {
                 log.error("Error al obtener plantilla del tipo de solicitud", e);
-                throw new RuntimeException("No se pudo obtener la plantilla PDF para el tipo de solicitud seleccionado. " +
-                    "Verifique que el tipo de solicitud tenga una plantilla configurada.", e);
+                if (e.getMessage() != null && e.getMessage().startsWith("PLANTILLA_NO_CONFIGURADA:")) {
+                    throw new BusinessValidationException(e.getMessage().substring("PLANTILLA_NO_CONFIGURADA: ".length()));
+                }
+                throw new ExternalServiceException("No se pudo obtener la plantilla PDF del tipo de solicitud. Inténtelo de nuevo en unos momentos.");
             }
         } else {
             // Si no hay tipo de solicitud, solo crear el directorio sin PDF
