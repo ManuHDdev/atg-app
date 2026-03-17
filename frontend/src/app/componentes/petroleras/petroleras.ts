@@ -4,6 +4,8 @@ import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { PetroleraService } from '../../services/petrolera.service';
 import { Petrolera } from '../../models/petrolera.model';
+import { NotificationService } from '../../services/notification.service';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-petroleras',
@@ -19,7 +21,9 @@ export class Petroleras implements OnInit {
 
   constructor(
     private petroleraService: PetroleraService,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -34,7 +38,7 @@ export class Petroleras implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Error al cargar petroleras';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
         console.error(err);
       }
@@ -87,7 +91,7 @@ export class Petroleras implements OnInit {
       this.petroleraService.delete(id.toString()).subscribe({
         next: () => this.cargarPetroleras(),
         error: (err) => {
-          alert('Error al eliminar petrolera');
+          this.notificationService.error(this.errorHandler.getMensaje(err));
           console.error(err);
         }
       });

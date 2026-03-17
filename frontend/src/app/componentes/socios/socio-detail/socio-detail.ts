@@ -13,6 +13,8 @@ import { CreditoService } from '../../../services/credito.service';
 import { ContratoSocioService } from '../../../services/contrato-socio.service';
 import { PetroleraService } from '../../../services/petrolera.service';
 import { DispositivoService } from '../../../services/dispositivo.service';
+import { NotificationService } from '../../../services/notification.service';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 import { Socio } from '../../../models/socio.model';
 import { Empresa } from '../../../models/empresa.model';
 import { SolicitudContrato } from '../../../models/solicitud-contrato.model';
@@ -88,7 +90,9 @@ export class SocioDetail implements OnInit {
     private petroleraService: PetroleraService,
     private dispositivoService: DispositivoService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -109,7 +113,7 @@ export class SocioDetail implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Error al cargar el socio';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
         console.error(err);
       }
@@ -306,7 +310,7 @@ export class SocioDetail implements OnInit {
           this.router.navigate(['/socios']);
         },
         error: (err) => {
-          alert('Error al eliminar socio');
+          this.notificationService.error(this.errorHandler.getMensaje(err));
           console.error(err);
         }
       });

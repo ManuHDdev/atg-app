@@ -9,6 +9,7 @@ import { TipoSolicitudService } from '../../../services/tipo-solicitud.service';
 import { PetroleraService } from '../../../services/petrolera.service';
 import { SocioService } from '../../../services/socio.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 import { SolicitudContrato, EstadoSolicitud, TipoSolicitudContrato, FiltroSolicitudesDTO } from '../../../models/solicitud-contrato.model';
 import { TipoContrato } from '../../../models/tipo-contrato.model';
 import { TipoSolicitud } from '../../../models/tipo-solicitud.model';
@@ -53,6 +54,7 @@ export class ContratosList implements OnInit {
     private petroleraService: PetroleraService,
     private socioService: SocioService,
     private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService,
     private router: Router
   ) {}
 
@@ -72,7 +74,7 @@ export class ContratosList implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.notificationService.error('Error al cargar solicitudes');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         this.loading = false;
         console.error(err);
       }
@@ -213,7 +215,7 @@ export class ContratosList implements OnInit {
         this.notificationService.success('PDF descargado correctamente');
       },
       error: (err) => {
-        this.notificationService.error('Error al descargar PDF');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         console.error(err);
       }
     });

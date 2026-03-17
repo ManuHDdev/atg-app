@@ -8,6 +8,7 @@ import { SocioService } from '../../../services/socio.service';
 import { PetroleraService } from '../../../services/petrolera.service';
 import { EmpresaService } from '../../../services/empresa.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 import { SolicitudContrato, EstadoSolicitud, TipoSolicitudContrato } from '../../../models/solicitud-contrato.model';
 import { PdfPreviewModal } from '../../shared/pdf-preview-modal/pdf-preview-modal';
 import { PdfEditorModal } from '../pdf-editor-modal/pdf-editor-modal';
@@ -56,6 +57,7 @@ export class ContratoDetail implements OnInit {
     private petroleraService: PetroleraService,
     private empresaService: EmpresaService,
     private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -112,7 +114,7 @@ export class ContratoDetail implements OnInit {
       error: (err) => {
         this.loading = false;
         console.error('Error al cargar contrato', err);
-        this.notificationService.error('Error al cargar el contrato');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         this.router.navigate(['/contratos']);
       }
     });
@@ -133,7 +135,7 @@ export class ContratoDetail implements OnInit {
       },
       error: (err) => {
         console.error('Error al descargar PDF', err);
-        this.notificationService.error('Error al descargar el PDF');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -153,7 +155,7 @@ export class ContratoDetail implements OnInit {
       },
       error: (err) => {
         console.error('Error al descargar plantilla', err);
-        this.notificationService.error('Error al descargar la plantilla');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -171,7 +173,7 @@ export class ContratoDetail implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar plantilla para previsualización', err);
-        this.notificationService.error('Error al cargar la plantilla para previsualización');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -207,7 +209,7 @@ export class ContratoDetail implements OnInit {
       error: (err) => {
         this.procesando = false;
         console.error('Error al guardar PDF', err);
-        this.notificationService.error('Error al guardar el PDF');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -229,7 +231,7 @@ export class ContratoDetail implements OnInit {
       error: (err) => {
         this.procesando = false;
         console.error('Error al enviar al socio', err);
-        this.notificationService.error('Error al enviar la solicitud al socio');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -255,7 +257,7 @@ export class ContratoDetail implements OnInit {
       error: (err) => {
         this.procesando = false;
         console.error('Error al subir PDF firmado', err);
-        this.notificationService.error('Error al subir el PDF firmado');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -277,7 +279,7 @@ export class ContratoDetail implements OnInit {
       error: (err) => {
         this.procesando = false;
         console.error('Error al enviar a petrolera', err);
-        this.notificationService.error('Error al enviar la solicitud a la petrolera');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -299,7 +301,7 @@ export class ContratoDetail implements OnInit {
       error: (err) => {
         this.procesando = false;
         console.error('Error al aceptar firma', err);
-        this.notificationService.error('Error al aceptar la firma del socio');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -321,7 +323,7 @@ export class ContratoDetail implements OnInit {
       error: (err) => {
         this.procesando = false;
         console.error('Error al aceptar por petrolera', err);
-        this.notificationService.error('Error al aceptar la solicitud');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -345,7 +347,7 @@ export class ContratoDetail implements OnInit {
       error: (err) => {
         this.procesando = false;
         console.error('Error al rechazar por petrolera', err);
-        this.notificationService.error('Error al rechazar la solicitud');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -451,7 +453,7 @@ export class ContratoDetail implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar PDF para previsualización', err);
-        this.notificationService.error('Error al cargar el PDF para previsualización');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }

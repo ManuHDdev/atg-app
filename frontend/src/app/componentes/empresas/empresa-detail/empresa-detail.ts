@@ -11,6 +11,7 @@ import { TarjetaService } from '../../../services/tarjeta.service';
 import { CreditoService } from '../../../services/credito.service';
 import { ContratoSocioService } from '../../../services/contrato-socio.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 import { Empresa } from '../../../models/empresa.model';
 import { Socio } from '../../../models/socio.model';
 import { SolicitudContrato } from '../../../models/solicitud-contrato.model';
@@ -76,7 +77,8 @@ export class EmpresaDetail implements OnInit {
     private contratoSocioService: ContratoSocioService,
     private router: Router,
     private route: ActivatedRoute,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -99,7 +101,7 @@ export class EmpresaDetail implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.notificationService.error('Error al cargar la empresa');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         this.loading = false;
         console.error(err);
       }
@@ -112,7 +114,7 @@ export class EmpresaDetail implements OnInit {
         this.socio = socio;
       },
       error: (err) => {
-        this.notificationService.error('Error al cargar información del socio');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         console.error('Error al cargar socio', err);
       }
     });
@@ -287,7 +289,7 @@ export class EmpresaDetail implements OnInit {
           }
         },
         error: (err) => {
-          this.notificationService.error('Error al eliminar empresa');
+          this.notificationService.error(this.errorHandler.getMensaje(err));
           console.error(err);
         }
       });

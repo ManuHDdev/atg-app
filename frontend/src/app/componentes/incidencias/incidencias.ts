@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { IncidenciaService } from '../../services/incidencia.service';
 import { AuthService } from '../../services/auth.service';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 import { IncidenciaResumen, EstadoIncidencia, ESTADOS_INCIDENCIA, ESTADO_LABELS, TIPO_LABELS } from '../../models/incidencia.model';
 
 @Component({
@@ -26,7 +27,8 @@ export class Incidencias implements OnInit {
   constructor(
     private service: IncidenciaService,
     public auth: AuthService,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -38,7 +40,7 @@ export class Incidencias implements OnInit {
     this.error = null;
     this.service.getAll().subscribe({
       next: (data) => { this.incidencias = data; this.loading = false; },
-      error: () => { this.error = 'Error al cargar las incidencias'; this.loading = false; }
+      error: (err) => { this.error = this.errorHandler.getMensaje(err); this.loading = false; }
     });
   }
 

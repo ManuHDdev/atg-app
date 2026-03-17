@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { PlantillaTarjetaService } from '../../services/plantilla-tarjeta.service';
 import { PlantillaTarjeta, VARIABLES_DISPONIBLES } from '../../models/plantilla-tarjeta.model';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-plantillas-tarjetas',
@@ -18,7 +19,8 @@ export class PlantillasTarjetas implements OnInit {
 
   constructor(
     private plantillaService: PlantillaTarjetaService,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -36,7 +38,7 @@ export class PlantillasTarjetas implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar plantillas:', err);
-        this.error = 'Error al cargar las plantillas';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });

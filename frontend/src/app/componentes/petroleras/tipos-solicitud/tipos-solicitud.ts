@@ -6,6 +6,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { TipoSolicitudService } from '../../../services/tipo-solicitud.service';
 import { PetroleraService } from '../../../services/petrolera.service';
 import { NotificationService } from '../../../services/notification.service';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 import { TipoSolicitud } from '../../../models/tipo-solicitud.model';
 import { Petrolera } from '../../../models/petrolera.model';
 
@@ -43,6 +44,7 @@ export class TiposSolicitud implements OnInit {
     private tipoSolicitudService: TipoSolicitudService,
     private petroleraService: PetroleraService,
     private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService,
     private sanitizer: DomSanitizer,
     private route: ActivatedRoute,
     private router: Router
@@ -74,7 +76,7 @@ export class TiposSolicitud implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.notificationService.error('Error al cargar tipos de solicitud');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         this.loading = false;
         console.error(err);
       }
@@ -91,7 +93,7 @@ export class TiposSolicitud implements OnInit {
       this.petroleraNombre = petrolera?.nombre || '';
       this.loading = false;
     }).catch((err) => {
-      this.notificationService.error('Error al cargar tipos de solicitud de la petrolera');
+      this.notificationService.error(this.errorHandler.getMensaje(err));
       this.loading = false;
       console.error(err);
     });
@@ -179,7 +181,7 @@ export class TiposSolicitud implements OnInit {
         }
       },
       error: (err) => {
-        this.notificationService.error('Error al guardar el tipo de solicitud');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         console.error(err);
       }
     });
@@ -198,7 +200,7 @@ export class TiposSolicitud implements OnInit {
         }
       },
       error: (err) => {
-        this.notificationService.error('Error al cargar la plantilla PDF');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         console.error(err);
       }
     });
@@ -214,7 +216,7 @@ export class TiposSolicitud implements OnInit {
           }
         },
         error: (err) => {
-          this.notificationService.error('Error al eliminar la plantilla PDF');
+          this.notificationService.error(this.errorHandler.getMensaje(err));
           console.error(err);
         }
       });
@@ -242,7 +244,7 @@ export class TiposSolicitud implements OnInit {
           }
         },
         error: (err) => {
-          this.notificationService.error('Error al eliminar tipo de solicitud');
+          this.notificationService.error(this.errorHandler.getMensaje(err));
           console.error(err);
         }
       });
@@ -260,7 +262,7 @@ export class TiposSolicitud implements OnInit {
         this.mostrarModalPdf = true;
       },
       error: (err) => {
-        this.notificationService.error('Error al cargar la previsualización del PDF');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         console.error(err);
       }
     });

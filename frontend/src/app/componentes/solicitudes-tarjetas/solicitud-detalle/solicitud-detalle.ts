@@ -10,6 +10,7 @@ import { Socio } from '../../../models/socio.model';
 import { Petrolera } from '../../../models/petrolera.model';
 import { EstadoBadge } from '../estado-badge/estado-badge';
 import { EmailLogs } from '../email-logs/email-logs';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 
 @Component({
   selector: 'app-solicitud-detalle',
@@ -45,7 +46,8 @@ export class SolicitudDetalle implements OnInit {
     private socioService: SocioService,
     private petroleraService: PetroleraService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -97,7 +99,7 @@ export class SolicitudDetalle implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar solicitud:', err);
-        this.error = 'Error al cargar la solicitud';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });
@@ -143,7 +145,7 @@ export class SolicitudDetalle implements OnInit {
       },
       error: (err) => {
         console.error('Error al aprobar:', err);
-        this.error = 'Error al aprobar la solicitud';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });
@@ -166,7 +168,7 @@ export class SolicitudDetalle implements OnInit {
       },
       error: (err) => {
         console.error('Error al rechazar:', err);
-        this.error = 'Error al rechazar la solicitud';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });
@@ -188,7 +190,7 @@ export class SolicitudDetalle implements OnInit {
       },
       error: (err) => {
         console.error('Error al registrar llegada:', err);
-        this.error = 'Error al registrar la llegada';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });
@@ -210,7 +212,7 @@ export class SolicitudDetalle implements OnInit {
       },
       error: (err) => {
         console.error('Error al marcar como entregada:', err);
-        this.error = 'Error al marcar como entregada';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });
@@ -227,7 +229,7 @@ export class SolicitudDetalle implements OnInit {
       },
       error: (err) => {
         console.error('Error al finalizar:', err);
-        this.error = 'Error al finalizar la solicitud';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });
@@ -283,7 +285,7 @@ export class SolicitudDetalle implements OnInit {
       },
       error: (err) => {
         console.error('Error al aprobar BAJA:', err);
-        this.error = 'Error al aprobar la solicitud de BAJA';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });
@@ -308,7 +310,7 @@ export class SolicitudDetalle implements OnInit {
       },
       error: (err) => {
         console.error('Error al aprobar DUPLICADO:', err);
-        this.error = 'Error al aprobar la solicitud de DUPLICADO';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });

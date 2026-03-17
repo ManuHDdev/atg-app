@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UsuarioService } from '../../services/usuario.service';
 import { Usuario, CreateUsuarioRequest, UpdateUsuarioRequest } from '../../models/usuario.model';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-usuarios',
@@ -27,7 +28,8 @@ export class Usuarios implements OnInit {
 
   constructor(
     private usuarioService: UsuarioService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private errorHandler: ErrorHandlerService
   ) {
     this.usuarioForm = this.fb.group({
       username: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(50)]],
@@ -49,7 +51,7 @@ export class Usuarios implements OnInit {
     this.error = null;
     this.usuarioService.getAll().subscribe({
       next: (data) => { this.usuarios = data; this.loading = false; },
-      error: () => { this.error = 'Error al cargar usuarios'; this.loading = false; }
+      error: (err) => { this.error = this.errorHandler.getMensaje(err); this.loading = false; }
     });
   }
 
@@ -105,7 +107,7 @@ export class Usuarios implements OnInit {
       };
       this.usuarioService.update(this.editandoId, req).subscribe({
         next: () => { this.guardando = false; this.cerrarModal(); this.cargar(); },
-        error: (err) => { this.guardando = false; this.errorModal = this.mensajeError(err); }
+        error: (err) => { this.guardando = false; this.errorModal = this.errorHandler.getMensaje(err); }
       });
     } else {
       const req: CreateUsuarioRequest = {
@@ -119,7 +121,7 @@ export class Usuarios implements OnInit {
       };
       this.usuarioService.create(req).subscribe({
         next: () => { this.guardando = false; this.cerrarModal(); this.cargar(); },
-        error: (err) => { this.guardando = false; this.errorModal = this.mensajeError(err); }
+        error: (err) => { this.guardando = false; this.errorModal = this.errorHandler.getMensaje(err); }
       });
     }
   }
@@ -128,7 +130,7 @@ export class Usuarios implements OnInit {
     if (!confirm(`¿Eliminar el usuario "${u.username}"? Esta acción no se puede deshacer.`)) return;
     this.usuarioService.delete(u.id).subscribe({
       next: () => this.cargar(),
-      error: () => this.error = 'Error al eliminar el usuario'
+      error: (err) => this.error = this.errorHandler.getMensaje(err)
     });
   }
 
@@ -140,12 +142,4 @@ export class Usuarios implements OnInit {
   }
 
   get f() { return this.usuarioForm.controls; }
-
-  private mensajeError(err: unknown): string {
-    if (err && typeof err === 'object' && 'status' in err) {
-      if ((err as { status: number }).status === 409) return 'Ya existe un usuario con ese nombre de usuario o email.';
-      if ((err as { status: number }).status === 400) return 'Datos inválidos. Revisa el formulario.';
-    }
-    return 'Error al guardar el usuario. Inténtalo de nuevo.';
-  }
 }

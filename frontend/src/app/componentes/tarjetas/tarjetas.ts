@@ -8,6 +8,7 @@ import { PetroleraService } from '../../services/petrolera.service';
 import { Tarjeta } from '../../models/tarjeta.model';
 import { Socio } from '../../models/socio.model';
 import { Petrolera } from '../../models/petrolera.model';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-tarjetas',
@@ -40,7 +41,8 @@ export class Tarjetas implements OnInit {
     private tarjetaService: TarjetaService,
     private socioService: SocioService,
     private petroleraService: PetroleraService,
-    private router: Router
+    private router: Router,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -62,7 +64,7 @@ export class Tarjetas implements OnInit {
       this.petroleras = petroleras || [];
       this.loading = false;
     }).catch((err) => {
-      this.error = 'Error al cargar datos';
+      this.error = this.errorHandler.getMensaje(err);
       this.loading = false;
       console.error(err);
     });
@@ -162,7 +164,7 @@ export class Tarjetas implements OnInit {
         this.cargarDatos();
       },
       error: (err) => {
-        this.error = 'Error al eliminar la tarjeta';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
         console.error(err);
       }

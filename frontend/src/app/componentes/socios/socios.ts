@@ -5,6 +5,8 @@ import { RouterLink } from '@angular/router';
 import { Router } from '@angular/router';
 import { SocioService } from '../../services/socio.service';
 import { Socio } from '../../models/socio.model';
+import { NotificationService } from '../../services/notification.service';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
   selector: 'app-socios',
@@ -24,7 +26,9 @@ export class Socios implements OnInit {
 
   constructor(
     private socioService: SocioService,
-    private router: Router
+    private router: Router,
+    private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -41,7 +45,7 @@ export class Socios implements OnInit {
         console.log(this.socios)
       },
       error: (err) => {
-        this.error = 'Error al cargar socios';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
         console.error(err);
       }
@@ -86,7 +90,7 @@ export class Socios implements OnInit {
       this.socioService.delete(id).subscribe({
         next: () => this.cargarSocios(),
         error: (err) => {
-          alert('Error al eliminar socio');
+          this.notificationService.error(this.errorHandler.getMensaje(err));
           console.error(err);
         }
       });

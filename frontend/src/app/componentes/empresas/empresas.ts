@@ -6,6 +6,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { EmpresaService } from '../../services/empresa.service';
 import { SocioService } from '../../services/socio.service';
 import { NotificationService } from '../../services/notification.service';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 import { Empresa } from '../../models/empresa.model';
 import { Socio } from '../../models/socio.model';
 
@@ -40,7 +41,8 @@ export class Empresas implements OnInit {
     private socioService: SocioService,
     private router: Router,
     private route: ActivatedRoute,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -63,7 +65,7 @@ export class Empresas implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.notificationService.error('Error al cargar empresas');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
         this.loading = false;
         console.error(err);
       }
@@ -81,7 +83,7 @@ export class Empresas implements OnInit {
       this.socioNombre = socio?.nombre || '';
       this.loading = false;
     }).catch((err) => {
-      this.notificationService.error('Error al cargar empresas del socio');
+      this.notificationService.error(this.errorHandler.getMensaje(err));
       this.loading = false;
       console.error(err);
     });
@@ -115,7 +117,7 @@ export class Empresas implements OnInit {
           }
         },
         error: (err) => {
-          this.notificationService.error('Error al eliminar empresa');
+          this.notificationService.error(this.errorHandler.getMensaje(err));
           console.error(err);
         }
       });

@@ -4,6 +4,8 @@ import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } 
 import { Router, ActivatedRoute } from '@angular/router';
 import { PetroleraService } from '../../../services/petrolera.service';
 import { PlantillaEmailService } from '../../../services/plantilla-email.service';
+import { NotificationService } from '../../../services/notification.service';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 import { Petrolera } from '../../../models/petrolera.model';
 import { PlantillaEmail, TipoEventoEmail, VARIABLES_POR_TIPO } from '../../../models/plantilla-email.model';
 
@@ -88,6 +90,8 @@ export class PetroleraForm implements OnInit {
     private fb: FormBuilder,
     private petroleraService: PetroleraService,
     private plantillaEmailService: PlantillaEmailService,
+    private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -121,7 +125,7 @@ export class PetroleraForm implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.error = 'Error al cargar la petrolera';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
         console.error(err);
       }
@@ -223,7 +227,7 @@ export class PetroleraForm implements OnInit {
       },
       error: (err) => {
         console.error('Error al guardar plantilla:', err);
-        alert('Error al guardar la plantilla');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -236,7 +240,7 @@ export class PetroleraForm implements OnInit {
         },
         error: (err) => {
           console.error('Error al eliminar plantilla:', err);
-          alert('Error al eliminar la plantilla');
+          this.notificationService.error(this.errorHandler.getMensaje(err));
         }
       });
     }
@@ -297,7 +301,7 @@ export class PetroleraForm implements OnInit {
       },
       error: (err) => {
         console.error('Error al guardar plantilla de crédito:', err);
-        alert('Error al guardar la plantilla');
+        this.notificationService.error(this.errorHandler.getMensaje(err));
       }
     });
   }
@@ -310,7 +314,7 @@ export class PetroleraForm implements OnInit {
         },
         error: (err) => {
           console.error('Error al eliminar plantilla de crédito:', err);
-          alert('Error al eliminar la plantilla');
+          this.notificationService.error(this.errorHandler.getMensaje(err));
         }
       });
     }
@@ -349,7 +353,7 @@ export class PetroleraForm implements OnInit {
         this.router.navigate(['/petroleras']);
       },
       error: (err) => {
-        this.error = 'Error al guardar la petrolera';
+        this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
         console.error(err);
       }

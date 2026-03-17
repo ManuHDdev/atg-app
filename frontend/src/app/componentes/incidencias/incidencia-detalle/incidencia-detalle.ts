@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { ActivatedRoute, Router } from '@angular/router';
 import { IncidenciaService } from '../../../services/incidencia.service';
 import { AuthService } from '../../../services/auth.service';
+import { ErrorHandlerService } from '../../../services/error-handler.service';
 import { Incidencia, EstadoIncidencia, ESTADO_LABELS, ESTADOS_INCIDENCIA, TIPO_LABELS } from '../../../models/incidencia.model';
 
 @Component({
@@ -31,7 +32,8 @@ export class IncidenciaDetalle implements OnInit {
     private router: Router,
     private service: IncidenciaService,
     public auth: AuthService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
+    private errorHandler: ErrorHandlerService
   ) {
     this.comentarioForm = this.fb.group({ texto: ['', Validators.required] });
     this.estadoForm = this.fb.group({
@@ -56,7 +58,7 @@ export class IncidenciaDetalle implements OnInit {
         });
         this.loading = false;
       },
-      error: () => { this.error = 'Error al cargar la incidencia'; this.loading = false; }
+      error: (err) => { this.error = this.errorHandler.getMensaje(err); this.loading = false; }
     });
   }
 
