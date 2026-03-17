@@ -1,12 +1,14 @@
 package com.manuhd.app.auth.service;
 
 import com.manuhd.app.auth.model.Incidencia;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class MailNotificationService {
 
     private final JavaMailSender mailSender;
@@ -25,7 +27,11 @@ public class MailNotificationService {
     }
 
     public void notificarNuevaIncidencia(Incidencia i) {
-        if (!emailEnabled) return;
+        if (!emailEnabled) {
+            log.info("Email deshabilitado (app.email.enabled=false), omitiendo notificación de incidencia #{}", i.getId());
+            return;
+        }
+        log.info("Enviando notificación de nueva incidencia #{} a {}", i.getId(), developerEmail);
         try {
             SimpleMailMessage msg = new SimpleMailMessage();
             msg.setFrom(fromEmail);
@@ -48,8 +54,9 @@ public class MailNotificationService {
                     """.formatted(i.getId(), i.getTipo(), i.getPrioridad(),
                     i.getTitulo(), i.getAutor(), i.getDescripcion()));
             mailSender.send(msg);
+            log.info("Notificación de incidencia #{} enviada a {}", i.getId(), developerEmail);
         } catch (Exception e) {
-            // No interrumpir el flujo si el email falla
+            log.error("Error al enviar notificación de incidencia #{}: {}", i.getId(), e.getMessage());
         }
     }
 }
