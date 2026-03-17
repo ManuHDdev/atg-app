@@ -6,12 +6,13 @@ import { incidenciasGuard } from './guards/incidencias.guard';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/login',
+    redirectTo: '/inicio',
     pathMatch: 'full'
   },
   {
     path: 'login',
-    loadComponent: () => import('./componentes/login/login').then(m => m.Login)
+    redirectTo: '/inicio',
+    pathMatch: 'full'
   },
   {
     path: 'registro',
@@ -194,6 +195,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: '/login'
+    redirectTo: '/inicio'
   }
 ];

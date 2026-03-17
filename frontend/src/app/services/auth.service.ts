@@ -12,8 +12,7 @@ export class AuthService {
 
   async init(): Promise<boolean> {
     return this.kc.init({
-      onLoad: 'check-sso',
-      silentCheckSsoRedirectUri: document.baseURI + 'silent-check-sso.html',
+      onLoad: 'login-required',
       pkceMethod: 'S256',
     });
   }
@@ -23,7 +22,7 @@ export class AuthService {
   }
 
   logout(): void {
-    this.kc.logout({ redirectUri: window.location.origin + '/atg/login' });
+    this.kc.logout({ redirectUri: window.location.origin + '/atg/inicio' });
   }
 
   isAuthenticated(): boolean {
