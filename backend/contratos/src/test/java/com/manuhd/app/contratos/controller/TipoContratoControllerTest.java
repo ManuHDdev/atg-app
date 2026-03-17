@@ -3,6 +3,8 @@ package com.manuhd.app.contratos.controller;
 import com.manuhd.app.contratos.client.PetrolerasClient;
 import com.manuhd.app.contratos.client.SociosClient;
 import com.manuhd.app.contratos.dto.TipoContratoDTO;
+import com.manuhd.app.contratos.exception.DuplicateResourceException;
+import com.manuhd.app.contratos.exception.ResourceNotFoundException;
 import com.manuhd.app.contratos.service.TipoContratoService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -119,11 +121,11 @@ class TipoContratoControllerTest {
         // Given
         Long id = 999L;
         when(tipoContratoService.obtenerPorId(id))
-                .thenThrow(new RuntimeException("Tipo de contrato no encontrado con ID: " + id));
+                .thenThrow(new ResourceNotFoundException("Tipo de contrato", "ID", id));
 
         // When & Then
         mockMvc.perform(get("/api/tipos-contrato/{id}", id))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isNotFound());
 
         verify(tipoContratoService, times(1)).obtenerPorId(id);
     }
@@ -150,19 +152,19 @@ class TipoContratoControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/tipos-contrato - Debe retornar error cuando código ya existe")
+    @DisplayName("POST /api/tipos-contrato - Debe retornar 409 cuando código ya existe")
     void createTipoContrato_DebeRetornarErrorCuandoCodigoExiste() throws Exception {
         // Given
         TipoContratoDTO inputDTO = createTipoContratoDTO(null, "TIPO_EXISTENTE", "Tipo Existente", true);
 
         when(tipoContratoService.crear(any(TipoContratoDTO.class)))
-                .thenThrow(new RuntimeException("Ya existe un tipo de contrato con el código: TIPO_EXISTENTE"));
+                .thenThrow(new DuplicateResourceException("Tipo de contrato", "código", "TIPO_EXISTENTE"));
 
         // When & Then
         mockMvc.perform(post("/api/tipos-contrato")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(inputDTO)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isConflict());
 
         verify(tipoContratoService, times(1)).crear(any(TipoContratoDTO.class));
     }
