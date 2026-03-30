@@ -94,7 +94,8 @@ export class IncidenciaDetalle implements OnInit {
   eliminar(): void {
     if (!this.incidencia || !confirm(`¿Eliminar la incidencia "${this.incidencia.titulo}"? Esta acción no se puede deshacer.`)) return;
     this.service.eliminar(this.incidencia.id).subscribe({
-      next: () => this.router.navigate(['/incidencias'])
+      next: () => this.router.navigate(['/incidencias']),
+      error: (err) => { this.error = this.errorHandler.getMensaje(err); }
     });
   }
 

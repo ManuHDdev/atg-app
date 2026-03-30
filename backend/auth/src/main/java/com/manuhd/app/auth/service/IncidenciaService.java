@@ -33,7 +33,7 @@ public class IncidenciaService {
 
     @Transactional(readOnly = true)
     public List<IncidenciaResumenDto> listar() {
-        return incidenciaRepository.findAllByOrderByFechaCreacionDesc()
+        return incidenciaRepository.findAllByActivoTrueOrderByFechaCreacionDesc()
                 .stream().map(IncidenciaResumenDto::from).toList();
     }
 
