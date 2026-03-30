@@ -11,10 +11,30 @@ export class AuthService {
   });
 
   async init(): Promise<boolean> {
-    return this.kc.init({
-      onLoad: 'login-required',
-      pkceMethod: 'S256',
-    });
+    try {
+      return await this.kc.init({
+        onLoad: 'login-required',
+        pkceMethod: 'S256',
+        checkLoginIframe: false,
+        silentCheckSsoRedirectUri: window.location.origin + '/atg/assets/silent-check-sso.html',
+      });
+    } catch {
+      this.clearStaleSession();
+      return this.kc.init({
+        onLoad: 'login-required',
+        pkceMethod: 'S256',
+        checkLoginIframe: false,
+      });
+    }
+  }
+
+  private clearStaleSession(): void {
+    Object.keys(sessionStorage)
+      .filter(k => k.startsWith('kc-'))
+      .forEach(k => sessionStorage.removeItem(k));
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('kc-'))
+      .forEach(k => localStorage.removeItem(k));
   }
 
   login(): void {
