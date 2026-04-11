@@ -11,30 +11,17 @@ export class AuthService {
   });
 
   async init(): Promise<boolean> {
-    try {
-      return await this.kc.init({
-        onLoad: 'login-required',
-        pkceMethod: 'S256',
-        checkLoginIframe: false,
-        silentCheckSsoRedirectUri: window.location.origin + '/atg/assets/silent-check-sso.html',
-      });
-    } catch {
-      this.clearStaleSession();
-      return this.kc.init({
-        onLoad: 'login-required',
-        pkceMethod: 'S256',
-        checkLoginIframe: false,
-      });
-    }
+    this.clearStaleSession();
+    return this.kc.init({
+      onLoad: 'login-required',
+      pkceMethod: 'S256',
+      checkLoginIframe: false,
+    });
   }
 
   private clearStaleSession(): void {
-    Object.keys(sessionStorage)
-      .filter(k => k.startsWith('kc-'))
-      .forEach(k => sessionStorage.removeItem(k));
-    Object.keys(localStorage)
-      .filter(k => k.startsWith('kc-'))
-      .forEach(k => localStorage.removeItem(k));
+    const keysToRemove = Object.keys(sessionStorage).filter(k => k.startsWith('kc-'));
+    keysToRemove.forEach(k => sessionStorage.removeItem(k));
   }
 
   login(): void {
@@ -54,7 +41,11 @@ export class AuthService {
   }
 
   async getValidToken(): Promise<string> {
-    await this.kc.updateToken(30);
+    try {
+      await this.kc.updateToken(30);
+    } catch {
+      this.kc.login({ redirectUri: window.location.origin + '/atg/inicio' });
+    }
     return this.kc.token ?? '';
   }
 
