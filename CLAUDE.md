@@ -78,3 +78,10 @@ com.manuhd.app.[microservicio]
 ANTES de generar cualquier fichero, lee los ficheros existentes de la misma capa
 para seguir exactamente el mismo patrón. Nunca asumas convenciones: verifícalas
 en el código existente del microservicio correspondiente.
+
+## Deuda técnica conocida
+
+- **Cero tests reales, pese a la convención "obligatoria"**: no existe ni un solo archivo de test en ninguno de los 7 microservicios backend ni en el frontend, a pesar de que este documento marca JUnit5+Mockito+TestContainers como obligatorios. El pipeline de CI (`pipeline.yml`) tiene una fase "Tests" que en la práctica no verifica nada:
+  - Backend: `./mvnw clean verify` por servicio pasa en verde trivialmente al no haber tests que ejecutar — falso verde.
+  - Frontend: no ejecuta `ng test` en absoluto, solo `ng build` (compila). El propio pipeline tiene un comentario diciendo que los tests están deshabilitados "porque los specs usan dependencias reales sin mockear", pero no existe ningún `.spec.ts` en el proyecto — el comentario parece un resto de una versión anterior con tests que fueron eliminados.
+  - Cualquier fix o feature nueva en microservicios críticos (auth, incidencias) debería empezar a incluir tests reales, ya que ahora mismo el CI no da ninguna garantía real de que el código funcione antes de desplegar a producción.
