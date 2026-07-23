@@ -280,7 +280,11 @@ services:
       - backend
     restart: unless-stopped
 
-  # ─── Nginx + Frontend (imagen GHCR con nginx config bakeada) ─────────────────
+  # ─── Nginx compartido: sirve ATG + otros dominios (bodasm, muebleshorrillo, ────
+  # elbunkerdelingeniero). La imagen solo aporta los archivos estáticos de ATG;
+  # el enrutamiento de TODOS los dominios vive en /home/manu/nginx-shared/conf.d/
+  # (un archivo por proyecto, cada uno gestiona el suyo). NUNCA volver a meter
+  # config de otros proyectos dentro de esta imagen — por eso se rompió antes.
   nginx:
     image: ghcr.io/manuhddev/atg-frontend:latest
     restart: unless-stopped
@@ -290,6 +294,7 @@ services:
     volumes:
       - certbot_certs:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot:ro
+      - /home/manu/nginx-shared/conf.d:/etc/nginx/conf.d:ro
     depends_on:
       - auth
       - socios
