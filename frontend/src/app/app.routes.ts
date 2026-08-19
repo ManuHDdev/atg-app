@@ -134,22 +134,6 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./componentes/petroleras/petrolera-form/petrolera-form').then(m => m.PetroleraForm)
   },
-  // Rutas de Tarjetas
-  {
-    path: 'tarjetas',
-    canActivate: [authGuard],
-    loadComponent: () => import('./componentes/tarjetas/tarjetas').then(m => m.Tarjetas)
-  },
-  {
-    path: 'tarjetas/nuevo',
-    canActivate: [authGuard],
-    loadComponent: () => import('./componentes/tarjetas/tarjeta-form/tarjeta-form').then(m => m.TarjetaForm)
-  },
-  {
-    path: 'tarjetas/:id/editar',
-    canActivate: [authGuard],
-    loadComponent: () => import('./componentes/tarjetas/tarjeta-form/tarjeta-form').then(m => m.TarjetaForm)
-  },
   // Rutas de Solicitudes de Tarjetas
   {
     path: 'solicitudes-tarjetas/dashboard',
