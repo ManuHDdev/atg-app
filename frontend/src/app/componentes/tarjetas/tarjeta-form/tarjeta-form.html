@@ -26,7 +26,7 @@
             [disabled]="loadingSocios"
             autocomplete="off">
           @if (busquedaSocio) {
-            <button type="button" class="autocomplete-clear" (click)="limpiarBusquedaSocio()">✕</button>
+            <button type="button" class="autocomplete-clear" (click)="limpiarBusquedaSocio()"><i class="bi bi-x"></i></button>
           }
           @if (mostrarListaSocios) {
             <ul class="autocomplete-list">

@@ -126,7 +126,7 @@
             }
             @if (f['tipoSolicitud'].value !== TipoSolicitudContrato.NUEVO && petrolerasFiltradas.length === 0 && f['socioId'].value) {
               <small class="help-text error-text">
-                ⚠️ Este socio no tiene contratos activos con ninguna petrolera
+                <i class="bi bi-exclamation-triangle"></i> Este socio no tiene contratos activos con ninguna petrolera
               </small>
             }
           </div>
@@ -166,7 +166,7 @@
               }
               @if (contratosActivos.length === 0 && f['socioId'].value && f['petroleraId'].value) {
                 <small class="help-text error-text">
-                  ⚠️ Este socio no tiene contratos activos con la petrolera seleccionada
+                  <i class="bi bi-exclamation-triangle"></i> Este socio no tiene contratos activos con la petrolera seleccionada
                 </small>
               }
             </div>
@@ -199,7 +199,7 @@
         @if (f['tipoSolicitud'].value === TipoSolicitudContrato.NUEVO && mostrarSubsecciones && tiposSolicitud.length === 0) {
           <div class="form-row">
             <div class="info-message">
-              <p><strong>⚠️ Atención:</strong> No hay tipos de solicitud configurados para esta petrolera.</p>
+              <p><strong><i class="bi bi-exclamation-triangle"></i> Atención:</strong> No hay tipos de solicitud configurados para esta petrolera.</p>
               <p>Debe configurar al menos un tipo de solicitud con plantilla PDF en la gestión de Petroleras.</p>
             </div>
           </div>

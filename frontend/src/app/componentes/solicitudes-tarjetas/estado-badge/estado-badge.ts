@@ -32,13 +32,13 @@ export class EstadoBadge {
 
   get estadoIcon(): string {
     const icons: Record<EstadoSolicitud, string> = {
-      'PENDIENTE': '⏳',
-      'APROBADA': '✓',
-      'RECHAZADA': '✗',
-      'TARJETA_LLEGADA': '📦',
-      'ENTREGADA': '✓✓',
-      'COMPLETADA': '✓✓✓'
+      'PENDIENTE': 'bi-hourglass-split',
+      'APROBADA': 'bi-check-lg',
+      'RECHAZADA': 'bi-x-lg',
+      'TARJETA_LLEGADA': 'bi-box-seam',
+      'ENTREGADA': 'bi-check2-all',
+      'COMPLETADA': 'bi-patch-check-fill'
     };
-    return icons[this.estado] || '•';
+    return icons[this.estado] || 'bi-circle-fill';
   }
 }

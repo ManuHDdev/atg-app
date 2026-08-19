@@ -10,9 +10,9 @@
       (blur)="onBlur()"
       [disabled]="loading"
     >
-    <span class="search-icon" *ngIf="!loading && !selectedSocio">🔍</span>
-    <span class="loading-icon" *ngIf="loading">⏳</span>
-    <span class="selected-icon" *ngIf="selectedSocio">✓</span>
+    <i class="bi bi-search search-icon" *ngIf="!loading && !selectedSocio"></i>
+    <i class="bi bi-hourglass-split loading-icon" *ngIf="loading"></i>
+    <i class="bi bi-check-circle-fill selected-icon" *ngIf="selectedSocio"></i>
   </div>
 
   <div class="dropdown" *ngIf="showDropdown && filteredSocios.length > 0">

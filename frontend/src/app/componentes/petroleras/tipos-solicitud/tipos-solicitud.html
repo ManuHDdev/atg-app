@@ -81,7 +81,7 @@
             />
             @if (nombreArchivoMostrar) {
               <div class="inline-row mt-xs">
-                <small class="archivo-actual-badge">📄 Archivo actual: {{ nombreArchivoMostrar }}</small>
+                <small class="archivo-actual-badge"><i class="bi bi-file-earmark-pdf"></i> Archivo actual: {{ nombreArchivoMostrar }}</small>
                 @if (editandoId) {
                   <button type="button" class="btn-icon btn-small" (click)="previsualizarPlantillaPdf(editandoId)" title="Ver PDF actual"><i class="bi bi-eye"></i> Ver</button>
                 }
