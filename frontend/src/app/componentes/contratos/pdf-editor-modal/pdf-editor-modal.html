@@ -109,7 +109,7 @@
                 @if (guardandoCampos) {
                   <span>Guardando...</span>
                 } @else {
-                  <span>✓ Guardar campos</span>
+                  <span><i class="bi bi-check-circle"></i> Guardar campos</span>
                 }
               </button>
             }
@@ -128,10 +128,10 @@
                 (click)="fileInput.click()"
                 [disabled]="loading || saving || guardandoCampos"
               >
-                📤 Subir PDF editado
+<i class="bi bi-upload"></i> Subir PDF editado
               </button>
               @if (archivoEditado) {
-                <span class="file-selected">✓ {{ archivoEditado.name }}</span>
+                <span class="file-selected"><i class="bi bi-check-circle"></i> {{ archivoEditado.name }}</span>
               }
             </div>
           </div>
@@ -151,7 +151,7 @@
               @if (saving) {
                 <span>Guardando...</span>
               } @else {
-                <span>✓ Continuar {{ archivoEditado ? 'con PDF editado' : 'sin cambios' }}</span>
+                <span><i class="bi bi-check-circle"></i> Continuar {{ archivoEditado ? 'con PDF editado' : 'sin cambios' }}</span>
               }
             </button>
           </div>

@@ -134,13 +134,13 @@
   letter-spacing: 0.04em;
 }
 
-.tipo-bug        { background: #fef2f2; color: #dc2626; }
-.tipo-mejora     { background: #eff6ff; color: #2563eb; }
-.tipo-sugerencia { background: #f0fdf4; color: #16a34a; }
+.tipo-bug        { background: var(--danger-light); color: var(--danger-dark); }
+.tipo-mejora     { background: var(--info-light); color: var(--info-dark); }
+.tipo-sugerencia { background: var(--success-light); color: var(--success-dark); }
 
-.prioridad-alta  { background: #fef2f2; color: #dc2626; }
-.prioridad-media { background: #fffbeb; color: #d97706; }
-.prioridad-baja  { background: #f0fdf4; color: #16a34a; }
+.prioridad-alta  { background: var(--danger-light); color: var(--danger-dark); }
+.prioridad-media { background: var(--warning-light); color: var(--warning-dark); }
+.prioridad-baja  { background: var(--success-light); color: var(--success-dark); }
 
 .estado-badge {
   display: inline-flex;
@@ -153,11 +153,11 @@
   white-space: nowrap;
 }
 
-.estado-nueva      { background: #eff6ff; color: #2563eb; }
-.estado-revision   { background: #fffbeb; color: #d97706; }
-.estado-desarrollo { background: #faf5ff; color: #7c3aed; }
-.estado-pendiente  { background: #fff7ed; color: #ea580c; }
-.estado-produccion { background: #f0fdf4; color: #16a34a; }
+.estado-nueva      { background: var(--info-light); color: var(--info-dark); }
+.estado-revision   { background: var(--warning-light); color: var(--warning-dark); }
+.estado-desarrollo { background: var(--purple-light); color: var(--purple-dark); }
+.estado-pendiente  { background: var(--orange-light); color: var(--orange-dark); }
+.estado-produccion { background: var(--success-light); color: var(--success-dark); }
 .estado-descartada { background: #f9fafb; color: #6b7280; }
 
 /* ========== STATES ========== */

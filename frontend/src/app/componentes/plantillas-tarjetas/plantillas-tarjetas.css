@@ -11,6 +11,25 @@
   margin-bottom: var(--spacing-xl);
 }
 
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-back:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
 .header h2 {
   margin: 0;
   color: var(--text-primary);
@@ -152,13 +171,13 @@
 }
 
 .badge-success {
-  background: #d4edda;
-  color: #155724;
+  background: var(--success-light);
+  color: var(--success-dark);
 }
 
 .badge-danger {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--danger-light);
+  color: var(--danger-dark);
 }
 
 .btn {

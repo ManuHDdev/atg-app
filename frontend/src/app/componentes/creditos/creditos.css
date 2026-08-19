@@ -77,8 +77,8 @@
 }
 
 .badge-scheduled {
-  background-color: #ede9fe;
-  color: #6d28d9;
+  background-color: var(--purple-light);
+  color: var(--purple-dark);
   margin-left: 0.5rem;
 }
 

@@ -44,11 +44,11 @@ export class NotificationComponent implements OnInit, OnDestroy {
 
   getIconClass(type: string): string {
     switch (type) {
-      case 'success': return '✓';
-      case 'error': return '✕';
-      case 'warning': return '⚠';
-      case 'info': return 'ℹ';
-      default: return 'ℹ';
+      case 'success': return 'bi-check-circle-fill';
+      case 'error': return 'bi-x-circle-fill';
+      case 'warning': return 'bi-exclamation-triangle-fill';
+      case 'info': return 'bi-info-circle-fill';
+      default: return 'bi-info-circle-fill';
     }
   }
 }

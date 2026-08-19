@@ -11,8 +11,8 @@
       [class.log-success]="isSuccess(line)"
       [class.log-error]="isError(line)"
     >
-      <span class="log-icon" *ngIf="isSuccess(line)">✓</span>
-      <span class="log-icon" *ngIf="isError(line)">✗</span>
+      <span class="log-icon" *ngIf="isSuccess(line)"><i class="bi bi-check-circle"></i></span>
+      <span class="log-icon" *ngIf="isError(line)"><i class="bi bi-x-circle"></i></span>
       <span class="log-text">{{ line }}</span>
     </div>
   </div>

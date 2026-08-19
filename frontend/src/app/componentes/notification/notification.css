@@ -14,7 +14,7 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: slideIn 0.3s ease-out;
   cursor: pointer;
@@ -33,22 +33,22 @@
 }
 
 .notification-success {
-  background: #10b981;
+  background: var(--success-color);
   color: white;
 }
 
 .notification-error {
-  background: #ef4444;
+  background: var(--danger-color);
   color: white;
 }
 
 .notification-warning {
-  background: #f59e0b;
+  background: var(--warning-color);
   color: white;
 }
 
 .notification-info {
-  background: #3b82f6;
+  background: var(--info-color);
   color: white;
 }
 

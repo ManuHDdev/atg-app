@@ -28,7 +28,7 @@
     <div class="form-container">
       <div class="form-header">
         <h2>{{ editandoId ? 'Editar Tipo de Solicitud' : 'Nuevo Tipo de Solicitud' }}</h2>
-        <button class="btn-icon" (click)="cancelarFormulario()">✕</button>
+        <button class="btn-icon" (click)="cancelarFormulario()"><i class="bi bi-x"></i></button>
       </div>
 
       <form [formGroup]="tipoSolicitudForm" (ngSubmit)="guardarTipoSolicitud()">
@@ -80,10 +80,10 @@
               (change)="onArchivoSeleccionado($event)"
             />
             @if (nombreArchivoMostrar) {
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
+              <div class="inline-row mt-xs">
                 <small class="archivo-actual-badge">📄 Archivo actual: {{ nombreArchivoMostrar }}</small>
                 @if (editandoId) {
-                  <button type="button" class="btn-icon btn-small" (click)="previsualizarPlantillaPdf(editandoId)" title="Ver PDF actual">👁️ Ver</button>
+                  <button type="button" class="btn-icon btn-small" (click)="previsualizarPlantillaPdf(editandoId)" title="Ver PDF actual"><i class="bi bi-eye"></i> Ver</button>
                 }
               </div>
             }
@@ -127,19 +127,19 @@
               <td><code>{{ tipoSolicitud.codigo }}</code></td>
               <td>
                 @if (tipoSolicitud.nombreArchivoPlantilla) {
-                  <div style="display: flex; gap: 0.5rem; align-items: center;">
+                  <div class="inline-row">
                     <span class="badge-success">{{ tipoSolicitud.nombreArchivoPlantilla }}</span>
                     <button
                       class="btn-icon btn-small"
                       (click)="previsualizarPlantillaPdf(tipoSolicitud.id!)"
                       title="Previsualizar plantilla">
-                      👁️
+                      <i class="bi bi-eye"></i>
                     </button>
                     <button
                       class="btn-icon-danger btn-small"
                       (click)="eliminarPlantillaPdf(tipoSolicitud.id!)"
                       title="Eliminar plantilla">
-                      🗑️
+                      <i class="bi bi-trash"></i>
                     </button>
                   </div>
                 } @else {
@@ -168,7 +168,7 @@
     <div class="modal-pdf" (click)="$event.stopPropagation()">
       <div class="modal-pdf-header">
         <span>Previsualización de plantilla PDF</span>
-        <button class="btn-icon" (click)="cerrarModalPdf()">✕</button>
+        <button class="btn-icon" (click)="cerrarModalPdf()"><i class="bi bi-x"></i></button>
       </div>
       <iframe [src]="urlPdfModal" class="modal-pdf-iframe" title="Plantilla PDF"></iframe>
     </div>

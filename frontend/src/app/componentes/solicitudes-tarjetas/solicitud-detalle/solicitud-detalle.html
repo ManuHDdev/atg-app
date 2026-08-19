@@ -106,7 +106,7 @@
           (click)="aprobar()"
           [disabled]="loading"
         >
-          ✓ Aprobar Solicitud
+          <i class="bi bi-check"></i> Aprobar Solicitud
         </button>
 
         <button
@@ -115,7 +115,7 @@
           (click)="rechazar()"
           [disabled]="loading"
         >
-          ✗ Rechazar Solicitud
+          <i class="bi bi-x"></i> Rechazar Solicitud
         </button>
 
         <button
@@ -124,7 +124,7 @@
           (click)="abrirModalLlegada()"
           [disabled]="loading"
         >
-          📦 Registrar Llegada de Tarjeta
+          <i class="bi bi-box-seam"></i> Registrar Llegada de Tarjeta
         </button>
 
         <button
@@ -133,7 +133,7 @@
           (click)="abrirModalEntregada()"
           [disabled]="loading"
         >
-          ✓✓ Marcar como Entregada
+          <i class="bi bi-check-all"></i> Marcar como Entregada
         </button>
 
         <button
@@ -142,7 +142,7 @@
           (click)="finalizar()"
           [disabled]="loading"
         >
-          ✓✓✓ Finalizar Proceso
+          <i class="bi bi-check-all"></i> Finalizar Proceso
         </button>
       </div>
     </div>
@@ -154,7 +154,7 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Rechazar Solicitud</h3>
-      <button class="modal-close" (click)="cerrarModal()">×</button>
+      <button class="modal-close" (click)="cerrarModal()"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="form-group">
       <label for="motivoRechazo">Motivo del rechazo *</label>
@@ -180,7 +180,7 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Registrar Llegada de Tarjeta</h3>
-      <button class="modal-close" (click)="cerrarModal()">×</button>
+      <button class="modal-close" (click)="cerrarModal()"><i class="bi bi-x-lg"></i></button>
     </div>
     <form [formGroup]="llegadaForm" (ngSubmit)="registrarLlegada()">
       <div class="form-group">
@@ -228,7 +228,7 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Marcar como Entregada</h3>
-      <button class="modal-close" (click)="cerrarModal()">×</button>
+      <button class="modal-close" (click)="cerrarModal()"><i class="bi bi-x-lg"></i></button>
     </div>
     <form [formGroup]="entregadaForm" (ngSubmit)="marcarEntregada()">
       <div class="form-group">
@@ -256,7 +256,7 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Aprobar Baja de Tarjeta</h3>
-      <button class="modal-close" (click)="cerrarModal()">×</button>
+      <button class="modal-close" (click)="cerrarModal()"><i class="bi bi-x-lg"></i></button>
     </div>
     <form [formGroup]="bajaForm" (ngSubmit)="aprobarBaja()">
       <div class="alert alert-info">
@@ -297,7 +297,7 @@
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h3>Aprobar Duplicado de Tarjeta</h3>
-      <button class="modal-close" (click)="cerrarModal()">×</button>
+      <button class="modal-close" (click)="cerrarModal()"><i class="bi bi-x-lg"></i></button>
     </div>
     <form [formGroup]="duplicadoForm" (ngSubmit)="aprobarDuplicado()">
       <div class="alert alert-info">

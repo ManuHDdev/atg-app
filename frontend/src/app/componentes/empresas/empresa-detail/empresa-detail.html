@@ -246,7 +246,7 @@
                           <span class="badge">{{ solicitud.estado }}</span>
                         </td>
                         <td>
-                          <a class="btn-icon" [routerLink]="['/contratos', solicitud.id]" title="Ver detalle">
+                          <a class="btn-icon-plain" [routerLink]="['/contratos', solicitud.id]" title="Ver detalle">
                             👁️
                           </a>
                         </td>
@@ -308,7 +308,7 @@
                           </span>
                         </td>
                         <td>
-                          <a class="btn-icon" [routerLink]="['/tarjetas', tarjeta.id]" title="Ver detalle">
+                          <a class="btn-icon-plain" [routerLink]="['/tarjetas', tarjeta.id]" title="Ver detalle">
                             👁️
                           </a>
                         </td>
@@ -347,7 +347,7 @@
                         </td>
                         <td>{{ credito.createdAt ? (credito.createdAt | date:'dd/MM/yyyy') : '-' }}</td>
                         <td>
-                          <a class="btn-icon" [routerLink]="['/creditos', credito.id]" title="Ver detalle">
+                          <a class="btn-icon-plain" [routerLink]="['/creditos', credito.id]" title="Ver detalle">
                             👁️
                           </a>
                         </td>
@@ -422,7 +422,7 @@
                           {{ contrato.fechaVigenciaDesde ? (contrato.fechaVigenciaDesde | date:'dd/MM/yyyy') : '-' }}
                         </td>
                         <td>
-                          <button class="btn-icon" (click)="verDetalleContrato(contrato.id!)" title="Ver detalle">
+                          <button class="btn-icon-plain" (click)="verDetalleContrato(contrato.id!)" title="Ver detalle">
                             👁️
                           </button>
                         </td>
@@ -457,7 +457,7 @@
                         <td>{{ tarjeta.matricula || '-' }}</td>
                         <td>{{ tarjeta.cantidad }} tarjeta(s)</td>
                         <td>
-                          <a class="btn-icon" [routerLink]="['/tarjetas', tarjeta.id]" title="Ver detalle">
+                          <a class="btn-icon-plain" [routerLink]="['/tarjetas', tarjeta.id]" title="Ver detalle">
                             👁️
                           </a>
                         </td>
@@ -492,7 +492,7 @@
                         <td>{{ credito.monto | currency:'EUR' }}</td>
                         <td>{{ credito.fechaRespuestaPetrolera ? (credito.fechaRespuestaPetrolera | date:'dd/MM/yyyy') : '-' }}</td>
                         <td>
-                          <a class="btn-icon" [routerLink]="['/creditos', credito.id]" title="Ver detalle">
+                          <a class="btn-icon-plain" [routerLink]="['/creditos', credito.id]" title="Ver detalle">
                             👁️
                           </a>
                         </td>

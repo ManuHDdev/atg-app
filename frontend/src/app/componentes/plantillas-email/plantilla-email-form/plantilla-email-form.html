@@ -107,7 +107,7 @@
             Cancelar
           </button>
           <button type="button" class="btn-secondary" (click)="generarPreview()">
-            👁️ Vista Previa
+            <i class="bi bi-eye"></i> Vista Previa
           </button>
           <button type="submit" class="btn-primary" [disabled]="loading">
             {{ isEditMode ? 'Actualizar' : 'Crear' }} Plantilla
@@ -140,7 +140,7 @@
         </div>
 
         <div class="panel-help">
-          <h4>💡 Cómo usar las variables</h4>
+          <h4><i class="bi bi-lightbulb"></i> Cómo usar las variables</h4>
           <p>
             Las variables se reemplazan automáticamente con los datos reales cuando se envía el email.
           </p>
@@ -161,7 +161,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Vista Previa del Email</h5>
-          <button type="button" class="btn-close" (click)="cerrarPreview()">✕</button>
+          <button type="button" class="btn-close" (click)="cerrarPreview()"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="modal-body">
           <div class="preview-container">

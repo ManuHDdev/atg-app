@@ -39,10 +39,10 @@
   border-left: 4px solid;
 }
 
-.stat-warning { border-left-color: #ffc107; }
-.stat-success { border-left-color: #28a745; }
-.stat-info { border-left-color: #17a2b8; }
-.stat-danger { border-left-color: #dc3545; }
+.stat-warning { border-left-color: var(--warning-color); }
+.stat-success { border-left-color: var(--success-color); }
+.stat-info { border-left-color: var(--info-color); }
+.stat-danger { border-left-color: var(--danger-color); }
 
 .stat-icon {
   font-size: 2.5rem;
@@ -96,10 +96,10 @@
   border: 1px solid transparent;
 }
 
-.stat-pill.stat-warning { background: #fff3cd; color: #856404; border-color: #ffc107; }
-.stat-pill.stat-success { background: #d4edda; color: #155724; border-color: #28a745; }
-.stat-pill.stat-info    { background: #d1ecf1; color: #0c5460; border-color: #17a2b8; }
-.stat-pill.stat-danger  { background: #f8d7da; color: #721c24; border-color: #dc3545; }
+.stat-pill.stat-warning { background: var(--warning-light); color: var(--warning-dark); border-color: var(--warning-color); }
+.stat-pill.stat-success { background: var(--success-light); color: var(--success-dark); border-color: var(--success-color); }
+.stat-pill.stat-info    { background: var(--info-light); color: var(--info-dark); border-color: var(--info-color); }
+.stat-pill.stat-danger  { background: var(--danger-light); color: var(--danger-dark); border-color: var(--danger-color); }
 
 .new-actions {
   display: flex;
@@ -114,11 +114,11 @@
   font-weight: 500;
 }
 
-.btn-alta     { background: #d4edda; color: #155724; border: 1px solid #28a745; }
+.btn-alta     { background: var(--success-light); color: var(--success-dark); border: 1px solid var(--success-color); }
 .btn-alta:hover { background: #c3e6cb; }
-.btn-baja     { background: #f8d7da; color: #721c24; border: 1px solid #dc3545; }
+.btn-baja     { background: var(--danger-light); color: var(--danger-dark); border: 1px solid var(--danger-color); }
 .btn-baja:hover { background: #f5c6cb; }
-.btn-duplicado { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+.btn-duplicado { background: var(--warning-light); color: var(--warning-dark); border: 1px solid var(--warning-color); }
 .btn-duplicado:hover { background: #ffeaa7; }
 
 .recent-section {
@@ -174,28 +174,28 @@
 }
 
 .badge-success {
-  background: #d4edda;
-  color: #155724;
+  background: var(--success-light);
+  color: var(--success-dark);
 }
 
 .badge-warning {
-  background: #fff3cd;
-  color: #856404;
+  background: var(--warning-light);
+  color: var(--warning-dark);
 }
 
 .badge-danger {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--danger-light);
+  color: var(--danger-dark);
 }
 
 .badge-info {
-  background: #d1ecf1;
-  color: #0c5460;
+  background: var(--info-light);
+  color: var(--info-dark);
 }
 
 .badge-primary {
-  background: #cce5ff;
-  color: #004085;
+  background: var(--primary-light);
+  color: var(--primary-dark);
 }
 
 .btn {
@@ -205,20 +205,6 @@
   cursor: pointer;
   font-weight: 500;
   transition: all var(--transition-fast);
-}
-
-.btn-primary {
-  background: var(--primary-color);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--primary-hover);
-}
-
-.btn-secondary {
-  background: var(--secondary-color);
-  color: white;
 }
 
 .btn-sm {
@@ -431,21 +417,21 @@ textarea.form-input {
 
 /* ========== Extra buttons ========== */
 .btn-success {
-  background: #28a745;
+  background: var(--success-color);
   color: white;
 }
 
 .btn-success:hover {
-  background: #218838;
+  background: var(--success-dark);
 }
 
 .btn-danger {
-  background: #dc3545;
+  background: var(--danger-color);
   color: white;
 }
 
 .btn-danger:hover {
-  background: #c82333;
+  background: var(--danger-dark);
 }
 
 .btn:disabled {
