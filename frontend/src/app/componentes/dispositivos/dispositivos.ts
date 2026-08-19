@@ -5,6 +5,8 @@ import { DispositivoService } from '../../services/dispositivo.service';
 import { SocioService } from '../../services/socio.service';
 import { EmpresaService } from '../../services/empresa.service';
 import { PetroleraService } from '../../services/petrolera.service';
+import { NotificationService } from '../../services/notification.service';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 import {
   Dispositivo,
   SolicitudDispositivo,
@@ -16,11 +18,12 @@ import { Socio } from '../../models/socio.model';
 import { Empresa } from '../../models/empresa.model';
 import { Petrolera } from '../../models/petrolera.model';
 import { EmailLogs } from '../solicitudes-tarjetas/email-logs/email-logs';
+import { SocioAutocomplete } from '../shared/socio-autocomplete/socio-autocomplete';
 
 @Component({
   selector: 'app-dispositivos',
   standalone: true,
-  imports: [CommonModule, FormsModule, EmailLogs],
+  imports: [CommonModule, FormsModule, EmailLogs, SocioAutocomplete],
   templateUrl: './dispositivos.html',
   styleUrl: './dispositivos.css',
 })
@@ -53,11 +56,15 @@ export class Dispositivos implements OnInit {
     { value: TipoSolicitudDispositivo.CAMBIO_MATRICULA, label: 'Cambio de Matrícula' }
   ];
 
-  // Autocomplete Socio
-  busquedaSocio: string = '';
-  sociosFiltrados: Socio[] = [];
-  mostrarListaSocios: boolean = false;
+  // Autocomplete Socio (app-socio-autocomplete)
   socioSeleccionado: Socio | null = null;
+
+  // Estado de carga del listado
+  loading = false;
+  error: string | null = null;
+
+  // Validación del formulario
+  intentoGuardar = false;
 
   // Modal de respuesta petrolera
   mostrarModalRespuesta = false;
@@ -69,7 +76,9 @@ export class Dispositivos implements OnInit {
     private dispositivoService: DispositivoService,
     private socioService: SocioService,
     private empresaService: EmpresaService,
-    private petroleraService: PetroleraService
+    private petroleraService: PetroleraService,
+    private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -83,13 +92,17 @@ export class Dispositivos implements OnInit {
   }
 
   cargarSolicitudes(): void {
+    this.loading = true;
+    this.error = null;
     this.dispositivoService.listarSolicitudes().subscribe({
       next: (data) => {
         this.solicitudes = data;
+        this.loading = false;
       },
       error: (error) => {
         console.error('Error al cargar solicitudes:', error);
-        alert('Error al cargar las solicitudes de dispositivo');
+        this.error = this.errorHandler.getMensaje(error, 'solicitudes');
+        this.loading = false;
       }
     });
   }
@@ -146,54 +159,31 @@ export class Dispositivos implements OnInit {
 
   abrirFormulario(): void {
     this.mostrarFormulario = true;
+    this.intentoGuardar = false;
     this.nuevaSolicitud = {
       socioId: 0,
       petroleraId: 0,
       tipoSolicitud: TipoSolicitudDispositivo.ALTA_DISPOSITIVO
     };
+    this.socioSeleccionado = null;
+    this.empresas = [];
     this.dispositivosSocio = [];
-    this.limpiarBusquedaSocio();
   }
 
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
+    this.intentoGuardar = false;
     this.solicitudSeleccionada = undefined;
-    this.dispositivosSocio = [];
-    this.limpiarBusquedaSocio();
-  }
-
-  // Autocomplete socio
-  buscarSocios(): void {
-    const termino = this.busquedaSocio.toLowerCase().trim();
-    if (!termino) {
-      this.sociosFiltrados = [];
-      this.mostrarListaSocios = false;
-      return;
-    }
-    this.sociosFiltrados = this.socios.filter(socio =>
-      socio.nombre.toLowerCase().includes(termino) ||
-      socio.numeroSocio.toLowerCase().includes(termino) ||
-      (socio.email && socio.email.toLowerCase().includes(termino))
-    ).slice(0, 10);
-    this.mostrarListaSocios = this.sociosFiltrados.length > 0;
-  }
-
-  seleccionarSocio(socio: Socio): void {
-    this.socioSeleccionado = socio;
-    this.busquedaSocio = `${socio.nombre} (${socio.numeroSocio})`;
-    this.nuevaSolicitud.socioId = Number(socio.id);
-    this.mostrarListaSocios = false;
-    this.onSocioChange();
-  }
-
-  limpiarBusquedaSocio(): void {
-    this.busquedaSocio = '';
     this.socioSeleccionado = null;
-    this.sociosFiltrados = [];
-    this.mostrarListaSocios = false;
     this.nuevaSolicitud.socioId = 0;
     this.empresas = [];
     this.dispositivosSocio = [];
+  }
+
+  seleccionarSocioDesdeAutocomplete(socio: Socio): void {
+    this.socioSeleccionado = socio;
+    this.nuevaSolicitud.socioId = Number(socio.id);
+    this.onSocioChange();
   }
 
   onTipoSolicitudChange(): void {
@@ -205,8 +195,10 @@ export class Dispositivos implements OnInit {
   }
 
   guardarSolicitud(): void {
+    this.intentoGuardar = true;
+
     if (!this.nuevaSolicitud.socioId || !this.nuevaSolicitud.petroleraId) {
-      alert('Por favor complete todos los campos obligatorios');
+      this.notificationService.error('Por favor complete todos los campos obligatorios');
       return;
     }
 
@@ -215,49 +207,49 @@ export class Dispositivos implements OnInit {
     // Validaciones por tipo
     if (tipo === TipoSolicitudDispositivo.ALTA_DISPOSITIVO) {
       if (!this.nuevaSolicitud.matricula || !this.nuevaSolicitud.matricula.trim()) {
-        alert('La matrícula es obligatoria para Alta de Dispositivo');
+        this.notificationService.error('La matrícula es obligatoria para Alta de Dispositivo');
         return;
       }
     }
 
     if (tipo === TipoSolicitudDispositivo.SOLICITUD_CREDITO) {
       if (!this.nuevaSolicitud.dispositivoId) {
-        alert('Debe seleccionar un dispositivo activo');
+        this.notificationService.error('Debe seleccionar un dispositivo activo');
         return;
       }
       if (!this.nuevaSolicitud.monto || this.nuevaSolicitud.monto <= 0) {
-        alert('El monto es obligatorio y debe ser mayor a 0');
+        this.notificationService.error('El monto es obligatorio y debe ser mayor a 0');
         return;
       }
     }
 
     if (tipo === TipoSolicitudDispositivo.BAJA_DISPOSITIVO) {
       if (!this.nuevaSolicitud.dispositivoId) {
-        alert('Debe seleccionar un dispositivo activo');
+        this.notificationService.error('Debe seleccionar un dispositivo activo');
         return;
       }
     }
 
     if (tipo === TipoSolicitudDispositivo.CAMBIO_MATRICULA) {
       if (!this.nuevaSolicitud.dispositivoId) {
-        alert('Debe seleccionar un dispositivo activo');
+        this.notificationService.error('Debe seleccionar un dispositivo activo');
         return;
       }
       if (!this.nuevaSolicitud.matriculaDestino || !this.nuevaSolicitud.matriculaDestino.trim()) {
-        alert('La matrícula destino es obligatoria para Cambio de Matrícula');
+        this.notificationService.error('La matrícula destino es obligatoria para Cambio de Matrícula');
         return;
       }
     }
 
     this.dispositivoService.crearSolicitud(this.nuevaSolicitud).subscribe({
       next: () => {
-        alert('Solicitud creada exitosamente');
+        this.notificationService.success('Solicitud creada exitosamente');
         this.cerrarFormulario();
         this.cargarSolicitudes();
       },
       error: (error) => {
         console.error('Error al crear solicitud:', error);
-        alert(error.error?.message || 'Error al crear la solicitud');
+        this.notificationService.error(this.errorHandler.getMensaje(error, 'solicitud'));
       }
     });
   }
@@ -270,12 +262,12 @@ export class Dispositivos implements OnInit {
     if (confirm('¿Está seguro de enviar esta solicitud a la petrolera?')) {
       this.dispositivoService.enviarAPetrolera(solicitud.id!).subscribe({
         next: () => {
-          alert('Solicitud enviada a la petrolera exitosamente');
+          this.notificationService.success('Solicitud enviada a la petrolera exitosamente');
           this.cargarSolicitudes();
         },
         error: (error) => {
           console.error('Error al enviar solicitud:', error);
-          alert('Error al enviar la solicitud');
+          this.notificationService.error(this.errorHandler.getMensaje(error, 'solicitud'));
         }
       });
     }
@@ -296,20 +288,21 @@ export class Dispositivos implements OnInit {
 
   confirmarRespuesta(): void {
     if (!this.solicitudRespondiendo) return;
+    if (!confirm('¿Está seguro de ' + (this.aprobandoRespuesta ? 'aprobar' : 'denegar') + ' esta solicitud?')) return;
     this.dispositivoService.responderPetrolera(
       this.solicitudRespondiendo.id!,
       this.aprobandoRespuesta,
       this.comentarioRespuesta
     ).subscribe({
       next: () => {
-        alert(`Solicitud ${this.aprobandoRespuesta ? 'aprobada' : 'denegada'} exitosamente`);
+        this.notificationService.success(`Solicitud ${this.aprobandoRespuesta ? 'aprobada' : 'denegada'} exitosamente`);
         this.cerrarModalRespuesta();
         this.solicitudSeleccionada = undefined;
         this.cargarSolicitudes();
       },
       error: (error) => {
         console.error('Error al responder solicitud:', error);
-        alert('Error al responder la solicitud');
+        this.notificationService.error(this.errorHandler.getMensaje(error, 'solicitud'));
       }
     });
   }

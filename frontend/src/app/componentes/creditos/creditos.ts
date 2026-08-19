@@ -5,16 +5,19 @@ import { CreditoService } from '../../services/credito.service';
 import { SocioService } from '../../services/socio.service';
 import { EmpresaService } from '../../services/empresa.service';
 import { PetroleraService } from '../../services/petrolera.service';
+import { NotificationService } from '../../services/notification.service';
+import { ErrorHandlerService } from '../../services/error-handler.service';
 import { Credito, CrearCreditoDTO, TipoCredito, EstadoCredito } from '../../models/credito.model';
 import { Socio } from '../../models/socio.model';
 import { Empresa } from '../../models/empresa.model';
 import { Petrolera } from '../../models/petrolera.model';
 import { EmailLogs } from '../solicitudes-tarjetas/email-logs/email-logs';
+import { SocioAutocomplete } from '../shared/socio-autocomplete/socio-autocomplete';
 
 @Component({
   selector: 'app-creditos',
   standalone: true,
-  imports: [CommonModule, FormsModule, EmailLogs],
+  imports: [CommonModule, FormsModule, EmailLogs, SocioAutocomplete],
   templateUrl: './creditos.html',
   styleUrl: './creditos.css',
 })
@@ -45,11 +48,15 @@ export class Creditos implements OnInit {
     { value: TipoCredito.DEVOLUCION_AVAL, label: 'Devolución de Aval' }
   ];
 
-  // Autocomplete Socio
-  busquedaSocio: string = '';
-  sociosFiltrados: Socio[] = [];
-  mostrarListaSocios: boolean = false;
+  // Autocomplete Socio (app-socio-autocomplete)
   socioSeleccionado: Socio | null = null;
+
+  // Estado de carga del listado
+  loading = false;
+  error: string | null = null;
+
+  // Validación del formulario
+  intentoGuardar = false;
 
   // Modal de respuesta petrolera
   mostrarModalRespuesta = false;
@@ -61,7 +68,9 @@ export class Creditos implements OnInit {
     private creditoService: CreditoService,
     private socioService: SocioService,
     private empresaService: EmpresaService,
-    private petroleraService: PetroleraService
+    private petroleraService: PetroleraService,
+    private notificationService: NotificationService,
+    private errorHandler: ErrorHandlerService
   ) {}
 
   ngOnInit(): void {
@@ -75,13 +84,17 @@ export class Creditos implements OnInit {
   }
 
   cargarCreditos(): void {
+    this.loading = true;
+    this.error = null;
     this.creditoService.listarTodos().subscribe({
       next: (data) => {
         this.creditos = data;
+        this.loading = false;
       },
       error: (error) => {
         console.error('Error al cargar créditos:', error);
-        alert('Error al cargar los créditos');
+        this.error = this.errorHandler.getMensaje(error, 'créditos');
+        this.loading = false;
       }
     });
   }
@@ -124,72 +137,49 @@ export class Creditos implements OnInit {
   abrirFormulario(): void {
     this.mostrarFormulario = true;
     this.modoEdicion = false;
+    this.intentoGuardar = false;
     this.nuevoCredito = {
       socioId: 0,
       petroleraId: 0,
       tipoCredito: TipoCredito.SOLICITUD_CREDITO
     };
-    this.limpiarBusquedaSocio();
+    this.socioSeleccionado = null;
+    this.empresas = [];
   }
 
   cerrarFormulario(): void {
     this.mostrarFormulario = false;
     this.modoEdicion = false;
+    this.intentoGuardar = false;
     this.creditoSeleccionado = undefined;
-    this.limpiarBusquedaSocio();
-  }
-
-  // Métodos para autocomplete de socio
-  buscarSocios(): void {
-    const termino = this.busquedaSocio.toLowerCase().trim();
-
-    if (!termino) {
-      this.sociosFiltrados = [];
-      this.mostrarListaSocios = false;
-      return;
-    }
-
-    this.sociosFiltrados = this.socios.filter(socio =>
-      socio.nombre.toLowerCase().includes(termino) ||
-      socio.numeroSocio.toLowerCase().includes(termino) ||
-      (socio.email && socio.email.toLowerCase().includes(termino))
-    ).slice(0, 10); // Limitar a 10 resultados
-
-    this.mostrarListaSocios = this.sociosFiltrados.length > 0;
-  }
-
-  seleccionarSocio(socio: Socio): void {
-    this.socioSeleccionado = socio;
-    this.busquedaSocio = `${socio.nombre} (${socio.numeroSocio})`;
-    this.nuevoCredito.socioId = Number(socio.id);
-    this.mostrarListaSocios = false;
-    this.onSocioChange();
-  }
-
-  limpiarBusquedaSocio(): void {
-    this.busquedaSocio = '';
     this.socioSeleccionado = null;
-    this.sociosFiltrados = [];
-    this.mostrarListaSocios = false;
     this.nuevoCredito.socioId = 0;
     this.empresas = [];
   }
 
+  seleccionarSocioDesdeAutocomplete(socio: Socio): void {
+    this.socioSeleccionado = socio;
+    this.nuevoCredito.socioId = Number(socio.id);
+    this.onSocioChange();
+  }
+
   guardarCredito(): void {
+    this.intentoGuardar = true;
+
     if (!this.nuevoCredito.socioId || !this.nuevoCredito.petroleraId) {
-      alert('Por favor complete todos los campos obligatorios');
+      this.notificationService.error('Por favor complete todos los campos obligatorios');
       return;
     }
 
     this.creditoService.crear(this.nuevoCredito).subscribe({
       next: (credito) => {
-        alert('Crédito creado exitosamente');
+        this.notificationService.success('Crédito creado exitosamente');
         this.cerrarFormulario();
         this.cargarCreditos();
       },
       error: (error) => {
         console.error('Error al crear crédito:', error);
-        alert('Error al crear el crédito');
+        this.notificationService.error(this.errorHandler.getMensaje(error, 'crédito'));
       }
     });
   }
@@ -202,12 +192,12 @@ export class Creditos implements OnInit {
     if (confirm('¿Está seguro de enviar este crédito a la petrolera?')) {
       this.creditoService.enviarAPetrolera(credito.id!).subscribe({
         next: () => {
-          alert('Crédito enviado a la petrolera exitosamente');
+          this.notificationService.success('Crédito enviado a la petrolera exitosamente');
           this.cargarCreditos();
         },
         error: (error) => {
           console.error('Error al enviar crédito:', error);
-          alert('Error al enviar el crédito');
+          this.notificationService.error(this.errorHandler.getMensaje(error, 'crédito'));
         }
       });
     }
@@ -228,20 +218,21 @@ export class Creditos implements OnInit {
 
   confirmarRespuesta(): void {
     if (!this.creditoRespondiendo) return;
+    if (!confirm('¿Está seguro de ' + (this.aprobandoRespuesta ? 'aprobar' : 'denegar') + ' este crédito?')) return;
     this.creditoService.responderPetrolera(
       this.creditoRespondiendo.id!,
       this.aprobandoRespuesta,
       this.comentarioRespuesta
     ).subscribe({
       next: () => {
-        alert(`Crédito ${this.aprobandoRespuesta ? 'aprobado' : 'denegado'} exitosamente`);
+        this.notificationService.success(`Crédito ${this.aprobandoRespuesta ? 'aprobado' : 'denegado'} exitosamente`);
         this.cerrarModalRespuesta();
         this.creditoSeleccionado = undefined;
         this.cargarCreditos();
       },
       error: (error) => {
         console.error('Error al responder crédito:', error);
-        alert('Error al responder el crédito');
+        this.notificationService.error(this.errorHandler.getMensaje(error, 'crédito'));
       }
     });
   }

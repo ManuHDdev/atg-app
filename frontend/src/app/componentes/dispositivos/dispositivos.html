@@ -1,7 +1,7 @@
 <div class="content-wrapper">
   <header class="page-header">
     <h1 class="page-title">Gestión de Dispositivos</h1>
-    <button class="btn-primary" (click)="abrirFormulario()">+ Nueva Solicitud</button>
+    <button class="btn-primary" (click)="abrirFormulario()"><i class="bi bi-plus-lg"></i> Nueva Solicitud</button>
   </header>
 
   <!-- Filtros -->
@@ -28,72 +28,88 @@
     </div>
   </div>
 
-  <!-- Tabla de solicitudes -->
-  @if (solicitudesFiltradas.length === 0) {
-    <div class="empty-state">
-      <p>No hay solicitudes de dispositivo para mostrar</p>
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Cargando...</span>
     </div>
   }
 
-  @if (solicitudesFiltradas.length > 0) {
-    <div class="table-container">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Tipo</th>
-            <th>Socio</th>
-            <th>Empresa</th>
-            <th>Petrolera</th>
-            <th>Matrícula</th>
-            <th>Monto</th>
-            <th>Estado</th>
-            <th>Fecha Creación</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (solicitud of solicitudesFiltradas; track solicitud.id) {
-            <tr>
-              <td>{{ solicitud.id }}</td>
-              <td>{{ getTipoLabel(solicitud.tipoSolicitud) }}</td>
-              <td>{{ solicitud.socioNombre }}</td>
-              <td>{{ solicitud.empresaNombre || 'N/A' }}</td>
-              <td>{{ solicitud.petroleraNombre }}</td>
-              <td>
-                {{ solicitud.dispositivoMatricula || solicitud.matricula || 'N/A' }}
-                @if (solicitud.tipoSolicitud === TipoSolicitud.CAMBIO_MATRICULA && solicitud.matriculaDestino) {
-                  <span class="matricula-arrow"> → {{ solicitud.matriculaDestino }}</span>
-                }
-              </td>
-              <td>{{ solicitud.tipoSolicitud === TipoSolicitud.SOLICITUD_CREDITO && solicitud.monto ? (solicitud.monto | number:'1.2-2') + ' €' : '-' }}</td>
-              <td>
-                <span class="badge" [ngClass]="getEstadoClass(solicitud.estado)">
-                  {{ getEstadoTexto(solicitud.estado) }}
-                </span>
-                @if (solicitud.programadoEnvio && solicitud.fechaProgramadaEnvio) {
-                  <span class="badge badge-scheduled"
-                        title="Programado: {{ solicitud.fechaProgramadaEnvio | date:'dd/MM/yyyy HH:mm' }}">
-                    Programado
-                  </span>
-                }
-              </td>
-              <td>{{ solicitud.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
-              <td class="actions">
-                <button class="btn-action" (click)="verDetalle(solicitud)" title="Ver detalle">
-                  <i class="bi bi-eye"></i>
-                </button>
-                @if (solicitud.estado === EstadoSolicitud.PENDIENTE) {
-                  <button class="btn-action" (click)="enviarAPetrolera(solicitud)" title="Enviar a petrolera">
-                    <i class="bi bi-send"></i>
-                  </button>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+  @if (error) {
+    <div class="alert-error">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      {{ error }}
     </div>
+  }
+
+  @if (!loading && !error) {
+    <!-- Tabla de solicitudes -->
+    @if (solicitudesFiltradas.length === 0) {
+      <div class="empty-state">
+        <p>No hay solicitudes de dispositivo para mostrar</p>
+      </div>
+    }
+
+    @if (solicitudesFiltradas.length > 0) {
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Socio</th>
+              <th>Empresa</th>
+              <th>Petrolera</th>
+              <th>Matrícula</th>
+              <th>Monto</th>
+              <th>Estado</th>
+              <th>Fecha Creación</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (solicitud of solicitudesFiltradas; track solicitud.id) {
+              <tr>
+                <td>{{ solicitud.id }}</td>
+                <td>{{ getTipoLabel(solicitud.tipoSolicitud) }}</td>
+                <td>{{ solicitud.socioNombre }}</td>
+                <td>{{ solicitud.empresaNombre || 'N/A' }}</td>
+                <td>{{ solicitud.petroleraNombre }}</td>
+                <td>
+                  {{ solicitud.dispositivoMatricula || solicitud.matricula || 'N/A' }}
+                  @if (solicitud.tipoSolicitud === TipoSolicitud.CAMBIO_MATRICULA && solicitud.matriculaDestino) {
+                    <span class="matricula-arrow"> → {{ solicitud.matriculaDestino }}</span>
+                  }
+                </td>
+                <td>{{ solicitud.tipoSolicitud === TipoSolicitud.SOLICITUD_CREDITO && solicitud.monto ? (solicitud.monto | number:'1.2-2') + ' €' : '-' }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getEstadoClass(solicitud.estado)">
+                    {{ getEstadoTexto(solicitud.estado) }}
+                  </span>
+                  @if (solicitud.programadoEnvio && solicitud.fechaProgramadaEnvio) {
+                    <span class="badge badge-scheduled"
+                          title="Programado: {{ solicitud.fechaProgramadaEnvio | date:'dd/MM/yyyy HH:mm' }}">
+                      Programado
+                    </span>
+                  }
+                </td>
+                <td>{{ solicitud.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td class="actions">
+                  <button class="btn-action" (click)="verDetalle(solicitud)" title="Ver detalle">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  @if (solicitud.estado === EstadoSolicitud.PENDIENTE) {
+                    <button class="btn-action" (click)="enviarAPetrolera(solicitud)" title="Enviar a petrolera">
+                      <i class="bi bi-send"></i>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   }
 
   <!-- Modal de formulario -->
@@ -116,35 +132,16 @@
                 </select>
               </div>
 
-              <div class="form-group autocomplete-container">
+              <div class="form-group">
                 <label class="form-label">Socio *</label>
-                <div class="autocomplete-wrapper">
-                  <input
-                    type="text"
-                    class="form-input"
-                    placeholder="Buscar socio por nombre, número..."
-                    [(ngModel)]="busquedaSocio"
-                    (input)="buscarSocios()"
-                    (focus)="buscarSocios()"
-                    name="busquedaSocio"
-                    autocomplete="off">
-                  @if (busquedaSocio) {
-                    <button
-                      type="button"
-                      class="autocomplete-clear"
-                      (click)="limpiarBusquedaSocio()">✕</button>
-                  }
-                  @if (mostrarListaSocios) {
-                    <ul class="autocomplete-list">
-                      @for (socio of sociosFiltrados; track socio.id) {
-                        <li class="autocomplete-item" (click)="seleccionarSocio(socio)">
-                          <div class="autocomplete-item-main">{{ socio.nombre }}</div>
-                          <div class="autocomplete-item-sub">{{ socio.numeroSocio }} - {{ socio.email }}</div>
-                        </li>
-                      }
-                    </ul>
-                  }
-                </div>
+                <app-socio-autocomplete
+                  [placeholder]="'Buscar socio por nombre, número...'"
+                  [required]="true"
+                  (socioSelected)="seleccionarSocioDesdeAutocomplete($event)">
+                </app-socio-autocomplete>
+                @if (intentoGuardar && !nuevaSolicitud.socioId) {
+                  <span class="error-text">Selecciona un socio</span>
+                }
               </div>
 
               <div class="form-group">
@@ -165,6 +162,9 @@
                     <option [value]="petrolera.id">{{ petrolera.nombre }}</option>
                   }
                 </select>
+                @if (intentoGuardar && !nuevaSolicitud.petroleraId) {
+                  <span class="error-text">Selecciona una petrolera</span>
+                }
               </div>
 
               <!-- ALTA: Matrícula -->
@@ -173,6 +173,9 @@
                   <label class="form-label">Matrícula *</label>
                   <input type="text" class="form-input" [(ngModel)]="nuevaSolicitud.matricula"
                          name="matricula" placeholder="Ej: 1234ABC" maxlength="20">
+                  @if (intentoGuardar && (!nuevaSolicitud.matricula || !nuevaSolicitud.matricula.trim())) {
+                    <span class="error-text">La matrícula es obligatoria</span>
+                  }
                 </div>
               }
 
@@ -189,6 +192,9 @@
                   @if (socioSeleccionado && dispositivosSocio.length === 0) {
                     <span class="form-hint form-hint-error">Este socio no tiene dispositivos activos</span>
                   }
+                  @if (intentoGuardar && !nuevaSolicitud.dispositivoId) {
+                    <span class="error-text">Selecciona un dispositivo</span>
+                  }
                 </div>
               }
 
@@ -198,6 +204,9 @@
                   <label class="form-label">Monto (€) *</label>
                   <input type="number" class="form-input" [(ngModel)]="nuevaSolicitud.monto"
                          name="monto" step="0.01" min="0">
+                  @if (intentoGuardar && (!nuevaSolicitud.monto || nuevaSolicitud.monto <= 0)) {
+                    <span class="error-text">El monto debe ser mayor a 0</span>
+                  }
                 </div>
               }
 
@@ -207,6 +216,9 @@
                   <label class="form-label">Matrícula Destino *</label>
                   <input type="text" class="form-input" [(ngModel)]="nuevaSolicitud.matriculaDestino"
                          name="matriculaDestino" placeholder="Nueva matrícula" maxlength="20">
+                  @if (intentoGuardar && (!nuevaSolicitud.matriculaDestino || !nuevaSolicitud.matriculaDestino.trim())) {
+                    <span class="error-text">La matrícula destino es obligatoria</span>
+                  }
                 </div>
               }
 

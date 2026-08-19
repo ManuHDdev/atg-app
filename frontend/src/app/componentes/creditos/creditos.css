@@ -248,73 +248,44 @@
   accent-color: var(--primary-color);
 }
 
-/* ========== Autocomplete ========== */
-.autocomplete-container {
-  position: relative;
+.error-text {
+  color: var(--danger-color);
+  font-size: 0.75rem;
+  margin-top: 0.125rem;
 }
 
-.autocomplete-wrapper {
-  position: relative;
-}
-
-.autocomplete-clear {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  color: var(--text-tertiary);
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: var(--radius-full);
-  transition: all var(--transition-fast);
-  line-height: 1;
-}
-
-.autocomplete-clear:hover {
-  background-color: var(--bg-tertiary);
+/* ========== Loading / Error states ========== */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2.5rem;
   color: var(--text-secondary);
 }
 
-.autocomplete-list {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  max-height: 240px;
-  overflow-y: auto;
-  list-style: none;
-  padding: 0.25rem;
-  z-index: 1100;
-  box-shadow: var(--shadow-lg);
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 
-.autocomplete-item {
-  padding: 0.625rem 0.75rem;
-  cursor: pointer;
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.alert-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
   border-radius: var(--radius-md);
-  transition: background-color 0.1s;
-}
-
-.autocomplete-item:hover {
-  background-color: var(--bg-secondary);
-}
-
-.autocomplete-item-main {
-  font-weight: 600;
-  color: var(--text-primary);
-  font-size: 0.875rem;
-}
-
-.autocomplete-item-sub {
-  font-size: 0.75rem;
-  color: var(--text-tertiary);
-  margin-top: 1px;
+  color: #dc2626;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
 }
 
 /* ========== Detail View ========== */
