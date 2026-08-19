@@ -308,7 +308,7 @@ services:
     networks:
       - backend
       - muebles
-      - boda
+      - silviayjose
       - calendario
 
   # ─── Certbot (renovación SSL) ─────────────────────────────────────────────────
@@ -336,9 +336,9 @@ networks:
   muebles:
     external: true
     name: muebles-horrillo_backend
-  boda:
+  silviayjose:
     external: true
-    name: boda_boda-net
+    name: silviayjose_silviayjose-net
   calendario:
     external: true
     name: calendario-net
