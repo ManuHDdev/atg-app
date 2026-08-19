@@ -1,7 +1,7 @@
 <div class="content-wrapper">
   <header class="page-header">
     <h1 class="page-title">Gestión de Créditos</h1>
-    <button class="btn-primary" (click)="abrirFormulario()">+ Nuevo Crédito</button>
+    <button class="btn-primary" (click)="abrirFormulario()"><i class="bi bi-plus-lg"></i> Nuevo Crédito</button>
   </header>
 
   <!-- Filtros -->
@@ -20,65 +20,81 @@
     </div>
   </div>
 
-  <!-- Tabla de créditos -->
-  @if (creditosFiltrados.length === 0) {
-    <div class="empty-state">
-      <p>No hay créditos para mostrar</p>
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <span>Cargando...</span>
     </div>
   }
 
-  @if (creditosFiltrados.length > 0) {
-    <div class="table-container">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Tipo</th>
-            <th>Socio</th>
-            <th>Empresa</th>
-            <th>Petrolera</th>
-            <th>Monto</th>
-            <th>Estado</th>
-            <th>Fecha Creación</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (credito of creditosFiltrados; track credito.id) {
-            <tr>
-              <td>{{ credito.id }}</td>
-              <td>{{ getTipoCreditoLabel(credito.tipoCredito) }}</td>
-              <td>{{ credito.socioNombre }}</td>
-              <td>{{ credito.empresaNombre || 'N/A' }}</td>
-              <td>{{ credito.petroleraNombre }}</td>
-              <td>{{ credito.tipoCredito === TipoCredito.DEVOLUCION_AVAL ? '-' : (credito.monto ? (credito.monto | number:'1.2-2') + ' €' : 'N/A') }}</td>
-              <td>
-                <span class="badge" [ngClass]="getEstadoClass(credito.estado)">
-                  {{ getEstadoTexto(credito.estado) }}
-                </span>
-                @if (credito.programadoEnvio && credito.fechaProgramadaEnvio) {
-                  <span class="badge badge-scheduled"
-                        title="Programado: {{ credito.fechaProgramadaEnvio | date:'dd/MM/yyyy HH:mm' }}">
-                    Programado
-                  </span>
-                }
-              </td>
-              <td>{{ credito.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
-              <td class="actions">
-                <button class="btn-action btn-action-view" (click)="verDetalle(credito)" title="Ver detalle">
-                  <i class="bi bi-eye"></i>
-                </button>
-                @if (credito.estado === EstadoCredito.PENDIENTE) {
-                  <button class="btn-action btn-action-send" (click)="enviarAPetrolera(credito)" title="Enviar a petrolera">
-                    <i class="bi bi-send"></i>
-                  </button>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
+  @if (error) {
+    <div class="alert-error">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+      {{ error }}
     </div>
+  }
+
+  @if (!loading && !error) {
+    <!-- Tabla de créditos -->
+    @if (creditosFiltrados.length === 0) {
+      <div class="empty-state">
+        <p>No hay créditos para mostrar</p>
+      </div>
+    }
+
+    @if (creditosFiltrados.length > 0) {
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tipo</th>
+              <th>Socio</th>
+              <th>Empresa</th>
+              <th>Petrolera</th>
+              <th>Monto</th>
+              <th>Estado</th>
+              <th>Fecha Creación</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (credito of creditosFiltrados; track credito.id) {
+              <tr>
+                <td>{{ credito.id }}</td>
+                <td>{{ getTipoCreditoLabel(credito.tipoCredito) }}</td>
+                <td>{{ credito.socioNombre }}</td>
+                <td>{{ credito.empresaNombre || 'N/A' }}</td>
+                <td>{{ credito.petroleraNombre }}</td>
+                <td>{{ credito.tipoCredito === TipoCredito.DEVOLUCION_AVAL ? '-' : (credito.monto ? (credito.monto | number:'1.2-2') + ' €' : 'N/A') }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getEstadoClass(credito.estado)">
+                    {{ getEstadoTexto(credito.estado) }}
+                  </span>
+                  @if (credito.programadoEnvio && credito.fechaProgramadaEnvio) {
+                    <span class="badge badge-scheduled"
+                          title="Programado: {{ credito.fechaProgramadaEnvio | date:'dd/MM/yyyy HH:mm' }}">
+                      Programado
+                    </span>
+                  }
+                </td>
+                <td>{{ credito.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td class="actions">
+                  <button class="btn-action btn-action-view" (click)="verDetalle(credito)" title="Ver detalle">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  @if (credito.estado === EstadoCredito.PENDIENTE) {
+                    <button class="btn-action btn-action-send" (click)="enviarAPetrolera(credito)" title="Enviar a petrolera">
+                      <i class="bi bi-send"></i>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   }
 
   <!-- Modal de formulario -->
@@ -101,35 +117,16 @@
                 </select>
               </div>
 
-              <div class="form-group autocomplete-container">
+              <div class="form-group">
                 <label class="form-label">Socio *</label>
-                <div class="autocomplete-wrapper">
-                  <input
-                    type="text"
-                    class="form-input"
-                    placeholder="Buscar socio por nombre, número..."
-                    [(ngModel)]="busquedaSocio"
-                    (input)="buscarSocios()"
-                    (focus)="buscarSocios()"
-                    name="busquedaSocio"
-                    autocomplete="off">
-                  @if (busquedaSocio) {
-                    <button
-                      type="button"
-                      class="autocomplete-clear"
-                      (click)="limpiarBusquedaSocio()">✕</button>
-                  }
-                  @if (mostrarListaSocios) {
-                    <ul class="autocomplete-list">
-                      @for (socio of sociosFiltrados; track socio.id) {
-                        <li class="autocomplete-item" (click)="seleccionarSocio(socio)">
-                          <div class="autocomplete-item-main">{{ socio.nombre }}</div>
-                          <div class="autocomplete-item-sub">{{ socio.numeroSocio }} - {{ socio.email }}</div>
-                        </li>
-                      }
-                    </ul>
-                  }
-                </div>
+                <app-socio-autocomplete
+                  [placeholder]="'Buscar socio por nombre, número...'"
+                  [required]="true"
+                  (socioSelected)="seleccionarSocioDesdeAutocomplete($event)">
+                </app-socio-autocomplete>
+                @if (intentoGuardar && !nuevoCredito.socioId) {
+                  <span class="error-text">Selecciona un socio</span>
+                }
               </div>
 
               <div class="form-group">
@@ -150,6 +147,9 @@
                     <option [value]="petrolera.id">{{ petrolera.nombre }}</option>
                   }
                 </select>
+                @if (intentoGuardar && !nuevoCredito.petroleraId) {
+                  <span class="error-text">Selecciona una petrolera</span>
+                }
               </div>
 
               @if (nuevoCredito.tipoCredito !== TipoCredito.DEVOLUCION_AVAL) {
