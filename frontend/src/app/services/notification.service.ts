@@ -22,7 +22,7 @@ export class NotificationService {
     this.show(message, 'success', duration);
   }
 
-  error(message: string, duration?: number) {
+  error(message: string, duration: number = 6000) {
     this.show(message, 'error', duration);
   }
 
