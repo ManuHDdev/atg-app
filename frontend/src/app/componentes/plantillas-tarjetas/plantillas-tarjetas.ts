@@ -62,14 +62,14 @@ export class PlantillasTarjetas implements OnInit {
 
   getTipoIcon(tipo: string): string {
     const icons: any = {
-      'LLEGADA_MADRID': '📦',
-      'LLEGADA_FUERA': '📮',
-      'ALTA_SOCIO': '✉️',
-      'ALTA_PETROLERA': '📧',
-      'BAJA_SOCIO': '📭',
-      'DUPLICADO_SOCIO': '📄'
+      'LLEGADA_MADRID': 'bi-box-seam',
+      'LLEGADA_FUERA': 'bi-mailbox',
+      'ALTA_SOCIO': 'bi-envelope',
+      'ALTA_PETROLERA': 'bi-envelope-fill',
+      'BAJA_SOCIO': 'bi-envelope-open',
+      'DUPLICADO_SOCIO': 'bi-file-earmark'
     };
-    return icons[tipo] || '📧';
+    return icons[tipo] || 'bi-envelope-fill';
   }
 
   volver(): void {

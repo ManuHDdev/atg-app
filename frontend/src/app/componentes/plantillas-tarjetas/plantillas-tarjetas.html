@@ -4,8 +4,9 @@
       <h2>Gestión de Plantillas de Correo</h2>
       <p class="subtitle">Configura los correos automáticos que se envían en cada tipo de solicitud</p>
     </div>
-    <button class="btn btn-secondary" (click)="volver()">
-      ← Volver al Dashboard
+    <button class="btn-back" (click)="volver()">
+      <i class="bi bi-arrow-left"></i>
+      Volver al Dashboard
     </button>
   </div>
 
@@ -15,7 +16,7 @@
   <div class="plantillas-grid" *ngIf="!loading && !error">
     <div class="plantilla-card" *ngFor="let plantilla of plantillas">
       <div class="plantilla-header">
-        <div class="plantilla-icon">{{ getTipoIcon(plantilla.tipo) }}</div>
+        <div class="plantilla-icon"><i class="bi" [class]="getTipoIcon(plantilla.tipo)"></i></div>
         <div class="plantilla-info">
           <h3>{{ getTipoLabel(plantilla.tipo) }}</h3>
           <span class="badge" [class.badge-success]="plantilla.activa" [class.badge-danger]="!plantilla.activa">
@@ -38,14 +39,14 @@
 
       <div class="plantilla-actions">
         <button class="btn btn-primary" (click)="editarPlantilla(plantilla.id!)">
-          ✏️ Editar Plantilla
+          <i class="bi bi-pencil-fill"></i> Editar Plantilla
         </button>
       </div>
     </div>
   </div>
 
   <div class="info-box">
-    <h4>📝 Variables Disponibles</h4>
+    <h4><i class="bi bi-pencil"></i> Variables Disponibles</h4>
     <p>Puedes usar estas variables en el asunto y cuerpo de los correos. Serán reemplazadas automáticamente:</p>
     <div class="variables-grid">
       <div class="variable-item" *ngFor="let variable of [

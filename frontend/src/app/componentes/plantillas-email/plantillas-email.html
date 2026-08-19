@@ -15,7 +15,7 @@
   @if (!loading && !error) {
     <!-- Información -->
     <div class="info-box">
-      <h3>ℹ️ Sobre las Plantillas de Email</h3>
+      <h3><i class="bi bi-info-circle"></i> Sobre las Plantillas de Email</h3>
       <p>Las plantillas de email se utilizan para enviar notificaciones automáticas a los socios en diferentes momentos del proceso:</p>
       <ul>
         <li><strong>Solicitud/Ampliación de Crédito:</strong> Correo enviado a la petrolera solicitando el crédito</li>
@@ -82,10 +82,10 @@
               <td>{{ plantilla.createdAt ? (plantilla.createdAt | date:'dd/MM/yyyy') : '-' }}</td>
               <td class="actions">
                 <button class="btn-icon" (click)="editarPlantilla(plantilla.id!)" title="Editar">
-                  ✏️
+                  <i class="bi bi-pencil-fill"></i>
                 </button>
                 <button class="btn-icon-danger" (click)="eliminarPlantilla(plantilla.id!)" title="Eliminar">
-                  🗑️
+                  <i class="bi bi-trash-fill"></i>
                 </button>
               </td>
             </tr>

@@ -80,10 +80,9 @@
           id="matricula"
           type="text"
           formControlName="matricula"
-          class="form-control"
+          class="form-control uppercase-input"
           [class.error]="f['matricula'].invalid && f['matricula'].touched"
-          placeholder="Ej: 1234ABC"
-          style="text-transform: uppercase;">
+          placeholder="Ej: 1234ABC">
         @if (f['matricula'].invalid && f['matricula'].touched) {
           <div class="error-text">
             @if (f['matricula'].errors?.['required']) {

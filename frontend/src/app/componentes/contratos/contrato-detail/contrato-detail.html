@@ -86,7 +86,7 @@
           @if (solicitud.estado === EstadoSolicitud.BORRADOR) {
             <span class="badge-warning">Estado Actual</span>
           } @else {
-            <span class="badge-success">✓ Completado</span>
+            <span class="badge-success"><i class="bi bi-check-circle"></i> Completado</span>
           }
         </div>
 
@@ -100,17 +100,17 @@
               <!-- Siempre mostrar la plantilla original -->
               @if (solicitud.rutaPdfEditable) {
                 <div class="pdf-file-info">
-                  <p class="file-label">📋 Plantilla Original:</p>
+                  <p class="file-label"><i class="bi bi-clipboard"></i> Plantilla Original:</p>
                   <p class="file-name">Plantilla editable.pdf</p>
                   <div class="button-group">
                     <button class="btn-primary" (click)="previsualizarPlantillaOriginal()">
-                      👁️ Ver Plantilla
+                      <i class="bi bi-eye"></i> Ver Plantilla
                     </button>
                     <button class="btn-secondary" (click)="descargarPlantillaOriginal()">
-                      📥 Descargar Plantilla
+                      <i class="bi bi-download"></i> Descargar Plantilla
                     </button>
                     <!-- <button class="btn-success" (click)="abrirEditorCampos()">
-                      ✏️ Editar campos
+                      <i class="bi bi-pen"></i> Editar campos
                     </button> -->
                   </div>
                 </div>
@@ -119,14 +119,14 @@
               <!-- Mostrar PDF editado subido solo si existe y no es la plantilla inicial -->
               @if (solicitud.rutaPdfEditable && solicitud.nombrePdfEditable && solicitud.nombrePdfEditable !== 'editable.pdf') {
                 <div class="pdf-file-info">
-                  <p class="file-label">✅ PDF Editado Guardado:</p>
+                  <p class="file-label"><i class="bi bi-check-circle"></i> PDF Editado Guardado:</p>
                   <p class="file-name">{{ solicitud.nombrePdfEditable }}</p>
                   <p class="help-text">
                     Este es el PDF que se enviará al socio cuando presiones "Enviar a Socio"
                   </p>
                   <div class="button-group">
                     <button class="btn-primary" (click)="previsualizarPdf('editable')">
-                      👁️ Ver PDF Editado
+                      <i class="bi bi-eye"></i> Ver PDF Editado
                     </button>
                   </div>
                 </div>
@@ -146,7 +146,7 @@
                       class="btn-primary"
                       (click)="guardarPdfEditado()"
                       [disabled]="procesando">
-                      💾 Guardar PDF Editado
+                      <i class="bi bi-save"></i> Guardar PDF Editado
                     </button>
                   }
                 </div>
@@ -161,7 +161,7 @@
                     class="btn-success"
                     (click)="enviarASocio()"
                     [disabled]="procesando">
-                    📤 Enviar a Socio
+                    <i class="bi bi-upload"></i> Enviar a Socio
                   </button>
                   <small class="help-text">
                     Esto aplanará el PDF (lo hará no editable) y cambiará el estado a "Enviado a Socio".
@@ -171,17 +171,17 @@
             </div>
           } @else {
             <div class="completed-info">
-              <p>✓ PDF editable guardado correctamente</p>
+              <p><i class="bi bi-check-circle"></i> PDF editable guardado correctamente</p>
               @if (solicitud.rutaPdfEditable && solicitud.nombrePdfEditable) {
                 <div class="pdf-file-info">
-                  <p class="file-label">📄 PDF Editado:</p>
+                  <p class="file-label"><i class="bi bi-file-earmark-pdf"></i> PDF Editado:</p>
                   <p class="file-name">{{ solicitud.nombrePdfEditable }}</p>
                   <div class="button-group">
                     <button class="btn-primary" (click)="previsualizarPdf('editable')">
-                      👁️ Ver PDF Editado
+                      <i class="bi bi-eye"></i> Ver PDF Editado
                     </button>
                     <button class="btn-secondary" (click)="descargarPdf('editable')">
-                      📥 Descargar PDF Editado
+                      <i class="bi bi-download"></i> Descargar PDF Editado
                     </button>
                   </div>
                 </div>
@@ -199,7 +199,7 @@
           @if (solicitud.estado === EstadoSolicitud.ENVIADO_SOCIO) {
             <span class="badge-info">Estado Actual</span>
           } @else if (solicitud.fechaEnvioSocio) {
-            <span class="badge-success">✓ Completado</span>
+            <span class="badge-success"><i class="bi bi-check-circle"></i> Completado</span>
           } @else {
             <span class="badge-secondary">Pendiente</span>
           }
@@ -212,11 +212,11 @@
 
             @if (solicitud.rutaPdfEnviado && solicitud.nombrePdfEnviado) {
               <div class="pdf-file-info">
-                <p class="file-label">📤 PDF Enviado al Socio:</p>
+                <p class="file-label"><i class="bi bi-upload"></i> PDF Enviado al Socio:</p>
                 <p class="file-name">{{ solicitud.nombrePdfEnviado }}</p>
                 <div class="button-group">
                   <button class="btn-primary" (click)="previsualizarPdf('enviado')">
-                    👁️ Ver PDF Enviado
+                    <i class="bi bi-eye"></i> Ver PDF Enviado
                   </button>
                 </div>
               </div>
@@ -225,11 +225,11 @@
             <!-- Mostrar PDF firmado ya subido si existe -->
             @if (solicitud.rutaPdfFirmado && solicitud.nombrePdfFirmado) {
               <div class="pdf-file-info">
-                <p class="file-label">✍️ PDF Firmado Recibido:</p>
+                <p class="file-label"><i class="bi bi-pen"></i> PDF Firmado Recibido:</p>
                 <p class="file-name">{{ solicitud.nombrePdfFirmado }}</p>
                 <div class="button-group">
                   <button class="btn-primary" (click)="previsualizarPdf('firmado')">
-                    👁️ Ver PDF Firmado
+                    <i class="bi bi-eye"></i> Ver PDF Firmado
                   </button>
                 </div>
               </div>
@@ -250,7 +250,7 @@
                       class="btn-primary"
                       (click)="subirPdfFirmado()"
                       [disabled]="procesando">
-                      ✍️ {{ solicitud.rutaPdfFirmado ? 'Reemplazar' : 'Subir' }} PDF Firmado
+                      <i class="bi bi-pen"></i> {{ solicitud.rutaPdfFirmado ? 'Reemplazar' : 'Subir' }} PDF Firmado
                     </button>
                   }
                 </div>
@@ -265,7 +265,7 @@
                     class="btn-success"
                     (click)="aceptarFirmaSocio()"
                     [disabled]="procesando">
-                    ✓ Aceptar Firma del Socio
+                    <i class="bi bi-check-circle"></i> Aceptar Firma del Socio
                   </button>
                   <small class="help-text">
                     Al aceptar, se avanzará al siguiente paso para enviar a la petrolera.
@@ -287,7 +287,7 @@
           @if (solicitud.estado === EstadoSolicitud.FIRMADO_SOCIO) {
             <span class="badge-primary">Estado Actual</span>
           } @else if (solicitud.fechaEnvioPetrolera) {
-            <span class="badge-success">✓ Completado</span>
+            <span class="badge-success"><i class="bi bi-check-circle"></i> Completado</span>
           } @else {
             <span class="badge-secondary">Pendiente</span>
           }
@@ -301,11 +301,11 @@
             <!-- Mostrar PDF enviado para referencia -->
             @if (solicitud.rutaPdfEnviado && solicitud.nombrePdfEnviado) {
               <div class="pdf-file-info">
-                <p class="file-label">📤 PDF que se Envió al Socio:</p>
+                <p class="file-label"><i class="bi bi-upload"></i> PDF que se Envió al Socio:</p>
                 <p class="file-name">{{ solicitud.nombrePdfEnviado }}</p>
                 <div class="button-group">
                   <button class="btn-primary" (click)="previsualizarPdf('enviado')">
-                    👁️ Ver PDF Enviado
+                    <i class="bi bi-eye"></i> Ver PDF Enviado
                   </button>
                 </div>
               </div>
@@ -314,14 +314,14 @@
             <!-- Mostrar PDF firmado recibido -->
             @if (solicitud.rutaPdfFirmado && solicitud.nombrePdfFirmado) {
               <div class="pdf-file-info">
-                <p class="file-label">✍️ PDF Firmado Recibido:</p>
+                <p class="file-label"><i class="bi bi-pen"></i> PDF Firmado Recibido:</p>
                 <p class="file-name">{{ solicitud.nombrePdfFirmado }}</p>
                 <div class="button-group">
                   <button class="btn-primary" (click)="previsualizarPdf('firmado')">
-                    👁️ Ver PDF Firmado
+                    <i class="bi bi-eye"></i> Ver PDF Firmado
                   </button>
                   <button class="btn-secondary" (click)="descargarPdf('firmado')">
-                    📥 Descargar
+                    <i class="bi bi-download"></i> Descargar
                   </button>
                 </div>
               </div>
@@ -333,7 +333,7 @@
                   class="btn-success"
                   (click)="enviarAPetrolera()"
                   [disabled]="procesando">
-                  🚀 Enviar a Petrolera
+                  <i class="bi bi-send"></i> Enviar a Petrolera
                 </button>
                 <small class="help-text">
                   Esto enviará el PDF final a la petrolera. Después, la petrolera deberá aceptar o rechazar la solicitud.
@@ -354,9 +354,9 @@
           @if (solicitud.estado === EstadoSolicitud.ENVIADO_PETROLERA) {
             <span class="badge-warning">Pendiente de Resolución</span>
           } @else if (solicitud.estado === EstadoSolicitud.ACEPTADA_PETROLERA) {
-            <span class="badge-success">✓ Aceptada</span>
+            <span class="badge-success"><i class="bi bi-check-circle"></i> Aceptada</span>
           } @else if (solicitud.estado === EstadoSolicitud.RECHAZADA_PETROLERA) {
-            <span class="badge-danger">✗ Rechazada</span>
+            <span class="badge-danger"><i class="bi bi-x-circle"></i> Rechazada</span>
           } @else {
             <span class="badge-secondary">Pendiente</span>
           }
@@ -368,11 +368,11 @@
 
             @if (solicitud.rutaPdfFinal && solicitud.nombrePdfFinal) {
               <div class="pdf-file-info">
-                <p class="file-label">🚀 PDF Final Enviado a Petrolera:</p>
+                <p class="file-label"><i class="bi bi-send"></i> PDF Final Enviado a Petrolera:</p>
                 <p class="file-name">{{ solicitud.nombrePdfFinal }}</p>
                 <div class="button-group">
                   <button class="btn-primary" (click)="previsualizarPdf('final')">
-                    👁️ Ver PDF Final
+                    <i class="bi bi-eye"></i> Ver PDF Final
                   </button>
                 </div>
               </div>
@@ -387,13 +387,13 @@
                     class="btn-success"
                     (click)="aceptarPorPetrolera()"
                     [disabled]="procesando">
-                    ✓ Aceptar Solicitud
+                    <i class="bi bi-check-circle"></i> Aceptar Solicitud
                   </button>
                   <button
                     class="btn-danger"
                     (click)="mostrarFormRechazo = !mostrarFormRechazo"
                     [disabled]="procesando">
-                    ✗ Rechazar Solicitud
+                    <i class="bi bi-x-circle"></i> Rechazar Solicitud
                   </button>
                 </div>
 
@@ -405,7 +405,7 @@
                       [(ngModel)]="motivoRechazo"
                       rows="3"
                       placeholder="Indique el motivo del rechazo..."></textarea>
-                    <div class="button-group" style="margin-top: 0.625rem; margin-bottom: 0;">
+                    <div class="button-group tight">
                       <button
                         class="btn-danger"
                         (click)="rechazarPorPetrolera()"
@@ -421,7 +421,7 @@
             <!-- Aceptada -->
             @if (solicitud.estado === EstadoSolicitud.ACEPTADA_PETROLERA) {
               <div class="completed-info">
-                <p>✅ La solicitud ha sido <strong>aceptada</strong> por la petrolera.</p>
+                <p><i class="bi bi-check-circle"></i> La solicitud ha sido <strong>aceptada</strong> por la petrolera.</p>
                 @if (solicitud.fechaResolucionPetrolera) {
                   <p><strong>Fecha de resolución:</strong> {{ solicitud.fechaResolucionPetrolera | date: 'dd/MM/yyyy HH:mm' }}</p>
                 }
@@ -431,7 +431,7 @@
             <!-- Rechazada -->
             @if (solicitud.estado === EstadoSolicitud.RECHAZADA_PETROLERA) {
               <div class="rejection-box">
-                <p>❌ La solicitud ha sido <strong>rechazada</strong> por la petrolera.</p>
+                <p><i class="bi bi-x-circle"></i> La solicitud ha sido <strong>rechazada</strong> por la petrolera.</p>
                 @if (solicitud.fechaResolucionPetrolera) {
                   <p><strong>Fecha de resolución:</strong> {{ solicitud.fechaResolucionPetrolera | date: 'dd/MM/yyyy HH:mm' }}</p>
                 }
@@ -460,15 +460,15 @@
       <div class="documents-grid">
         @if (solicitud.rutaPdfEditable) {
           <div class="document-card">
-            <div class="document-icon">📄</div>
+            <div class="document-icon"><i class="bi bi-file-earmark-pdf"></i></div>
             <h4>PDF Editable</h4>
             <p>Versión original editable del contrato</p>
             <div class="button-group-vertical">
               <button class="btn-primary" (click)="previsualizarPdf('editable')">
-                👁️ Ver
+                <i class="bi bi-eye"></i> Ver
               </button>
               <button class="btn-secondary" (click)="descargarPdf('editable')">
-                📥 Descargar
+                <i class="bi bi-download"></i> Descargar
               </button>
             </div>
           </div>
@@ -476,15 +476,15 @@
 
         @if (solicitud.rutaPdfEnviado) {
           <div class="document-card">
-            <div class="document-icon">📤</div>
+            <div class="document-icon"><i class="bi bi-upload"></i></div>
             <h4>PDF Enviado</h4>
             <p>Versión aplanada enviada al socio</p>
             <div class="button-group-vertical">
               <button class="btn-primary" (click)="previsualizarPdf('enviado')">
-                👁️ Ver
+                <i class="bi bi-eye"></i> Ver
               </button>
               <button class="btn-secondary" (click)="descargarPdf('enviado')">
-                📥 Descargar
+                <i class="bi bi-download"></i> Descargar
               </button>
             </div>
           </div>
@@ -492,15 +492,15 @@
 
         @if (solicitud.rutaPdfFirmado) {
           <div class="document-card">
-            <div class="document-icon">✍️</div>
+            <div class="document-icon"><i class="bi bi-pen"></i></div>
             <h4>PDF Firmado</h4>
             <p>Versión firmada por el socio</p>
             <div class="button-group-vertical">
               <button class="btn-primary" (click)="previsualizarPdf('firmado')">
-                👁️ Ver
+                <i class="bi bi-eye"></i> Ver
               </button>
               <button class="btn-secondary" (click)="descargarPdf('firmado')">
-                📥 Descargar
+                <i class="bi bi-download"></i> Descargar
               </button>
             </div>
           </div>
@@ -508,15 +508,15 @@
 
         @if (solicitud.rutaPdfFinal) {
           <div class="document-card">
-            <div class="document-icon">✅</div>
+            <div class="document-icon"><i class="bi bi-check-circle"></i></div>
             <h4>PDF Final</h4>
             <p>Versión final enviada a petrolera</p>
             <div class="button-group-vertical">
               <button class="btn-primary" (click)="previsualizarPdf('final')">
-                👁️ Ver
+                <i class="bi bi-eye"></i> Ver
               </button>
               <button class="btn-secondary" (click)="descargarPdf('final')">
-                📥 Descargar
+                <i class="bi bi-download"></i> Descargar
               </button>
             </div>
           </div>

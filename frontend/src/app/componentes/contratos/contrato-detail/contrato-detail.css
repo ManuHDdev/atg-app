@@ -150,6 +150,11 @@
   margin-bottom: 1rem;
 }
 
+.button-group.tight {
+  margin-top: var(--spacing-xs);
+  margin-bottom: 0;
+}
+
 /* ========== Upload Section ========== */
 .upload-section {
   background: var(--bg-primary);
@@ -326,8 +331,9 @@
 }
 
 .document-icon {
-  font-size: 2.5rem;
+  font-size: 1.5rem;
   margin-bottom: 0.75rem;
+  color: var(--text-secondary);
 }
 
 .document-card h4 {
@@ -355,7 +361,6 @@
 
 /* ========== Badges ========== */
 .badge-info,
-.badge-primary,
 .badge-warning,
 .badge-success,
 .badge-secondary,
@@ -371,11 +376,6 @@
 .badge-info {
   background-color: var(--info-light);
   color: var(--info-dark);
-}
-
-.badge-primary {
-  background-color: #e0e7ff;
-  color: #4338ca;
 }
 
 .badge-warning {

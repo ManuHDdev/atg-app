@@ -26,8 +26,8 @@
 }
 
 .detail-section {
-  background: var(--card-bg);
-  border-radius: 8px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
 }
 
@@ -93,11 +93,11 @@
 }
 
 .empresa-card {
-  background: var(--bg-color);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 1rem;
-  transition: all 0.2s;
+  transition: var(--transition-fast);
 }
 
 .empresa-header {
@@ -140,14 +140,14 @@
   font-size: 1rem;
   font-weight: 500;
   padding: 0.75rem 1.5rem;
-  transition: all 0.2s;
+  transition: var(--transition-fast);
   position: relative;
   bottom: -2px;
 }
 
 .tab-button:hover {
   color: var(--primary-color);
-  background: var(--bg-hover);
+  background: var(--bg-tertiary);
 }
 
 .tab-button.active {
@@ -162,38 +162,10 @@
   margin-top: 1rem;
 }
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.data-table thead {
-  background: var(--bg-hover);
-}
-
-.data-table th {
-  text-align: left;
-  padding: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  border-bottom: 2px solid var(--border-color);
-}
-
-.data-table td {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-
-.data-table tbody tr:hover {
-  background: var(--bg-hover);
-}
-
 .data-table .badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 0.85rem;
   font-weight: 500;
 }
@@ -223,17 +195,10 @@
   color: var(--primary-dark);
 }
 
-.btn-icon {
-  background: none;
-  border: none;
-  cursor: pointer;
+/* Overrides delta on top of the global .btn-icon-plain (larger icon, extra hit area) */
+.btn-icon-plain {
   font-size: 1.25rem;
   padding: 0.25rem;
-  transition: transform 0.2s;
-}
-
-.btn-icon:hover {
-  transform: scale(1.2);
 }
 
 /* Filtros */
@@ -263,10 +228,10 @@
 .form-control {
   padding: 0.5rem;
   border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
   color: var(--text-primary);
-  background: var(--bg-color);
+  background: var(--bg-secondary);
 }
 
 .form-control:focus {
