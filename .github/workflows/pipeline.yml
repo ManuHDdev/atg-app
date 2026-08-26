@@ -73,10 +73,11 @@ jobs:
       - name: Install dependencies
         run: cd frontend && npm ci --legacy-peer-deps
 
+      - name: Run tests
+        run: cd frontend && npx ng test --watch=false --browsers=ChromeHeadless
+
       - name: Build Angular (verifica compilación)
         run: cd frontend && npx ng build --base-href /atg/ --configuration=production
-        # ng test deshabilitado: specs usan dependencias reales (Keycloak, HttpClient)
-        # sin mockear. Habilitar cuando los tests tengan mocks adecuados.
 
   # ──────────────────────────────────────────────────────────
   # FASE 2 — BUILD + PUSH DOCKER (solo push a main, tras tests)
