@@ -157,6 +157,11 @@ export const routes: Routes = [
     loadComponent: () => import('./componentes/plantillas-tarjetas/plantillas-tarjetas').then(m => m.PlantillasTarjetas)
   },
   {
+    path: 'plantillas-tarjetas/nueva',
+    canActivate: [authGuard],
+    loadComponent: () => import('./componentes/plantillas-tarjetas/plantilla-form').then(m => m.PlantillaForm)
+  },
+  {
     path: 'plantillas-tarjetas/:id/editar',
     canActivate: [authGuard],
     loadComponent: () => import('./componentes/plantillas-tarjetas/plantilla-form').then(m => m.PlantillaForm)

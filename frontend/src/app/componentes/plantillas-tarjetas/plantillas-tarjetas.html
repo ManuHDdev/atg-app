@@ -4,10 +4,20 @@
       <h2>Gestión de Plantillas de Correo</h2>
       <p class="subtitle">Configura los correos automáticos que se envían en cada tipo de solicitud</p>
     </div>
-    <button class="btn-back" (click)="volver()">
-      <i class="bi bi-arrow-left"></i>
-      Volver al Dashboard
-    </button>
+    <div class="header-actions">
+      <button
+        *ngIf="!todasCreadas"
+        class="btn btn-primary"
+        (click)="nuevaPlantilla()"
+      >
+        <i class="bi bi-plus-lg"></i>
+        Nueva plantilla
+      </button>
+      <button class="btn-back" (click)="volver()">
+        <i class="bi bi-arrow-left"></i>
+        Volver al Dashboard
+      </button>
+    </div>
   </div>
 
   <div *ngIf="loading" class="loading">Cargando plantillas...</div>

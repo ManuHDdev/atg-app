@@ -4,21 +4,42 @@
       <i class="bi bi-arrow-left"></i>
       Volver
     </button>
-    <h2>Editar Plantilla: {{ getTipoLabel() }}</h2>
+    <h2>{{ tituloPagina }}</h2>
     <p class="form-description">Personaliza el asunto y contenido del correo que se enviará automáticamente</p>
   </div>
 
   <div *ngIf="success" class="alert alert-success">
-    Plantilla actualizada exitosamente. Redirigiendo...
+    {{ modoCreacion ? 'Plantilla creada exitosamente. Redirigiendo...' : 'Plantilla actualizada exitosamente. Redirigiendo...' }}
   </div>
 
   <div *ngIf="error" class="alert alert-danger">
     {{ error }}
   </div>
 
+  <div *ngIf="sinTiposDisponibles" class="alert alert-danger">
+    <i class="bi bi-info-circle"></i>
+    Todas las plantillas están ya creadas. Para cambiar su contenido, edita la plantilla correspondiente desde el listado.
+  </div>
+
   <div class="content-layout">
     <div class="form-section">
       <form [formGroup]="formulario" (ngSubmit)="onSubmit()" class="form">
+        <div class="form-group" *ngIf="modoCreacion">
+          <label for="tipo">Tipo de Plantilla *</label>
+          <select id="tipo" formControlName="tipo" class="form-control">
+            <option value="">Selecciona un tipo</option>
+            <option *ngFor="let tipo of tiposDisponibles" [value]="tipo">{{ getTipoLabel(tipo) }}</option>
+          </select>
+          <span *ngIf="campoInvalido('tipo')" class="error-text">Selecciona un tipo de plantilla</span>
+          <small class="form-text">Solo se muestran los tipos que aún no tienen plantilla</small>
+        </div>
+
+        <div class="form-group" *ngIf="!modoCreacion">
+          <label>Tipo de Plantilla</label>
+          <input type="text" class="form-control" [value]="getTipoLabel()" readonly disabled>
+          <small class="form-text">El tipo no se puede modificar</small>
+        </div>
+
         <div class="form-group">
           <label for="asunto">Asunto del Correo *</label>
           <input
@@ -29,9 +50,7 @@
             placeholder="Ej: Tu tarjeta está disponible"
             maxlength="255"
           >
-          <div *ngIf="formulario.get('asunto')?.invalid && formulario.get('asunto')?.touched" class="error-message">
-            El asunto es obligatorio (máximo 255 caracteres)
-          </div>
+          <span *ngIf="campoInvalido('asunto')" class="error-text">El asunto es obligatorio (máximo 255 caracteres)</span>
           <small class="form-text">Puedes usar variables como &#123;nombre&#125;, &#123;matricula&#125;, etc.</small>
         </div>
 
@@ -44,9 +63,7 @@
             rows="15"
             placeholder="Escribe el contenido del correo aquí. Puedes usar HTML y variables."
           ></textarea>
-          <div *ngIf="formulario.get('cuerpo')?.invalid && formulario.get('cuerpo')?.touched" class="error-message">
-            El contenido es obligatorio
-          </div>
+          <span *ngIf="campoInvalido('cuerpo')" class="error-text">El contenido es obligatorio</span>
           <small class="form-text">Soporta HTML. Usa las variables del panel derecho.</small>
         </div>
 
@@ -62,8 +79,8 @@
           <button type="button" class="btn btn-secondary" (click)="cancelar()" [disabled]="loading">
             Cancelar
           </button>
-          <button type="submit" class="btn btn-primary" [disabled]="loading || formulario.invalid">
-            {{ loading ? 'Guardando...' : 'Guardar Cambios' }}
+          <button type="submit" class="btn btn-primary" [disabled]="loading || sinTiposDisponibles">
+            {{ loading ? 'Guardando...' : textoBotonGuardar }}
           </button>
         </div>
       </form>

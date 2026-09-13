@@ -123,6 +123,13 @@
   margin-top: var(--spacing-xs);
 }
 
+.error-text {
+  display: block;
+  color: var(--danger-color);
+  font-size: 0.75rem;
+  margin-top: 0.125rem;
+}
+
 .form-text {
   display: block;
   color: var(--text-secondary);

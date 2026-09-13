@@ -2,7 +2,12 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { PlantillaTarjetaService } from '../../services/plantilla-tarjeta.service';
-import { PlantillaTarjeta, VARIABLES_DISPONIBLES } from '../../models/plantilla-tarjeta.model';
+import {
+  PlantillaTarjeta,
+  TIPOS_PLANTILLA_TARJETA,
+  VARIABLES_DISPONIBLES,
+  getTipoPlantillaLabel
+} from '../../models/plantilla-tarjeta.model';
 import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
@@ -17,6 +22,8 @@ export class PlantillasTarjetas implements OnInit {
   variablesDisponibles = VARIABLES_DISPONIBLES;
   loading: boolean = false;
   error: string | null = null;
+  /** true si ya existe una plantilla de cada tipo: no se puede crear ninguna más. */
+  todasCreadas: boolean = false;
 
   constructor(
     private plantillaService: PlantillaTarjetaService,
@@ -35,6 +42,7 @@ export class PlantillasTarjetas implements OnInit {
     this.plantillaService.getAll().subscribe({
       next: (data) => {
         this.plantillas = data;
+        this.todasCreadas = data.length >= TIPOS_PLANTILLA_TARJETA.length;
         this.loading = false;
       },
       error: (err) => {
@@ -45,25 +53,16 @@ export class PlantillasTarjetas implements OnInit {
     });
   }
 
+  nuevaPlantilla(): void {
+    this.router.navigate(['/plantillas-tarjetas', 'nueva']);
+  }
+
   editarPlantilla(id: string): void {
     this.router.navigate(['/plantillas-tarjetas', id, 'editar']);
   }
 
   getTipoLabel(tipo: string): string {
-    const labels: any = {
-      'LLEGADA_MADRID': 'Llegada - Madrid',
-      'LLEGADA_FUERA': 'Llegada - Otras Provincias',
-      'ALTA_SOCIO': 'Alta - Correo al Socio',
-      'ALTA_PETROLERA': 'Alta - Correo a Petrolera',
-      'ALTA_APROBADA': 'Alta - Aprobada por la Petrolera',
-      'ALTA_RECHAZADA': 'Alta - Rechazada por la Petrolera',
-      'BAJA_SOCIO': 'Baja - Correo al Socio',
-      'BAJA_CONFIRMADA': 'Baja - Confirmada por la Petrolera',
-      'DUPLICADO_SOCIO': 'Duplicado - Correo al Socio',
-      'DUPLICADO_CONFIRMADA': 'Duplicado - Confirmado por la Petrolera',
-      'DUPLICADO_PETROLERA': 'Duplicado - Correo a Petrolera'
-    };
-    return labels[tipo] || tipo;
+    return getTipoPlantillaLabel(tipo);
   }
 
   getTipoIcon(tipo: string): string {
