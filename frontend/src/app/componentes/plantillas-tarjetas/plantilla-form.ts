@@ -118,10 +118,12 @@ export class PlantillaForm implements OnInit {
       'LLEGADA_FUERA': 'Llegada - Otras Provincias',
       'ALTA_SOCIO': 'Alta - Correo al Socio',
       'ALTA_PETROLERA': 'Alta - Correo a Petrolera',
-      'ALTA_APROBADA': 'Alta Aprobada - Correo al Socio',
-      'ALTA_RECHAZADA': 'Alta Rechazada - Correo al Socio',
+      'ALTA_APROBADA': 'Alta - Aprobada por la Petrolera',
+      'ALTA_RECHAZADA': 'Alta - Rechazada por la Petrolera',
       'BAJA_SOCIO': 'Baja - Correo al Socio',
+      'BAJA_CONFIRMADA': 'Baja - Confirmada por la Petrolera',
       'DUPLICADO_SOCIO': 'Duplicado - Correo al Socio',
+      'DUPLICADO_CONFIRMADA': 'Duplicado - Confirmado por la Petrolera',
       'DUPLICADO_PETROLERA': 'Duplicado - Correo a Petrolera'
     };
     return labels[this.plantilla.tipo] || this.plantilla.tipo;

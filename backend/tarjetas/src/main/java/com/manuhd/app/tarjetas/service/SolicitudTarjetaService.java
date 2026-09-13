@@ -10,11 +10,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -149,6 +151,30 @@ public class SolicitudTarjetaService {
         SolicitudTarjeta updated = repository.save(solicitud);
         log.info("Solicitud rechazada con id: {}", updated.getId());
 
+        // Avisar al socio del rechazo (si existe la plantilla)
+        StringBuilder correosEnviados = new StringBuilder(updated.getCorreosEnviados() != null ? updated.getCorreosEnviados() : "");
+        try {
+            SocioDTO socio = obtenerSocio(solicitud.getSocioId());
+            PetroleraDTO petrolera = obtenerPetrolera(solicitud.getPetroleraId());
+            Map<String, String> variables = crearMapaVariables(socio, petrolera, solicitud);
+            variables.put("motivo", motivo != null ? motivo : "");
+
+            Optional<EnvioCorreoResult> resultado = enviarCorreoSiHayPlantilla(
+                    TipoPlantilla.ALTA_RECHAZADA, socio.getEmail(), variables);
+            if (resultado.isPresent()) {
+                if (correosEnviados.length() > 0) correosEnviados.append("\n");
+                correosEnviados.append(resultado.get().toString());
+                updated.setCorreosEnviados(correosEnviados.toString());
+                repository.save(updated);
+            }
+        } catch (Exception e) {
+            log.error("Error al enviar correo de rechazo: {}", e.getMessage());
+            if (correosEnviados.length() > 0) correosEnviados.append("\n");
+            correosEnviados.append("ERROR: ").append(e.getMessage());
+            updated.setCorreosEnviados(correosEnviados.toString());
+            repository.save(updated);
+        }
+
         return convertToDTO(updated);
     }
 
@@ -170,15 +196,27 @@ public class SolicitudTarjetaService {
         SolicitudTarjeta updated = repository.save(solicitud);
         log.info("Solicitud aprobada con id: {}", updated.getId());
 
-        // Enviar correo de aprobación (si existe la plantilla)
+        // Enviar correo de aprobación al socio (si existe la plantilla)
+        StringBuilder correosEnviados = new StringBuilder(updated.getCorreosEnviados() != null ? updated.getCorreosEnviados() : "");
         try {
             SocioDTO socio = obtenerSocio(solicitud.getSocioId());
             PetroleraDTO petrolera = obtenerPetrolera(solicitud.getPetroleraId());
             Map<String, String> variables = crearMapaVariables(socio, petrolera, solicitud);
 
-            // TODO: Implementar envío de correo ALTA_APROBADA cuando exista la plantilla
+            Optional<EnvioCorreoResult> resultado = enviarCorreoSiHayPlantilla(
+                    TipoPlantilla.ALTA_APROBADA, socio.getEmail(), variables);
+            if (resultado.isPresent()) {
+                if (correosEnviados.length() > 0) correosEnviados.append("\n");
+                correosEnviados.append(resultado.get().toString());
+                updated.setCorreosEnviados(correosEnviados.toString());
+                repository.save(updated);
+            }
         } catch (Exception e) {
             log.error("Error al enviar correo de aprobación: {}", e.getMessage());
+            if (correosEnviados.length() > 0) correosEnviados.append("\n");
+            correosEnviados.append("ERROR: ").append(e.getMessage());
+            updated.setCorreosEnviados(correosEnviados.toString());
+            repository.save(updated);
         }
 
         return convertToDTO(updated);
@@ -230,19 +268,13 @@ public class SolicitudTarjetaService {
             Map<String, String> variables = crearMapaVariables(socio, petrolera, solicitud);
             variables.put("fechaBaja", dto.getFechaBaja().toString());
 
-            PlantillaTarjeta plantilla = plantillaService.obtenerPlantillaActiva(TipoPlantilla.BAJA_SOCIO);
-            if (plantilla != null) {
-                EnvioCorreoResult resultado = emailService.enviarCorreoConPlantilla(
-                        socio.getEmail(),
-                        plantilla.getAsunto(),
-                        plantilla.getCuerpo(),
-                        variables,
-                        TipoPlantilla.BAJA_SOCIO.name()
-                );
-
-                // Registrar correo enviado
+            // BAJA_CONFIRMADA (no BAJA_SOCIO): la petrolera ya ha confirmado la baja,
+            // el correo de "hemos tramitado tu solicitud" se envió al crear la solicitud.
+            Optional<EnvioCorreoResult> resultado = enviarCorreoSiHayPlantilla(
+                    TipoPlantilla.BAJA_CONFIRMADA, socio.getEmail(), variables);
+            if (resultado.isPresent()) {
                 if (correosEnviados.length() > 0) correosEnviados.append("\n");
-                correosEnviados.append(resultado.toString());
+                correosEnviados.append(resultado.get().toString());
                 updated.setCorreosEnviados(correosEnviados.toString());
                 repository.save(updated);
             }
@@ -306,19 +338,13 @@ public class SolicitudTarjetaService {
             variables.put("fechaRespuesta", dto.getFechaRespuesta().toString());
             variables.put("cantidad", String.valueOf(tarjeta.getCantidad()));
 
-            PlantillaTarjeta plantilla = plantillaService.obtenerPlantillaActiva(TipoPlantilla.DUPLICADO_SOCIO);
-            if (plantilla != null) {
-                EnvioCorreoResult resultado = emailService.enviarCorreoConPlantilla(
-                        socio.getEmail(),
-                        plantilla.getAsunto(),
-                        plantilla.getCuerpo(),
-                        variables,
-                        TipoPlantilla.DUPLICADO_SOCIO.name()
-                );
-
-                // Registrar correo enviado
+            // DUPLICADO_CONFIRMADA (no DUPLICADO_SOCIO): la petrolera ya ha confirmado el
+            // duplicado, el correo de trámite se envió al crear la solicitud.
+            Optional<EnvioCorreoResult> resultado = enviarCorreoSiHayPlantilla(
+                    TipoPlantilla.DUPLICADO_CONFIRMADA, socio.getEmail(), variables);
+            if (resultado.isPresent()) {
                 if (correosEnviados.length() > 0) correosEnviados.append("\n");
-                correosEnviados.append(resultado.toString());
+                correosEnviados.append(resultado.get().toString());
                 updated.setCorreosEnviados(correosEnviados.toString());
                 repository.save(updated);
             }
@@ -451,11 +477,49 @@ public class SolicitudTarjetaService {
         return resultados;
     }
 
+    /**
+     * Envía un correo solo si hay plantilla activa para el tipo indicado. Si todavía no
+     * está configurada, deja constancia en el log y no interrumpe la transición de estado
+     * ni ensucia el historial de correos enviados.
+     */
+    private Optional<EnvioCorreoResult> enviarCorreoSiHayPlantilla(TipoPlantilla tipo, String destinatario, Map<String, String> variables) {
+        Optional<PlantillaTarjeta> plantilla = plantillaService.buscarPlantillaActiva(tipo);
+        if (plantilla.isEmpty()) {
+            log.warn("No hay plantilla activa para {}; no se envía correo", tipo);
+            return Optional.empty();
+        }
+
+        return Optional.of(emailService.enviarCorreoConPlantilla(
+                destinatario,
+                plantilla.get().getAsunto(),
+                plantilla.get().getCuerpo(),
+                variables,
+                tipo.name()
+        ));
+    }
+
+    /**
+     * Detecta si el socio pertenece a la Comunidad de Madrid tolerando mayúsculas,
+     * espacios, acentos y variantes como "Comunidad de Madrid".
+     */
+    boolean esProvinciaMadrid(String provincia) {
+        if (provincia == null || provincia.isBlank()) {
+            return false;
+        }
+
+        String normalizada = Normalizer.normalize(provincia.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toUpperCase();
+
+        // contains cubre tanto "MADRID" exacto como "COMUNIDAD DE MADRID"
+        return normalizada.contains("MADRID");
+    }
+
     private List<EnvioCorreoResult> enviarCorreoLlegada(SocioDTO socio, Map<String, String> variables) {
         List<EnvioCorreoResult> resultados = new java.util.ArrayList<>();
         TipoPlantilla tipoPlantilla;
 
-        if ("Madrid".equalsIgnoreCase(socio.getProvincia())) {
+        if (esProvinciaMadrid(socio.getProvincia())) {
             tipoPlantilla = TipoPlantilla.LLEGADA_MADRID;
             log.info("Enviando correo de llegada para Madrid al socio: {}", socio.getNombre());
         } else {
@@ -615,7 +679,11 @@ public class SolicitudTarjetaService {
         variables.put("nif", socio != null ? socio.getNumeroSocio() : "");
         variables.put("email", socio != null ? socio.getEmail() : "");
         variables.put("telefono", socio != null ? socio.getTelefono() : "");
+        variables.put("direccion", socio != null ? socio.getDireccion() : "");
+        variables.put("poblacion", socio != null ? socio.getPoblacion() : "");
+        variables.put("codigoPostal", socio != null ? socio.getCodigoPostal() : "");
         variables.put("provincia", socio != null ? socio.getProvincia() : "");
+        variables.put("direccionCompleta", construirDireccionCompleta(socio));
 
         // Variables de la petrolera
         variables.put("nombrePetrolera", petrolera != null ? petrolera.getNombre() : "");
@@ -623,10 +691,47 @@ public class SolicitudTarjetaService {
 
         // Variables de la solicitud
         variables.put("matricula", solicitud.getMatricula());
-        variables.put("numeroContrato", "");
+        variables.put("numeroContrato", solicitud.getNumeroContrato() != null ? solicitud.getNumeroContrato() : "");
         variables.put("fecha", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
 
         return variables;
+    }
+
+    /**
+     * Dirección postal en una sola línea: "direccion, codigoPostal poblacion (provincia)",
+     * omitiendo las partes vacías.
+     */
+    private String construirDireccionCompleta(SocioDTO socio) {
+        if (socio == null) {
+            return "";
+        }
+
+        List<String> partes = new java.util.ArrayList<>();
+
+        if (tieneValor(socio.getDireccion())) {
+            partes.add(socio.getDireccion().trim());
+        }
+
+        // Código postal y población van juntos: "28001 Madrid"
+        String cpPoblacion = (tieneValor(socio.getCodigoPostal()) ? socio.getCodigoPostal().trim() + " " : "")
+                + (tieneValor(socio.getPoblacion()) ? socio.getPoblacion().trim() : "");
+        if (!cpPoblacion.isBlank()) {
+            partes.add(cpPoblacion.trim());
+        }
+
+        String direccionCompleta = String.join(", ", partes);
+
+        // La provincia se añade entre paréntesis, sin coma previa
+        if (tieneValor(socio.getProvincia())) {
+            String provincia = "(" + socio.getProvincia().trim() + ")";
+            direccionCompleta = direccionCompleta.isBlank() ? provincia : direccionCompleta + " " + provincia;
+        }
+
+        return direccionCompleta;
+    }
+
+    private boolean tieneValor(String valor) {
+        return valor != null && !valor.isBlank();
     }
 
     private SolicitudTarjetaDTO convertToDTO(SolicitudTarjeta entity) {

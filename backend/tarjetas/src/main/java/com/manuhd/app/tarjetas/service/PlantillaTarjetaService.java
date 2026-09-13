@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,6 +49,16 @@ public class PlantillaTarjetaService {
         log.info("Obteniendo plantilla activa de tipo: {}", tipo);
         return repository.findByTipoAndActivaTrue(tipo)
                 .orElseThrow(() -> new RuntimeException("No hay plantilla activa para tipo: " + tipo));
+    }
+
+    /**
+     * Variante no lanzadora de {@link #obtenerPlantillaActiva(TipoPlantilla)}: permite
+     * a los llamantes decidir qué hacer cuando todavía no hay plantilla configurada.
+     */
+    @Transactional(readOnly = true)
+    public Optional<PlantillaTarjeta> buscarPlantillaActiva(TipoPlantilla tipo) {
+        log.info("Buscando plantilla activa de tipo: {}", tipo);
+        return repository.findByTipoAndActivaTrue(tipo);
     }
 
     @Transactional
