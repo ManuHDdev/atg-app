@@ -14,6 +14,7 @@ import { ErrorHandlerService } from '../../services/error-handler.service';
 })
 export class PlantillasTarjetas implements OnInit {
   plantillas: PlantillaTarjeta[] = [];
+  variablesDisponibles = VARIABLES_DISPONIBLES;
   loading: boolean = false;
   error: string | null = null;
 
@@ -54,8 +55,13 @@ export class PlantillasTarjetas implements OnInit {
       'LLEGADA_FUERA': 'Llegada - Otras Provincias',
       'ALTA_SOCIO': 'Alta - Correo al Socio',
       'ALTA_PETROLERA': 'Alta - Correo a Petrolera',
+      'ALTA_APROBADA': 'Alta - Aprobada por la Petrolera',
+      'ALTA_RECHAZADA': 'Alta - Rechazada por la Petrolera',
       'BAJA_SOCIO': 'Baja - Correo al Socio',
-      'DUPLICADO_SOCIO': 'Duplicado - Correo al Socio'
+      'BAJA_CONFIRMADA': 'Baja - Confirmada por la Petrolera',
+      'DUPLICADO_SOCIO': 'Duplicado - Correo al Socio',
+      'DUPLICADO_CONFIRMADA': 'Duplicado - Confirmado por la Petrolera',
+      'DUPLICADO_PETROLERA': 'Duplicado - Correo a Petrolera'
     };
     return labels[tipo] || tipo;
   }
@@ -66,8 +72,13 @@ export class PlantillasTarjetas implements OnInit {
       'LLEGADA_FUERA': 'bi-mailbox',
       'ALTA_SOCIO': 'bi-envelope',
       'ALTA_PETROLERA': 'bi-envelope-fill',
+      'ALTA_APROBADA': 'bi-check-circle',
+      'ALTA_RECHAZADA': 'bi-x-circle',
       'BAJA_SOCIO': 'bi-envelope-open',
-      'DUPLICADO_SOCIO': 'bi-file-earmark'
+      'BAJA_CONFIRMADA': 'bi-check2-square',
+      'DUPLICADO_SOCIO': 'bi-file-earmark',
+      'DUPLICADO_CONFIRMADA': 'bi-file-earmark-check',
+      'DUPLICADO_PETROLERA': 'bi-file-earmark-arrow-up'
     };
     return icons[tipo] || 'bi-envelope-fill';
   }

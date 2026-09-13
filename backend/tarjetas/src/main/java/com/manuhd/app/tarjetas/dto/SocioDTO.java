@@ -12,6 +12,9 @@ public class SocioDTO {
     private String nombre;
     private String email;
     private String telefono;
+    private String direccion;
+    private String poblacion;
+    private String codigoPostal;
     private String provincia;
     private String numeroSocio;
 }

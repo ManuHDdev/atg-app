@@ -49,20 +49,9 @@
     <h4><i class="bi bi-pencil"></i> Variables Disponibles</h4>
     <p>Puedes usar estas variables en el asunto y cuerpo de los correos. Serán reemplazadas automáticamente:</p>
     <div class="variables-grid">
-      <div class="variable-item" *ngFor="let variable of [
-        {var: '{nombre}', desc: 'Nombre del socio'},
-        {var: '{nif}', desc: 'NIF/Número de socio'},
-        {var: '{email}', desc: 'Email del socio'},
-        {var: '{telefono}', desc: 'Teléfono del socio'},
-        {var: '{provincia}', desc: 'Provincia del socio'},
-        {var: '{matricula}', desc: 'Matrícula del vehículo'},
-        {var: '{numeroContrato}', desc: 'Número de contrato'},
-        {var: '{fecha}', desc: 'Fecha actual'},
-        {var: '{nombrePetrolera}', desc: 'Nombre de la petrolera'},
-        {var: '{emailPetrolera}', desc: 'Email de la petrolera'}
-      ]">
-        <code>{{ variable.var }}</code>
-        <span>{{ variable.desc }}</span>
+      <div class="variable-item" *ngFor="let variable of variablesDisponibles">
+        <code>{{ variable.variable }}</code>
+        <span>{{ variable.descripcion }}</span>
       </div>
     </div>
   </div>
