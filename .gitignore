@@ -40,3 +40,8 @@ logs/
 # ─── Scripts de automatización ────────────────────────────────────────────────
 scripts/.env
 /tmp/atg_*
+
+# Almacenamiento de la aplicación en tiempo de ejecución (PDFs de solicitudes,
+# plantillas subidas...). En producción vive en volúmenes Docker, nunca en el
+# repo: no debe versionarse.
+backend/*/storage/
