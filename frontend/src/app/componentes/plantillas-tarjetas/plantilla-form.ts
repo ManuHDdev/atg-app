@@ -3,7 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { PlantillaTarjetaService } from '../../services/plantilla-tarjeta.service';
-import { PlantillaTarjeta, VARIABLES_DISPONIBLES } from '../../models/plantilla-tarjeta.model';
+import {
+  PlantillaTarjeta,
+  TipoPlantillaTarjeta,
+  TIPOS_PLANTILLA_TARJETA,
+  VARIABLES_DISPONIBLES,
+  getTipoPlantillaLabel
+} from '../../models/plantilla-tarjeta.model';
 import { ErrorHandlerService } from '../../services/error-handler.service';
 
 @Component({
@@ -19,6 +25,15 @@ export class PlantillaForm implements OnInit {
   plantilla: PlantillaTarjeta | null = null;
   variablesDisponibles = VARIABLES_DISPONIBLES;
 
+  /** true cuando la ruta no lleva :id (alta de plantilla). */
+  modoCreacion: boolean = false;
+  /** Tipos que todavía no tienen plantilla creada (solo en modo creación). */
+  tiposDisponibles: TipoPlantillaTarjeta[] = [];
+  /** true si todos los tipos ya tienen plantilla: no se puede crear ninguna más. */
+  sinTiposDisponibles: boolean = false;
+  /** Marca que el usuario ya intentó guardar, para mostrar los errores inline. */
+  intentoGuardar: boolean = false;
+
   loading: boolean = false;
   error: string | null = null;
   success: boolean = false;
@@ -33,8 +48,14 @@ export class PlantillaForm implements OnInit {
 
   ngOnInit(): void {
     this.plantillaId = this.route.snapshot.paramMap.get('id') || '';
+    this.modoCreacion = !this.plantillaId;
     this.inicializarFormulario();
-    this.cargarPlantilla();
+
+    if (this.modoCreacion) {
+      this.cargarTiposDisponibles();
+    } else {
+      this.cargarPlantilla();
+    }
   }
 
   inicializarFormulario(): void {
@@ -42,6 +63,30 @@ export class PlantillaForm implements OnInit {
       asunto: ['', [Validators.required, Validators.maxLength(255)]],
       cuerpo: ['', Validators.required],
       activa: [true]
+    });
+
+    if (this.modoCreacion) {
+      this.formulario.addControl('tipo', this.fb.control('', Validators.required));
+    }
+  }
+
+  cargarTiposDisponibles(): void {
+    this.loading = true;
+    this.plantillaService.getAll().subscribe({
+      next: (plantillas) => {
+        const tiposUsados = new Set(plantillas.map(p => p.tipo));
+        this.tiposDisponibles = TIPOS_PLANTILLA_TARJETA.filter(tipo => !tiposUsados.has(tipo));
+        this.sinTiposDisponibles = this.tiposDisponibles.length === 0;
+        if (this.sinTiposDisponibles) {
+          this.formulario.disable();
+        }
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error al cargar plantillas:', err);
+        this.error = this.errorHandler.getMensaje(err);
+        this.loading = false;
+      }
     });
   }
 
@@ -75,7 +120,17 @@ export class PlantillaForm implements OnInit {
     }
   }
 
+  campoInvalido(nombre: string): boolean {
+    const control = this.formulario.get(nombre);
+    if (!control) return false;
+    return control.invalid && (this.intentoGuardar || control.touched);
+  }
+
   onSubmit(): void {
+    if (this.sinTiposDisponibles) return;
+
+    this.intentoGuardar = true;
+
     if (this.formulario.invalid) {
       Object.keys(this.formulario.controls).forEach(key => {
         this.formulario.get(key)?.markAsTouched();
@@ -86,6 +141,37 @@ export class PlantillaForm implements OnInit {
     this.loading = true;
     this.error = null;
 
+    if (this.modoCreacion) {
+      this.crearPlantilla();
+    } else {
+      this.actualizarPlantilla();
+    }
+  }
+
+  private crearPlantilla(): void {
+    const nuevaPlantilla: PlantillaTarjeta = {
+      tipo: this.formulario.value.tipo,
+      asunto: this.formulario.value.asunto,
+      cuerpo: this.formulario.value.cuerpo,
+      activa: this.formulario.value.activa
+    };
+
+    this.plantillaService.create(nuevaPlantilla).subscribe({
+      next: () => {
+        this.success = true;
+        setTimeout(() => {
+          this.router.navigate(['/plantillas-tarjetas']);
+        }, 1500);
+      },
+      error: (err) => {
+        console.error('Error al crear plantilla:', err);
+        this.error = this.errorHandler.getMensaje(err);
+        this.loading = false;
+      }
+    });
+  }
+
+  private actualizarPlantilla(): void {
     const plantillaActualizada = {
       ...this.plantilla,
       ...this.formulario.value
@@ -110,22 +196,17 @@ export class PlantillaForm implements OnInit {
     this.router.navigate(['/plantillas-tarjetas']);
   }
 
-  getTipoLabel(): string {
-    if (!this.plantilla) return '';
+  getTipoLabel(tipo?: string): string {
+    const valor = tipo ?? this.plantilla?.tipo;
+    if (!valor) return '';
+    return getTipoPlantillaLabel(valor);
+  }
 
-    const labels: any = {
-      'LLEGADA_MADRID': 'Llegada - Madrid',
-      'LLEGADA_FUERA': 'Llegada - Otras Provincias',
-      'ALTA_SOCIO': 'Alta - Correo al Socio',
-      'ALTA_PETROLERA': 'Alta - Correo a Petrolera',
-      'ALTA_APROBADA': 'Alta - Aprobada por la Petrolera',
-      'ALTA_RECHAZADA': 'Alta - Rechazada por la Petrolera',
-      'BAJA_SOCIO': 'Baja - Correo al Socio',
-      'BAJA_CONFIRMADA': 'Baja - Confirmada por la Petrolera',
-      'DUPLICADO_SOCIO': 'Duplicado - Correo al Socio',
-      'DUPLICADO_CONFIRMADA': 'Duplicado - Confirmado por la Petrolera',
-      'DUPLICADO_PETROLERA': 'Duplicado - Correo a Petrolera'
-    };
-    return labels[this.plantilla.tipo] || this.plantilla.tipo;
+  get tituloPagina(): string {
+    return this.modoCreacion ? 'Nueva plantilla' : `Editar Plantilla: ${this.getTipoLabel()}`;
+  }
+
+  get textoBotonGuardar(): string {
+    return this.modoCreacion ? 'Guardar plantilla' : 'Guardar Cambios';
   }
 }
