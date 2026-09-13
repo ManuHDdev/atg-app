@@ -207,10 +207,22 @@ public class SolicitudContratoService {
             throw new RuntimeException("Solo se pueden enviar solicitudes en estado BORRADOR");
         }
 
+        // El PDF de origen debe existir: no se puede pedir una firma sin contrato
+        validarPdfDisponible(
+            solicitud.getRutaPdfEditable(),
+            "No se puede enviar al socio: falta el PDF de la solicitud " + solicitud.getNumeroSolicitud()
+        );
+
         // Aplanar PDF (quitar campos editables)
         String rutaPdfEnviado = pdfService.aplanarPdfParaSolicitud(
             solicitud.getRutaPdfEditable(),
             solicitud.getNumeroSolicitud()
+        );
+
+        // El PDF aplanado es el que se adjunta al socio: sin él no se marca como enviado
+        Path adjuntoSocio = validarPdfDisponible(
+            rutaPdfEnviado,
+            "No se puede enviar al socio: falta el PDF de la solicitud " + solicitud.getNumeroSolicitud()
         );
 
         // Actualizar estado y registrar fecha
@@ -233,7 +245,8 @@ public class SolicitudContratoService {
 
         // Enviar email al socio notificando el envío del contrato
         try {
-            enviarNotificacionSocioEtapa(updated, "NOTIF_SOCIO_ENVIADO");
+            enviarNotificacionSocioEtapa(updated, "NOTIF_SOCIO_ENVIADO", adjuntoSocio,
+                "Contrato-" + updated.getNumeroSolicitud() + ".pdf");
         } catch (Exception e) {
             log.error("Error notificando socio sobre envío: {}", e.getMessage());
         }
@@ -299,15 +312,21 @@ public class SolicitudContratoService {
             throw new RuntimeException("Solo se pueden enviar a petrolera solicitudes en estado FIRMADO_SOCIO");
         }
 
-        // Copiar PDF firmado como final (solo si hay PDF firmado)
-        if (solicitud.getRutaPdfFirmado() != null) {
-            String rutaPdfFinal = pdfService.copiarPdfFinal(
-                solicitud.getRutaPdfFirmado(),
-                solicitud.getNumeroSolicitud()
-            );
-            solicitud.setRutaPdfFinal(rutaPdfFinal);
-            solicitud.setNombrePdfFinal("final.pdf");
-        }
+        String mensajeFaltaPdf = "No se puede enviar a la petrolera: falta el PDF firmado de la solicitud "
+            + solicitud.getNumeroSolicitud();
+
+        // El PDF firmado debe existir: no se marca como enviado lo que no se puede enviar
+        validarPdfDisponible(solicitud.getRutaPdfFirmado(), mensajeFaltaPdf);
+
+        // Copiar PDF firmado como final
+        String rutaPdfFinal = pdfService.copiarPdfFinal(
+            solicitud.getRutaPdfFirmado(),
+            solicitud.getNumeroSolicitud()
+        );
+        solicitud.setRutaPdfFinal(rutaPdfFinal);
+        solicitud.setNombrePdfFinal("final.pdf");
+
+        Path adjuntoPetrolera = validarPdfDisponible(rutaPdfFinal, mensajeFaltaPdf);
 
         // Actualizar estado y registrar fecha
         solicitud.setEstado(EstadoSolicitud.ENVIADO_PETROLERA);
@@ -360,7 +379,8 @@ public class SolicitudContratoService {
                     );
                 }
 
-                emailService.enviarCorreoHTML(emailPetrolera, asuntoEmail, cuerpoEmail);
+                emailService.enviarCorreoHTMLConAdjunto(emailPetrolera, asuntoEmail, cuerpoEmail,
+                    adjuntoPetrolera, "Contrato-firmado-" + solicitud.getNumeroSolicitud() + ".pdf");
                 registrarEnvioCorreo(updated, "CONTRATO_PETROLERA", emailPetrolera, true, null);
             }
         } catch (Exception e) {
@@ -859,7 +879,33 @@ public class SolicitudContratoService {
         solicitudRepository.save(solicitud);
     }
 
+    /**
+     * Comprueba que el PDF que se va a adjuntar existe y es legible antes de dar por hecho el envío.
+     *
+     * @return la ruta validada, lista para adjuntar
+     * @throws BusinessValidationException si el fichero falta o no se puede leer
+     */
+    private Path validarPdfDisponible(String rutaPdf, String mensajeError) {
+        if (rutaPdf == null || rutaPdf.isBlank()) {
+            throw new BusinessValidationException(mensajeError);
+        }
+        Path ruta = Paths.get(rutaPdf);
+        if (!Files.isRegularFile(ruta) || !Files.isReadable(ruta)) {
+            throw new BusinessValidationException(mensajeError);
+        }
+        return ruta;
+    }
+
     private void enviarNotificacionSocioEtapa(SolicitudContrato solicitud, String tipoNotificacion) {
+        enviarNotificacionSocioEtapa(solicitud, tipoNotificacion, null, null);
+    }
+
+    /**
+     * Notificación al socio de una etapa del trámite, opcionalmente con un PDF adjunto.
+     * Sólo la etapa de envío para firma lleva adjunto; el resto pasan {@code adjunto == null}.
+     */
+    private void enviarNotificacionSocioEtapa(SolicitudContrato solicitud, String tipoNotificacion,
+                                              Path adjunto, String nombreAdjunto) {
         SociosClient.SocioDTO socio = sociosClient.obtenerSocio(solicitud.getSocioId());
         PetrolerasClient.PetroleraDTO petrolera = petrolerasClient.obtenerPetrolera(solicitud.getPetroleraId());
         String emailSocio = socio.getEmail();
@@ -944,7 +990,11 @@ public class SolicitudContratoService {
         }
 
         try {
-            emailService.enviarCorreoHTML(emailSocio, asunto, cuerpo);
+            if (adjunto != null) {
+                emailService.enviarCorreoHTMLConAdjunto(emailSocio, asunto, cuerpo, adjunto, nombreAdjunto);
+            } else {
+                emailService.enviarCorreoHTML(emailSocio, asunto, cuerpo);
+            }
             registrarEnvioCorreo(solicitud, tipoPlantillaBackend != null ? tipoPlantillaBackend : tipoNotificacion, emailSocio, true, null);
         } catch (Exception e) {
             registrarEnvioCorreo(solicitud, tipoPlantillaBackend != null ? tipoPlantillaBackend : tipoNotificacion, emailSocio, false, e.getMessage());
