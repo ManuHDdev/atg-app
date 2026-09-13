@@ -3,6 +3,7 @@ package com.manuhd.app.contratos.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
+import java.nio.file.Path;
 import java.util.Map;
 
 @Service
@@ -72,6 +74,44 @@ public class EmailService {
         } catch (MessagingException e) {
             log.error("Error al enviar correo HTML a {}: {}", destinatario, e.getMessage());
             throw new RuntimeException("Error al enviar correo HTML", e);
+        }
+    }
+
+    /**
+     * Envía un correo HTML con un único fichero adjunto.
+     *
+     * @param destinatario  dirección de destino
+     * @param asunto        asunto del correo
+     * @param cuerpoHTML    cuerpo del correo en HTML
+     * @param adjunto       ruta del fichero a adjuntar
+     * @param nombreAdjunto nombre legible con el que se adjunta el fichero
+     */
+    public void enviarCorreoHTMLConAdjunto(String destinatario, String asunto, String cuerpoHTML,
+                                           Path adjunto, String nombreAdjunto) {
+        if (!emailEnabled) {
+            log.info("Envío de correo HTML con adjunto SIMULADO (email.enabled=false)");
+            log.info("Destinatario: {}", destinatario);
+            log.info("Asunto: {}", asunto);
+            log.info("Cuerpo HTML: {}", cuerpoHTML);
+            log.info("Adjunto: {} (ruta: {})", nombreAdjunto, adjunto);
+            return;
+        }
+
+        try {
+            MimeMessage mensaje = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mensaje, true, "UTF-8");
+
+            helper.setFrom(emailFrom);
+            helper.setTo(destinatario);
+            helper.setSubject(asunto);
+            helper.setText(cuerpoHTML, true);
+            helper.addAttachment(nombreAdjunto, new FileSystemResource(adjunto.toFile()));
+
+            mailSender.send(mensaje);
+            log.info("Correo HTML con adjunto '{}' enviado exitosamente a: {}", nombreAdjunto, destinatario);
+        } catch (MessagingException e) {
+            log.error("Error al enviar correo HTML con adjunto a {}: {}", destinatario, e.getMessage());
+            throw new RuntimeException("Error al enviar correo HTML con adjunto", e);
         }
     }
 
