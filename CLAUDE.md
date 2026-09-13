@@ -81,7 +81,13 @@ en el código existente del microservicio correspondiente.
 
 ## Deuda técnica conocida
 
-- **Cero tests reales, pese a la convención "obligatoria"**: no existe ni un solo archivo de test en ninguno de los 7 microservicios backend ni en el frontend, a pesar de que este documento marca JUnit5+Mockito+TestContainers como obligatorios. El pipeline de CI (`pipeline.yml`) tiene una fase "Tests" que en la práctica no verifica nada:
-  - Backend: `./mvnw clean verify` por servicio pasa en verde trivialmente al no haber tests que ejecutar — falso verde.
-  - Frontend: no ejecuta `ng test` en absoluto, solo `ng build` (compila). El propio pipeline tiene un comentario diciendo que los tests están deshabilitados "porque los specs usan dependencias reales sin mockear", pero no existe ningún `.spec.ts` en el proyecto — el comentario parece un resto de una versión anterior con tests que fueron eliminados.
-  - Cualquier fix o feature nueva en microservicios críticos (auth, incidencias) debería empezar a incluir tests reales, ya que ahora mismo el CI no da ninguna garantía real de que el código funcione antes de desplegar a producción.
+- **Cobertura de tests muy desigual entre módulos**: la convención de este documento (JUnit5 + Mockito, TestContainers) solo se cumple en parte.
+  - `contratos` es el módulo mejor cubierto: ~98 tests (servicios, clientes REST, repositorio e integración de flujo).
+  - `tarjetas` tiene tests unitarios del ciclo de solicitudes y sus correos.
+  - `auth`, `socios`, `petroleras`, `creditos` y `dispositivos` solo tienen el `contextLoads` que genera Spring Initializr: ahí `./mvnw clean verify` sigue pasando en verde sin verificar nada.
+  - Frontend: 13 specs, con cobertura real en `creditos`, `dispositivos` y `plantillas-tarjetas`; el resto son scaffolds de "should create".
+  - `ng test` sí se ejecuta en CI desde 2026-08. Antes estaba deshabilitado y la suite entera estaba rota (Karma no cargaba `zone.js` y a la mayoría de specs les faltaban providers).
+  - Ojo con JaCoCo: la versión fijada (0.8.12) no sabe leer class files de Java 25, por eso el pipeline pasa `-Djacoco.skip=true`. Un `./mvnw verify` en local sin ese flag falla en el goal `report` aunque los tests estén en verde.
+  - Cualquier fix o feature nueva debe seguir incluyendo tests, empezando por los microservicios que hoy no tienen ninguno.
+
+- **Documentos de socios versionados en Git**: `backend/contratos/storage/` tiene ~190 PDFs de solicitudes reales (`SOL-2025-*`, `SOL-2026-*`) commiteados, y no hay ninguna regla en `.gitignore` que lo evite. Son documentos con datos personales (nombre, NIF, dirección, cuenta bancaria). El directorio es almacenamiento de la aplicación en tiempo de ejecución, no código: debería estar ignorado y, idealmente, purgado del historial.
