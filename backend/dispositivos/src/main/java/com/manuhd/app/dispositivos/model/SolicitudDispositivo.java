@@ -53,8 +53,18 @@ public class SolicitudDispositivo {
     @Column(name = "matricula_destino", length = 20)
     private String matriculaDestino;
 
+    /** Importe SOLICITADO a la petrolera (solo para tipo SOLICITUD_CREDITO). */
     @Column(precision = 10, scale = 2)
     private BigDecimal monto;
+
+    /**
+     * Importe realmente CONCEDIDO por la petrolera (solo para tipo SOLICITUD_CREDITO).
+     *
+     * Null mientras no haya respuesta, si la solicitud fue denegada o si el tipo no lleva
+     * importe. Puede diferir del solicitado.
+     */
+    @Column(name = "monto_concedido", precision = 10, scale = 2)
+    private BigDecimal montoConcedido;
 
     @Column(columnDefinition = "TEXT")
     private String observaciones;

@@ -178,12 +178,21 @@ public class CreditoService {
     }
 
     @Transactional
-    public CreditoDTO responderPetrolera(Long creditoId, boolean aprobado, String respuesta) {
+    public CreditoDTO responderPetrolera(Long creditoId, boolean aprobado, String respuesta,
+            BigDecimal montoConcedido) {
         Credito credito = creditoRepository.findById(creditoId)
                 .orElseThrow(() -> new RuntimeException("Crédito no encontrado con id: " + creditoId));
 
         if (credito.getEstado() != EstadoCredito.ENVIADO_PETROLERA) {
             throw new RuntimeException("El crédito no está en estado ENVIADO_PETROLERA");
+        }
+
+        // El importe concedido solo tiene sentido al aprobar. Al denegar se ignora lo que llegue
+        // y se deja a null: no hay importe concedido si la petrolera no concede nada.
+        if (aprobado) {
+            credito.setMontoConcedido(validarMontoConcedido(credito, montoConcedido));
+        } else {
+            credito.setMontoConcedido(null);
         }
 
         credito.setEstado(aprobado ? EstadoCredito.APROBADO : EstadoCredito.DENEGADO);
@@ -197,6 +206,22 @@ public class CreditoService {
         notificarSocio(creditoId);
 
         return convertirADTO(actualizado);
+    }
+
+    /**
+     * Valida el importe concedido al aprobar un crédito.
+     *
+     * La devolución de aval no lleva importe solicitado, por lo que tampoco lleva concedido:
+     * en ese caso se ignora lo que llegue y se guarda null.
+     */
+    private BigDecimal validarMontoConcedido(Credito credito, BigDecimal montoConcedido) {
+        if (credito.getTipoCredito() == TipoCredito.DEVOLUCION_AVAL) {
+            return null;
+        }
+        if (montoConcedido == null || montoConcedido.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("El importe concedido es obligatorio y debe ser mayor que 0");
+        }
+        return montoConcedido;
     }
 
     @Transactional
@@ -228,7 +253,8 @@ public class CreditoService {
             "<p><strong>Detalles:</strong></p>" +
             "<ul>" +
             "<li>Tipo: %s</li>" +
-            "<li>Monto: %s</li>" +
+            "<li>Importe solicitado: %s</li>" +
+            "%s" +
             "<li>Estado: %s</li>" +
             "<li>Respuesta: %s</li>" +
             "</ul>" +
@@ -240,6 +266,9 @@ public class CreditoService {
             credito.getEstado() == EstadoCredito.APROBADO ? "APROBADA" : "DENEGADA",
             credito.getTipoCredito(),
             credito.getMonto() != null ? credito.getMonto().toString() + " €" : "N/A",
+            credito.getMontoConcedido() != null
+                ? "<li>Importe concedido: " + credito.getMontoConcedido().toString() + " €</li>"
+                : "",
             credito.getEstado(),
             credito.getRespuestaPetrolera() != null ? credito.getRespuestaPetrolera() : "Sin comentarios"
         );
@@ -281,6 +310,8 @@ public class CreditoService {
         variables.put("petrolera_nombre", (String) petrolera.get("nombre"));
         variables.put("tipo_credito", credito.getTipoCredito().name());
         variables.put("monto", credito.getMonto() != null ? credito.getMonto().toString() : "N/A");
+        variables.put("monto_concedido",
+                credito.getMontoConcedido() != null ? credito.getMontoConcedido().toString() : "N/A");
         variables.put("observaciones", credito.getObservaciones() != null ? credito.getObservaciones() : "");
         variables.put("fecha_solicitud", credito.getCreatedAt().toString());
 
@@ -387,6 +418,7 @@ public class CreditoService {
         dto.setTipoCredito(credito.getTipoCredito());
         dto.setEstado(credito.getEstado());
         dto.setMonto(credito.getMonto());
+        dto.setMontoConcedido(credito.getMontoConcedido());
         dto.setObservaciones(credito.getObservaciones());
         dto.setFechaEnvioPetrolera(credito.getFechaEnvioPetrolera());
         dto.setFechaRespuestaPetrolera(credito.getFechaRespuestaPetrolera());

@@ -72,6 +72,8 @@ export class Dispositivos implements OnInit {
   solicitudRespondiendo?: SolicitudDispositivo;
   aprobandoRespuesta: boolean = false;
   comentarioRespuesta: string = '';
+  /** Importe concedido por la petrolera; se precarga con el solicitado al abrir el modal. */
+  montoConcedidoRespuesta: number | null = null;
 
   constructor(
     private dispositivoService: DispositivoService,
@@ -299,6 +301,9 @@ export class Dispositivos implements OnInit {
     this.solicitudRespondiendo = solicitud;
     this.aprobandoRespuesta = aprobado;
     this.comentarioRespuesta = '';
+    this.intentoGuardar = false;
+    // Lo habitual es que la petrolera conceda lo solicitado: se precarga para no reescribirlo
+    this.montoConcedidoRespuesta = aprobado ? solicitud.monto ?? null : null;
     this.mostrarModalRespuesta = true;
   }
 
@@ -306,15 +311,37 @@ export class Dispositivos implements OnInit {
     this.mostrarModalRespuesta = false;
     this.solicitudRespondiendo = undefined;
     this.comentarioRespuesta = '';
+    this.montoConcedidoRespuesta = null;
+    this.intentoGuardar = false;
+  }
+
+  /** Solo la solicitud de crédito lleva importe, y por tanto importe concedido. */
+  requiereImporteConcedido(solicitud?: SolicitudDispositivo): boolean {
+    return !!solicitud && solicitud.tipoSolicitud === TipoSolicitudDispositivo.SOLICITUD_CREDITO;
+  }
+
+  /** El importe concedido difiere del solicitado (se resalta en el listado y el detalle). */
+  importeDifiere(solicitud: SolicitudDispositivo): boolean {
+    return solicitud.montoConcedido != null && solicitud.monto != null
+      && Number(solicitud.montoConcedido) !== Number(solicitud.monto);
   }
 
   confirmarRespuesta(): void {
     if (!this.solicitudRespondiendo) return;
+    this.intentoGuardar = true;
+
+    const exigeImporte = this.aprobandoRespuesta && this.requiereImporteConcedido(this.solicitudRespondiendo);
+    if (exigeImporte && (!this.montoConcedidoRespuesta || this.montoConcedidoRespuesta <= 0)) {
+      this.notificationService.error('El importe concedido es obligatorio y debe ser mayor que 0');
+      return;
+    }
+
     if (!confirm('¿Está seguro de ' + (this.aprobandoRespuesta ? 'aprobar' : 'denegar') + ' esta solicitud?')) return;
     this.dispositivoService.responderPetrolera(
       this.solicitudRespondiendo.id!,
       this.aprobandoRespuesta,
-      this.comentarioRespuesta
+      this.comentarioRespuesta,
+      exigeImporte ? this.montoConcedidoRespuesta : null
     ).subscribe({
       next: () => {
         this.notificationService.success(`Solicitud ${this.aprobandoRespuesta ? 'aprobada' : 'denegada'} exitosamente`);

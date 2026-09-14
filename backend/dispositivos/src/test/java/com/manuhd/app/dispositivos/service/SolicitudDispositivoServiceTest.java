@@ -205,4 +205,98 @@ class SolicitudDispositivoServiceTest {
 
         verify(dispositivoRepository, never()).findById(anyLong());
     }
+
+    // --- Importe concedido por la petrolera ---------------------------------------------
+
+    private SolicitudDispositivo solicitudEnviada(TipoSolicitud tipo, BigDecimal monto) {
+        SolicitudDispositivo solicitud = new SolicitudDispositivo();
+        solicitud.setId(1L);
+        solicitud.setSocioId(SOCIO_ID);
+        solicitud.setPetroleraId(PETROLERA_ID);
+        solicitud.setTipoSolicitud(tipo);
+        solicitud.setEstado(EstadoSolicitud.ENVIADO_PETROLERA);
+        solicitud.setMonto(monto);
+        solicitud.setMatricula("1234ABC");
+        when(solicitudRepository.findById(1L)).thenReturn(java.util.Optional.of(solicitud));
+
+        // La notificacion al socio consulta los microservicios de socios y petroleras
+        java.util.Map<String, Object> socio = new java.util.HashMap<>();
+        socio.put("nombre", "Transportes Perez");
+        socio.put("email", "socio@example.com");
+        when(restTemplate.getForObject(eq("http://socios:8081/api/socios/" + SOCIO_ID), eq(java.util.Map.class)))
+                .thenReturn(socio);
+        java.util.Map<String, Object> petrolera = new java.util.HashMap<>();
+        petrolera.put("nombre", "Cepsa (Moeve)");
+        petrolera.put("email", "petrolera@example.com");
+        when(restTemplate.getForObject(eq(URL_PETROLERA), eq(java.util.Map.class))).thenReturn(petrolera);
+        return solicitud;
+    }
+
+    @Test
+    void registraElImporteConcedidoAlAprobarUnaSolicitudDeCredito() {
+        SolicitudDispositivo solicitud = solicitudEnviada(TipoSolicitud.SOLICITUD_CREDITO, new BigDecimal("12000.00"));
+
+        service.responderPetrolera(1L, true, "OK", new BigDecimal("12000.00"));
+
+        assertThat(solicitud.getMontoConcedido()).isEqualByComparingTo("12000.00");
+    }
+
+    @Test
+    void persisteUnImporteConcedidoDistintoDelSolicitado() {
+        SolicitudDispositivo solicitud = solicitudEnviada(TipoSolicitud.SOLICITUD_CREDITO, new BigDecimal("2000.00"));
+
+        service.responderPetrolera(1L, true, "Ampliado", new BigDecimal("4000.00"));
+
+        assertThat(solicitud.getMonto()).isEqualByComparingTo("2000.00");
+        assertThat(solicitud.getMontoConcedido()).isEqualByComparingTo("4000.00");
+    }
+
+    @Test
+    void rechazaLaAprobacionDeCreditoSinImporteConcedido() {
+        SolicitudDispositivo solicitud = solicitudEnviada(TipoSolicitud.SOLICITUD_CREDITO, new BigDecimal("2000.00"));
+
+        assertThatThrownBy(() -> service.responderPetrolera(1L, true, "OK", null))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("importe concedido");
+
+        assertThat(solicitud.getEstado()).isEqualTo(EstadoSolicitud.ENVIADO_PETROLERA);
+    }
+
+    @Test
+    void rechazaLaAprobacionDeCreditoConImporteConcedidoCeroONegativo() {
+        solicitudEnviada(TipoSolicitud.SOLICITUD_CREDITO, new BigDecimal("2000.00"));
+
+        assertThatThrownBy(() -> service.responderPetrolera(1L, true, "OK", BigDecimal.ZERO))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("mayor que 0");
+
+        assertThatThrownBy(() -> service.responderPetrolera(1L, true, "OK", new BigDecimal("-1")))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("mayor que 0");
+    }
+
+    @Test
+    void alDenegarNoSeGuardaImporteConcedido() {
+        SolicitudDispositivo solicitud = solicitudEnviada(TipoSolicitud.SOLICITUD_CREDITO, new BigDecimal("2000.00"));
+
+        service.responderPetrolera(1L, false, "Denegado", new BigDecimal("2000.00"));
+
+        assertThat(solicitud.getMontoConcedido()).isNull();
+    }
+
+    @Test
+    void unTipoSinImporteSeApruebaSinImporteConcedido() {
+        SolicitudDispositivo solicitud = solicitudEnviada(TipoSolicitud.BAJA_DISPOSITIVO, null);
+        solicitud.setDispositivoId(DISPOSITIVO_ID);
+        Dispositivo dispositivo = new Dispositivo();
+        dispositivo.setId(DISPOSITIVO_ID);
+        dispositivo.setMatricula("1234ABC");
+        dispositivo.setActivo(true);
+        when(dispositivoRepository.findById(DISPOSITIVO_ID)).thenReturn(java.util.Optional.of(dispositivo));
+
+        // Aunque llegue un importe, un tipo que no es credito no lo guarda
+        service.responderPetrolera(1L, true, "OK", new BigDecimal("500.00"));
+
+        assertThat(solicitud.getMontoConcedido()).isNull();
+    }
 }

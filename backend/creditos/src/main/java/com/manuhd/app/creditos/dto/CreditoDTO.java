@@ -40,7 +40,11 @@ public class CreditoDTO {
     @NotNull(message = "El estado es obligatorio")
     private EstadoCredito estado;
 
+    /** Importe solicitado a la petrolera. */
     private BigDecimal monto;
+
+    /** Importe concedido por la petrolera (null si aun no hay respuesta o fue denegado). */
+    private BigDecimal montoConcedido;
 
     private String observaciones;
 

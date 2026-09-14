@@ -21,7 +21,8 @@ describe('Creditos', () => {
     socioId: 10,
     petroleraId: 20,
     tipoCredito: TipoCredito.SOLICITUD_CREDITO,
-    estado: EstadoCredito.ENVIADO_PETROLERA
+    estado: EstadoCredito.ENVIADO_PETROLERA,
+    monto: 12000
   };
 
   beforeEach(async () => {
@@ -126,12 +127,85 @@ describe('Creditos', () => {
     it('aprueba el crédito y notifica éxito si el usuario confirma', () => {
       spyOn(window, 'confirm').and.returnValue(true);
       component.aprobandoRespuesta = true;
+      // Aprobar exige importe concedido: se precarga con el solicitado
+      component.montoConcedidoRespuesta = credito.monto;
       creditoServiceSpy.responderPetrolera.and.returnValue(of(credito as any));
 
       component.confirmarRespuesta();
 
-      expect(creditoServiceSpy.responderPetrolera).toHaveBeenCalledWith(credito.id, true, component.comentarioRespuesta);
+      expect(creditoServiceSpy.responderPetrolera).toHaveBeenCalledWith(credito.id, true, '', credito.monto);
       expect(notificationServiceSpy.success).toHaveBeenCalled();
+    });
+  });
+
+  describe('importe concedido en el modal de respuesta', () => {
+    it('precarga el importe concedido con el importe solicitado al aprobar', () => {
+      component.abrirModalRespuesta(credito as any, true);
+
+      expect(component.montoConcedidoRespuesta).toBe(12000);
+      expect(component.intentoGuardar).toBeFalse();
+    });
+
+    it('no precarga importe al denegar', () => {
+      component.abrirModalRespuesta(credito as any, false);
+
+      expect(component.montoConcedidoRespuesta).toBeNull();
+    });
+
+    it('oculta el campo al denegar y lo muestra al aprobar (salvo devolucion de aval)', () => {
+      expect(component.requiereImporteConcedido(credito as any)).toBeTrue();
+      expect(component.requiereImporteConcedido(
+        { ...credito, tipoCredito: TipoCredito.DEVOLUCION_AVAL } as any)).toBeFalse();
+    });
+
+    it('exige el importe concedido al aprobar y no llama al backend si falta', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      component.abrirModalRespuesta(credito as any, true);
+      component.montoConcedidoRespuesta = null;
+
+      component.confirmarRespuesta();
+
+      expect(component.intentoGuardar).toBeTrue();
+      expect(creditoServiceSpy.responderPetrolera).not.toHaveBeenCalled();
+      expect(notificationServiceSpy.error).toHaveBeenCalled();
+    });
+
+    it('rechaza un importe concedido de 0 o negativo', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      component.abrirModalRespuesta(credito as any, true);
+      component.montoConcedidoRespuesta = 0;
+
+      component.confirmarRespuesta();
+
+      expect(creditoServiceSpy.responderPetrolera).not.toHaveBeenCalled();
+    });
+
+    it('envia null como importe concedido al denegar', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      creditoServiceSpy.responderPetrolera.and.returnValue(of(credito as any));
+      component.abrirModalRespuesta(credito as any, false);
+      component.comentarioRespuesta = 'Denegado';
+
+      component.confirmarRespuesta();
+
+      expect(creditoServiceSpy.responderPetrolera).toHaveBeenCalledWith(credito.id, false, 'Denegado', null);
+    });
+
+    it('envia el importe concedido cuando difiere del solicitado', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      creditoServiceSpy.responderPetrolera.and.returnValue(of(credito as any));
+      component.abrirModalRespuesta(credito as any, true);
+      component.montoConcedidoRespuesta = 8000;
+
+      component.confirmarRespuesta();
+
+      expect(creditoServiceSpy.responderPetrolera).toHaveBeenCalledWith(credito.id, true, '', 8000);
+    });
+
+    it('detecta cuando el importe concedido difiere del solicitado', () => {
+      expect(component.importeDifiere({ ...credito, montoConcedido: 8000 } as any)).toBeTrue();
+      expect(component.importeDifiere({ ...credito, montoConcedido: 12000 } as any)).toBeFalse();
+      expect(component.importeDifiere(credito as any)).toBeFalse();
     });
   });
 });

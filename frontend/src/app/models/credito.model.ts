@@ -11,7 +11,10 @@ export interface Credito {
   petroleraEmail?: string;
   tipoCredito: TipoCredito;
   estado: EstadoCredito;
+  /** Importe solicitado a la petrolera. */
   monto?: number;
+  /** Importe concedido por la petrolera (null/undefined si aun no hay respuesta o fue denegado). */
+  montoConcedido?: number;
   observaciones?: string;
   fechaEnvioPetrolera?: string;
   fechaRespuestaPetrolera?: string;

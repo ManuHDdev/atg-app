@@ -63,6 +63,8 @@ export class Creditos implements OnInit {
   creditoRespondiendo?: Credito;
   aprobandoRespuesta: boolean = false;
   comentarioRespuesta: string = '';
+  /** Importe concedido por la petrolera; se precarga con el solicitado al abrir el modal. */
+  montoConcedidoRespuesta: number | null = null;
 
   constructor(
     private creditoService: CreditoService,
@@ -208,6 +210,9 @@ export class Creditos implements OnInit {
     this.creditoRespondiendo = credito;
     this.aprobandoRespuesta = aprobado;
     this.comentarioRespuesta = '';
+    this.intentoGuardar = false;
+    // Lo habitual es que la petrolera conceda lo solicitado: se precarga para no reescribirlo
+    this.montoConcedidoRespuesta = aprobado ? credito.monto ?? null : null;
     this.mostrarModalRespuesta = true;
   }
 
@@ -215,15 +220,37 @@ export class Creditos implements OnInit {
     this.mostrarModalRespuesta = false;
     this.creditoRespondiendo = undefined;
     this.comentarioRespuesta = '';
+    this.montoConcedidoRespuesta = null;
+    this.intentoGuardar = false;
+  }
+
+  /** La devolución de aval no lleva importe, así que tampoco importe concedido. */
+  requiereImporteConcedido(credito?: Credito): boolean {
+    return !!credito && credito.tipoCredito !== TipoCredito.DEVOLUCION_AVAL;
+  }
+
+  /** El importe concedido difiere del solicitado (se resalta en el listado y el detalle). */
+  importeDifiere(credito: Credito): boolean {
+    return credito.montoConcedido != null && credito.monto != null
+      && Number(credito.montoConcedido) !== Number(credito.monto);
   }
 
   confirmarRespuesta(): void {
     if (!this.creditoRespondiendo) return;
+    this.intentoGuardar = true;
+
+    const exigeImporte = this.aprobandoRespuesta && this.requiereImporteConcedido(this.creditoRespondiendo);
+    if (exigeImporte && (!this.montoConcedidoRespuesta || this.montoConcedidoRespuesta <= 0)) {
+      this.notificationService.error('El importe concedido es obligatorio y debe ser mayor que 0');
+      return;
+    }
+
     if (!confirm('¿Está seguro de ' + (this.aprobandoRespuesta ? 'aprobar' : 'denegar') + ' este crédito?')) return;
     this.creditoService.responderPetrolera(
       this.creditoRespondiendo.id!,
       this.aprobandoRespuesta,
-      this.comentarioRespuesta
+      this.comentarioRespuesta,
+      exigeImporte ? this.montoConcedidoRespuesta : null
     ).subscribe({
       next: () => {
         this.notificationService.success(`Crédito ${this.aprobandoRespuesta ? 'aprobado' : 'denegado'} exitosamente`);

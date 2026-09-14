@@ -19,6 +19,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -135,5 +136,93 @@ class CreditoServiceTest {
                 .hasMessageContaining("No se ha podido verificar la petrolera");
 
         verify(creditoRepository, never()).save(any(Credito.class));
+    }
+
+    // --- Importe concedido por la petrolera ---------------------------------------------
+
+    private Credito creditoEnviado(TipoCredito tipo, BigDecimal monto) {
+        Credito credito = new Credito();
+        credito.setId(1L);
+        credito.setSocioId(SOCIO_ID);
+        credito.setPetroleraId(PETROLERA_ID);
+        credito.setTipoCredito(tipo);
+        credito.setEstado(EstadoCredito.ENVIADO_PETROLERA);
+        credito.setMonto(monto);
+        when(creditoRepository.findById(1L)).thenReturn(Optional.of(credito));
+
+        // La notificacion al socio consulta el microservicio de socios
+        java.util.Map<String, Object> socio = new java.util.HashMap<>();
+        socio.put("nombre", "Transportes Perez");
+        socio.put("email", "socio@example.com");
+        when(restTemplate.getForObject(eq("http://socios:8081/api/socios/" + SOCIO_ID), eq(java.util.Map.class)))
+                .thenReturn(socio);
+        return credito;
+    }
+
+    @Test
+    void registraElImporteConcedidoAlAprobar() {
+        Credito credito = creditoEnviado(TipoCredito.SOLICITUD_CREDITO, new BigDecimal("12000.00"));
+
+        service.responderPetrolera(1L, true, "OK", new BigDecimal("12000.00"));
+
+        assertThat(credito.getMontoConcedido()).isEqualByComparingTo("12000.00");
+        assertThat(credito.getMonto()).isEqualByComparingTo("12000.00");
+    }
+
+    @Test
+    void persisteUnImporteConcedidoDistintoDelSolicitado() {
+        Credito credito = creditoEnviado(TipoCredito.SOLICITUD_CREDITO, new BigDecimal("50000.00"));
+
+        service.responderPetrolera(1L, true, "Concedido parcialmente", new BigDecimal("30000.00"));
+
+        assertThat(credito.getMonto()).isEqualByComparingTo("50000.00");
+        assertThat(credito.getMontoConcedido()).isEqualByComparingTo("30000.00");
+    }
+
+    @Test
+    void rechazaLaAprobacionSinImporteConcedido() {
+        Credito credito = creditoEnviado(TipoCredito.SOLICITUD_CREDITO, new BigDecimal("2000.00"));
+
+        assertThatThrownBy(() -> service.responderPetrolera(1L, true, "OK", null))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("importe concedido");
+
+        assertThat(credito.getEstado()).isEqualTo(EstadoCredito.ENVIADO_PETROLERA);
+        verify(creditoRepository, never()).save(any(Credito.class));
+    }
+
+    @Test
+    void rechazaLaAprobacionConImporteConcedidoCeroONegativo() {
+        creditoEnviado(TipoCredito.SOLICITUD_CREDITO, new BigDecimal("2000.00"));
+
+        assertThatThrownBy(() -> service.responderPetrolera(1L, true, "OK", BigDecimal.ZERO))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("mayor que 0");
+
+        assertThatThrownBy(() -> service.responderPetrolera(1L, true, "OK", new BigDecimal("-10")))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("mayor que 0");
+
+        verify(creditoRepository, never()).save(any(Credito.class));
+    }
+
+    @Test
+    void alDenegarNoSeGuardaImporteConcedido() {
+        Credito credito = creditoEnviado(TipoCredito.SOLICITUD_CREDITO, new BigDecimal("4000.00"));
+
+        // Aunque llegue un importe, al denegar se ignora y queda a null
+        service.responderPetrolera(1L, false, "Sin riesgo suficiente", new BigDecimal("4000.00"));
+
+        assertThat(credito.getMontoConcedido()).isNull();
+    }
+
+    @Test
+    void laDevolucionDeAvalSeApruebaSinImporteConcedido() {
+        Credito credito = creditoEnviado(TipoCredito.DEVOLUCION_AVAL, null);
+
+        service.responderPetrolera(1L, true, "OK", null);
+
+        assertThat(credito.getMontoConcedido()).isNull();
+        assertThat(credito.getEstado()).isEqualTo(EstadoCredito.COMPLETADO_APROBADO);
     }
 }
