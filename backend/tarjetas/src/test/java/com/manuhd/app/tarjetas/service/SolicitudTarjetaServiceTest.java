@@ -2,6 +2,7 @@ package com.manuhd.app.tarjetas.service;
 
 import com.manuhd.app.tarjetas.dto.AprobarBajaDTO;
 import com.manuhd.app.tarjetas.dto.AprobarDuplicadoDTO;
+import com.manuhd.app.tarjetas.dto.CrearSolicitudDTO;
 import com.manuhd.app.tarjetas.dto.EnvioCorreoResult;
 import com.manuhd.app.tarjetas.dto.MarcarEntregadaDTO;
 import com.manuhd.app.tarjetas.dto.PetroleraDTO;
@@ -35,14 +36,17 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.contains;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -148,6 +152,29 @@ class SolicitudTarjetaServiceTest {
                 .thenReturn(new EnvioCorreoResult(true, tipo.name(), EMAIL_SOCIO));
     }
 
+    /** Plantilla obligatoria (obtenerPlantillaActiva): los correos de llegada y de alta. */
+    private void mockPlantillaObligatoria(TipoPlantilla tipo) {
+        when(plantillaService.obtenerPlantillaActiva(tipo)).thenReturn(plantilla(tipo));
+        when(emailService.enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), eq(tipo.name())))
+                .thenReturn(new EnvioCorreoResult(true, tipo.name(), EMAIL_SOCIO));
+    }
+
+    /** Alta de solicitud: create() guarda la solicitud y despues su registro de correos. */
+    private void mockGuardadoDeNuevaSolicitud() {
+        when(repository.save(any(SolicitudTarjeta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    private CrearSolicitudDTO crearDTO(TipoSolicitud tipo, LocalDate fechaLlegadaEstimada) {
+        CrearSolicitudDTO dto = new CrearSolicitudDTO();
+        dto.setSocioId(SOCIO_ID);
+        dto.setPetroleraId(PETROLERA_ID);
+        dto.setMatricula("1234ABC");
+        dto.setNumeroContrato("CTR-9876");
+        dto.setTipo(tipo);
+        dto.setFechaLlegadaEstimada(fechaLlegadaEstimada);
+        return dto;
+    }
+
     @SuppressWarnings("unchecked")
     private Map<String, String> capturarVariables(TipoPlantilla tipo) {
         ArgumentCaptor<Map<String, String>> captor = ArgumentCaptor.forClass(Map.class);
@@ -167,16 +194,16 @@ class SolicitudTarjetaServiceTest {
         return tarjeta;
     }
 
-    // ---------- aprobar ----------
+    // ---------- respuesta de la petrolera ----------
 
     @Test
-    void aprobarEnviaCorreoDeAltaAprobadaYPasaAAprobada() {
+    void aprobarPorPetroleraEnviaCorreoDeAltaAprobadaYPasaAAprobada() {
         SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
         mockSolicitudGuardada(solicitud);
         mockServiciosExternos();
         mockPlantillaActiva(TipoPlantilla.ALTA_APROBADA);
 
-        SolicitudTarjetaDTO resultado = service.aprobar(SOLICITUD_ID);
+        SolicitudTarjetaDTO resultado = service.aprobarPorPetrolera(SOLICITUD_ID);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.APROBADA);
         verify(emailService).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
@@ -185,29 +212,29 @@ class SolicitudTarjetaServiceTest {
     }
 
     @Test
-    void aprobarSinPlantillaActivaNoRompeLaTransicionNiRegistraCorreos() {
+    void aprobarPorPetroleraSinPlantillaActivaNoRompeLaTransicionNiRegistraCorreos() {
         SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
         mockSolicitudGuardada(solicitud);
         mockServiciosExternos();
         when(plantillaService.buscarPlantillaActiva(TipoPlantilla.ALTA_APROBADA)).thenReturn(Optional.empty());
 
-        SolicitudTarjetaDTO resultado = service.aprobar(SOLICITUD_ID);
+        SolicitudTarjetaDTO resultado = service.aprobarPorPetrolera(SOLICITUD_ID);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.APROBADA);
         assertThat(solicitud.getCorreosEnviados()).isNull();
         verify(emailService, never()).enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), anyString());
     }
 
-    // ---------- rechazar ----------
+    // ---------- denegación de la petrolera ----------
 
     @Test
-    void rechazarEnviaCorreoDeAltaRechazadaConElMotivoYPasaARechazada() {
+    void denegarPorPetroleraEnviaCorreoDeAltaRechazadaConElMotivoYPasaARechazada() {
         SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
         mockSolicitudGuardada(solicitud);
         mockServiciosExternos();
         mockPlantillaActiva(TipoPlantilla.ALTA_RECHAZADA);
 
-        SolicitudTarjetaDTO resultado = service.rechazar(SOLICITUD_ID, "Contrato no vigente");
+        SolicitudTarjetaDTO resultado = service.denegarPorPetrolera(SOLICITUD_ID, "Contrato no vigente");
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.RECHAZADA);
         assertThat(capturarVariables(TipoPlantilla.ALTA_RECHAZADA))
@@ -215,10 +242,10 @@ class SolicitudTarjetaServiceTest {
         assertThat(solicitud.getCorreosEnviados()).contains(TipoPlantilla.ALTA_RECHAZADA.name());
     }
 
-    // ---------- aprobarBaja / aprobarDuplicado ----------
+    // ---------- baja / duplicado aprobados por la petrolera ----------
 
     @Test
-    void aprobarBajaEnviaBajaConfirmadaYNoBajaSocio() {
+    void aprobarBajaPorPetroleraEnviaBajaConfirmadaYNoBajaSocio() {
         SolicitudTarjeta solicitud = solicitud(TipoSolicitud.BAJA);
         solicitud.setTarjetaId(TARJETA_ID);
         mockSolicitudGuardada(solicitud);
@@ -227,7 +254,7 @@ class SolicitudTarjetaServiceTest {
         mockPlantillaActiva(TipoPlantilla.BAJA_CONFIRMADA);
 
         AprobarBajaDTO dto = new AprobarBajaDTO(LocalDate.of(2026, 1, 15), null);
-        SolicitudTarjetaDTO resultado = service.aprobarBaja(SOLICITUD_ID, dto);
+        SolicitudTarjetaDTO resultado = service.aprobarBajaPorPetrolera(SOLICITUD_ID, dto);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.COMPLETADA);
         verify(emailService).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
@@ -238,7 +265,7 @@ class SolicitudTarjetaServiceTest {
     }
 
     @Test
-    void aprobarDuplicadoEnviaDuplicadoConfirmadaYPasaACompletada() {
+    void aprobarDuplicadoPorPetroleraEnviaDuplicadoConfirmadaYPasaACompletada() {
         SolicitudTarjeta solicitud = solicitud(TipoSolicitud.DUPLICADO);
         solicitud.setTarjetaId(TARJETA_ID);
         mockSolicitudGuardada(solicitud);
@@ -247,7 +274,7 @@ class SolicitudTarjetaServiceTest {
         mockPlantillaActiva(TipoPlantilla.DUPLICADO_CONFIRMADA);
 
         AprobarDuplicadoDTO dto = new AprobarDuplicadoDTO(LocalDate.of(2026, 2, 1), null);
-        SolicitudTarjetaDTO resultado = service.aprobarDuplicado(SOLICITUD_ID, dto);
+        SolicitudTarjetaDTO resultado = service.aprobarDuplicadoPorPetrolera(SOLICITUD_ID, dto);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.COMPLETADA);
         verify(emailService).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
@@ -301,7 +328,7 @@ class SolicitudTarjetaServiceTest {
         mockServiciosExternos();
         mockPlantillaActiva(TipoPlantilla.ALTA_APROBADA);
 
-        service.aprobar(SOLICITUD_ID);
+        service.aprobarPorPetrolera(SOLICITUD_ID);
 
         assertThat(capturarVariables(TipoPlantilla.ALTA_APROBADA))
                 .containsEntry("numeroContrato", "CTR-9876")
@@ -319,7 +346,7 @@ class SolicitudTarjetaServiceTest {
         mockServiciosExternos();
         mockPlantillaActiva(TipoPlantilla.ALTA_APROBADA);
 
-        service.aprobar(SOLICITUD_ID);
+        service.aprobarPorPetrolera(SOLICITUD_ID);
 
         assertThat(capturarVariables(TipoPlantilla.ALTA_APROBADA)).containsEntry("numeroContrato", "");
     }
@@ -327,7 +354,7 @@ class SolicitudTarjetaServiceTest {
     // ---------- trazabilidad: quien tramita sale del token ----------
 
     @Test
-    void aprobarBajaRegistraElUsuarioDelTokenComoProcesadoPor() {
+    void aprobarBajaPorPetroleraRegistraElUsuarioDelTokenComoProcesadoPor() {
         SolicitudTarjeta solicitud = solicitud(TipoSolicitud.BAJA);
         solicitud.setTarjetaId(TARJETA_ID);
         mockSolicitudGuardada(solicitud);
@@ -335,7 +362,7 @@ class SolicitudTarjetaServiceTest {
         when(tarjetaService.findById(TARJETA_ID)).thenReturn(tarjeta(1));
         when(plantillaService.buscarPlantillaActiva(TipoPlantilla.BAJA_CONFIRMADA)).thenReturn(Optional.empty());
 
-        SolicitudTarjetaDTO resultado = service.aprobarBaja(SOLICITUD_ID,
+        SolicitudTarjetaDTO resultado = service.aprobarBajaPorPetrolera(SOLICITUD_ID,
                 new AprobarBajaDTO(LocalDate.of(2026, 1, 15), null));
 
         assertThat(resultado.getProcesadoPor()).isEqualTo(USUARIO_TOKEN);
@@ -383,7 +410,7 @@ class SolicitudTarjetaServiceTest {
 
         SolicitudTarjetaDTO resultado = service.marcarEntregada(SOLICITUD_ID, new MarcarEntregadaDTO(null, null));
 
-        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.ENTREGADA);
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.COMPLETADA);
         ArgumentCaptor<Tarjeta> captor = ArgumentCaptor.forClass(Tarjeta.class);
         verify(tarjetaService, times(1)).create(captor.capture());
         assertThat(captor.getValue().getSolicitudId()).isEqualTo(SOLICITUD_ID);
@@ -400,5 +427,138 @@ class SolicitudTarjetaServiceTest {
         service.marcarEntregada(SOLICITUD_ID, new MarcarEntregadaDTO(null, null));
 
         verify(tarjetaService, never()).create(any(Tarjeta.class));
+    }
+
+    // ---------- LLEGADA: registro en un solo paso ----------
+
+    @Test
+    void crearLlegadaNaceEnTarjetaLlegadaYAvisaAlSocioUnaSolaVez() {
+        mockGuardadoDeNuevaSolicitud();
+        mockServiciosExternos();
+        mockPlantillaObligatoria(TipoPlantilla.LLEGADA_MADRID);
+
+        LocalDate fechaLlegada = LocalDate.of(2026, 4, 10);
+        SolicitudTarjetaDTO resultado = service.create(crearDTO(TipoSolicitud.LLEGADA, fechaLlegada));
+
+        // Nace ya "llegada": no pasa por PENDIENTE ni espera respuesta de la petrolera.
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.TARJETA_LLEGADA);
+        assertThat(resultado.getFechaLlegadaEstimada()).isEqualTo(fechaLlegada);
+        assertThat(resultado.getProcesadoPor()).isEqualTo(USUARIO_TOKEN);
+
+        // El aviso al socio sale exactamente una vez, no dos como en el flujo anterior.
+        verify(emailService, times(1)).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
+                eq(TipoPlantilla.LLEGADA_MADRID.name()));
+        verify(emailService, times(1)).enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), anyString());
+        assertThat(resultado.getCorreosEnviados()).contains(TipoPlantilla.LLEGADA_MADRID.name());
+    }
+
+    @Test
+    void crearLlegadaFueraDeMadridUsaLaPlantillaPostal() {
+        socio.setProvincia("Toledo");
+        mockGuardadoDeNuevaSolicitud();
+        mockServiciosExternos();
+        mockPlantillaObligatoria(TipoPlantilla.LLEGADA_FUERA);
+
+        SolicitudTarjetaDTO resultado = service.create(crearDTO(TipoSolicitud.LLEGADA, LocalDate.of(2026, 4, 10)));
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.TARJETA_LLEGADA);
+        verify(emailService, times(1)).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
+                eq(TipoPlantilla.LLEGADA_FUERA.name()));
+    }
+
+    @Test
+    void crearLlegadaSinFechaNoSeAdmite() {
+        CrearSolicitudDTO dto = crearDTO(TipoSolicitud.LLEGADA, null);
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("fecha de llegada es obligatoria");
+
+        verify(repository, never()).save(any(SolicitudTarjeta.class));
+    }
+
+    @Test
+    void registrarLlegadaNoSeAplicaAUnaSolicitudDeTipoLlegada() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.LLEGADA);
+        solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
+        when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(solicitud));
+
+        RegistrarLlegadaDTO dto = new RegistrarLlegadaDTO(LocalDate.of(2026, 3, 1), "CTR-9876", null);
+
+        assertThatThrownBy(() -> service.registrarLlegada(SOLICITUD_ID, dto))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("solicitudes de ALTA");
+
+        // Lo importante: no se reenvia el aviso de llegada al socio.
+        verify(emailService, never()).enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), anyString());
+    }
+
+    // ---------- entrega: cierra el proceso ----------
+
+    @Test
+    void marcarEntregadaCompletaLaSolicitudYRegistraLaFechaDeEntrega() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
+        solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
+        mockSolicitudGuardada(solicitud);
+
+        LocalDateTime fechaEntrega = LocalDateTime.of(2026, 5, 20, 11, 30);
+        SolicitudTarjetaDTO resultado = service.marcarEntregada(SOLICITUD_ID,
+                new MarcarEntregadaDTO(fechaEntrega, null));
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.COMPLETADA);
+        assertThat(resultado.getFechaEntrega()).isEqualTo(fechaEntrega);
+    }
+
+    @Test
+    void marcarEntregadaSinFechaUsaElMomentoActual() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
+        solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
+        mockSolicitudGuardada(solicitud);
+
+        LocalDateTime antes = LocalDateTime.now();
+        SolicitudTarjetaDTO resultado = service.marcarEntregada(SOLICITUD_ID, new MarcarEntregadaDTO(null, null));
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.COMPLETADA);
+        assertThat(resultado.getFechaEntrega()).isNotNull();
+        assertThat(resultado.getFechaEntrega()).isAfterOrEqualTo(antes);
+    }
+
+    // ---------- recorrido completo del ALTA ----------
+
+    @Test
+    void unAltaRecorreTodoSuCaminoHastaCompletada() {
+        mockGuardadoDeNuevaSolicitud();
+        mockServiciosExternos();
+        mockPlantillaObligatoria(TipoPlantilla.ALTA_SOCIO);
+        mockPlantillaObligatoria(TipoPlantilla.ALTA_PETROLERA);
+        mockPlantillaObligatoria(TipoPlantilla.LLEGADA_MADRID);
+        when(plantillaService.buscarPlantillaActiva(TipoPlantilla.ALTA_APROBADA)).thenReturn(Optional.empty());
+
+        // 1. Se presenta el alta a la petrolera: queda pendiente de su respuesta.
+        SolicitudTarjetaDTO creada = service.create(crearDTO(TipoSolicitud.ALTA, null));
+        assertThat(creada.getEstado()).isEqualTo(EstadoSolicitud.PENDIENTE);
+        verify(emailService).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
+                eq(TipoPlantilla.ALTA_SOCIO.name()));
+
+        // La solicitud viva es la que se guardo: se reutiliza en los pasos siguientes.
+        ArgumentCaptor<SolicitudTarjeta> captor = ArgumentCaptor.forClass(SolicitudTarjeta.class);
+        verify(repository, atLeastOnce()).save(captor.capture());
+        SolicitudTarjeta enCurso = captor.getValue();
+        enCurso.setId(SOLICITUD_ID);
+        when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(enCurso));
+
+        // 2. La petrolera responde que si.
+        assertThat(service.aprobarPorPetrolera(SOLICITUD_ID).getEstado()).isEqualTo(EstadoSolicitud.APROBADA);
+
+        // 3. Llega la tarjeta fisica y se avisa al socio.
+        SolicitudTarjetaDTO conLlegada = service.registrarLlegada(SOLICITUD_ID,
+                new RegistrarLlegadaDTO(LocalDate.of(2026, 6, 1), "CTR-9876", null));
+        assertThat(conLlegada.getEstado()).isEqualTo(EstadoSolicitud.TARJETA_LLEGADA);
+
+        // 4. Se entrega al socio: se crea la tarjeta y el proceso queda cerrado.
+        SolicitudTarjetaDTO entregada = service.marcarEntregada(SOLICITUD_ID, new MarcarEntregadaDTO(null, null));
+        assertThat(entregada.getEstado()).isEqualTo(EstadoSolicitud.COMPLETADA);
+        assertThat(entregada.getFechaEntrega()).isNotNull();
+        verify(tarjetaService, times(1)).create(any(Tarjeta.class));
     }
 }

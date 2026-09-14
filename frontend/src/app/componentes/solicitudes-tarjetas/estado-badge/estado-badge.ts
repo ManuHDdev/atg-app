@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-type EstadoSolicitud = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'TARJETA_LLEGADA' | 'ENTREGADA' | 'COMPLETADA';
+type EstadoSolicitud = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'TARJETA_LLEGADA' | 'COMPLETADA';
 
 @Component({
   selector: 'app-estado-badge',
@@ -21,10 +21,9 @@ export class EstadoBadge {
   get estadoLabel(): string {
     const labels: Record<EstadoSolicitud, string> = {
       'PENDIENTE': 'Pendiente',
-      'APROBADA': 'Aprobada',
-      'RECHAZADA': 'Rechazada',
+      'APROBADA': 'Aprobada por la petrolera',
+      'RECHAZADA': 'Denegada por la petrolera',
       'TARJETA_LLEGADA': 'Tarjeta Llegada',
-      'ENTREGADA': 'Entregada',
       'COMPLETADA': 'Completada'
     };
     return labels[this.estado] || this.estado;
@@ -36,7 +35,6 @@ export class EstadoBadge {
       'APROBADA': 'bi-check-lg',
       'RECHAZADA': 'bi-x-lg',
       'TARJETA_LLEGADA': 'bi-box-seam',
-      'ENTREGADA': 'bi-check2-all',
       'COMPLETADA': 'bi-patch-check-fill'
     };
     return icons[this.estado] || 'bi-circle-fill';

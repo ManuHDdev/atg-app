@@ -101,21 +101,21 @@
       <h3>Acciones Disponibles</h3>
       <div class="actions-grid">
         <button
-          *ngIf="puedeAprobar"
+          *ngIf="puedeRegistrarRespuestaPetrolera"
           class="btn btn-success"
-          (click)="aprobar()"
+          (click)="registrarAprobacionPetrolera()"
           [disabled]="loading"
         >
-          <i class="bi bi-check"></i> Aprobar Solicitud
+          <i class="bi bi-check"></i> Registrar aprobación de la petrolera
         </button>
 
         <button
-          *ngIf="puedeAprobar"
+          *ngIf="puedeRegistrarRespuestaPetrolera"
           class="btn btn-danger"
-          (click)="rechazar()"
+          (click)="registrarDenegacionPetrolera()"
           [disabled]="loading"
         >
-          <i class="bi bi-x"></i> Rechazar Solicitud
+          <i class="bi bi-x"></i> Registrar denegación de la petrolera
         </button>
 
         <button
@@ -135,41 +135,32 @@
         >
           <i class="bi bi-check-all"></i> Marcar como Entregada
         </button>
-
-        <button
-          *ngIf="puedeFinalizar"
-          class="btn btn-success"
-          (click)="finalizar()"
-          [disabled]="loading"
-        >
-          <i class="bi bi-check-all"></i> Finalizar Proceso
-        </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal Rechazar Solicitud -->
+<!-- Modal Registrar denegación de la petrolera -->
 <div class="modal-overlay" *ngIf="showRechazoModal" (click)="cerrarModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h3>Rechazar Solicitud</h3>
+      <h3>Registrar denegación de la petrolera</h3>
       <button class="modal-close" (click)="cerrarModal()"><i class="bi bi-x-lg"></i></button>
     </div>
     <div class="form-group">
-      <label for="motivoRechazo">Motivo del rechazo *</label>
+      <label for="motivoRechazo">Motivo indicado por la petrolera *</label>
       <textarea
         id="motivoRechazo"
         [(ngModel)]="motivoRechazo"
         class="form-control"
         rows="4"
-        placeholder="Ingrese el motivo del rechazo..."
+        placeholder="Motivo por el que la petrolera ha denegado la solicitud..."
       ></textarea>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-      <button type="button" class="btn btn-danger" [disabled]="!motivoRechazo.trim()" (click)="confirmarRechazo()">
-        Confirmar Rechazo
+      <button type="button" class="btn btn-danger" [disabled]="!motivoRechazo.trim()" (click)="confirmarDenegacionPetrolera()">
+        Registrar denegación
       </button>
     </div>
   </div>
@@ -223,11 +214,11 @@
   </div>
 </div>
 
-<!-- Modal Marcar Entregada -->
+<!-- Modal Registrar Entrega al Socio -->
 <div class="modal-overlay" *ngIf="showEntregadaModal" (click)="cerrarModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h3>Marcar como Entregada</h3>
+      <h3>Registrar entrega al socio</h3>
       <button class="modal-close" (click)="cerrarModal()"><i class="bi bi-x-lg"></i></button>
     </div>
     <form [formGroup]="entregadaForm" (ngSubmit)="marcarEntregada()">
@@ -251,16 +242,16 @@
   </div>
 </div>
 
-<!-- Modal Aprobar BAJA -->
+<!-- Modal Registrar Aprobacion de BAJA por la Petrolera -->
 <div class="modal-overlay" *ngIf="showBajaModal" (click)="cerrarModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h3>Aprobar Baja de Tarjeta</h3>
+      <h3>Registrar aprobación de la baja por la petrolera</h3>
       <button class="modal-close" (click)="cerrarModal()"><i class="bi bi-x-lg"></i></button>
     </div>
-    <form [formGroup]="bajaForm" (ngSubmit)="aprobarBaja()">
+    <form [formGroup]="bajaForm" (ngSubmit)="registrarAprobacionBajaPetrolera()">
       <div class="alert alert-info">
-        <strong>Información:</strong> Al aprobar esta solicitud, la tarjeta se marcará como inactiva y se registrará la fecha de baja.
+        <strong>Información:</strong> Al registrar la aprobación de la petrolera, la tarjeta se marcará como inactiva y se registrará la fecha de baja.
       </div>
       <div class="form-group">
         <label for="fechaBaja">Fecha de Baja *</label>
@@ -285,23 +276,23 @@
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
         <button type="submit" class="btn btn-danger" [disabled]="bajaForm.invalid || loading">
-          Aprobar Baja
+          Registrar aprobación
         </button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Modal Aprobar DUPLICADO -->
+<!-- Modal Registrar Aprobacion de DUPLICADO por la Petrolera -->
 <div class="modal-overlay" *ngIf="showDuplicadoModal" (click)="cerrarModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h3>Aprobar Duplicado de Tarjeta</h3>
+      <h3>Registrar aprobación del duplicado por la petrolera</h3>
       <button class="modal-close" (click)="cerrarModal()"><i class="bi bi-x-lg"></i></button>
     </div>
-    <form [formGroup]="duplicadoForm" (ngSubmit)="aprobarDuplicado()">
+    <form [formGroup]="duplicadoForm" (ngSubmit)="registrarAprobacionDuplicadoPetrolera()">
       <div class="alert alert-info">
-        <strong>Información:</strong> Al aprobar esta solicitud, se incrementará el contador de tarjetas físicas (cantidad) para esta matrícula.
+        <strong>Información:</strong> Al registrar la aprobación de la petrolera, se incrementará el contador de tarjetas físicas (cantidad) para esta matrícula.
       </div>
       <div class="form-group">
         <label for="fechaRespuesta">Fecha de Respuesta *</label>
@@ -326,7 +317,7 @@
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
         <button type="submit" class="btn btn-primary" [disabled]="duplicadoForm.invalid || loading">
-          Aprobar Duplicado
+          Registrar aprobación
         </button>
       </div>
     </form>

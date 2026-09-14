@@ -68,42 +68,42 @@ public class SolicitudTarjetaController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
-    @PutMapping("/{id}/rechazar")
-    public ResponseEntity<SolicitudTarjetaDTO> rechazar(
+    @PutMapping("/{id}/denegar-petrolera")
+    public ResponseEntity<SolicitudTarjetaDTO> denegarPorPetrolera(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
-        log.info("PUT /api/solicitudes-tarjetas/{}/rechazar - Rechazar solicitud", id);
+        log.info("PUT /api/solicitudes-tarjetas/{}/denegar-petrolera - Registrar denegación de la petrolera", id);
         String motivo = body.getOrDefault("motivo", "Sin especificar");
-        SolicitudTarjetaDTO rejected = service.rechazar(id, motivo);
-        return ResponseEntity.ok(rejected);
+        SolicitudTarjetaDTO denegada = service.denegarPorPetrolera(id, motivo);
+        return ResponseEntity.ok(denegada);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
-    @PutMapping("/{id}/aprobar")
-    public ResponseEntity<SolicitudTarjetaDTO> aprobar(@PathVariable Long id) {
-        log.info("PUT /api/solicitudes-tarjetas/{}/aprobar - Aprobar solicitud", id);
-        SolicitudTarjetaDTO approved = service.aprobar(id);
-        return ResponseEntity.ok(approved);
+    @PutMapping("/{id}/aprobar-petrolera")
+    public ResponseEntity<SolicitudTarjetaDTO> aprobarPorPetrolera(@PathVariable Long id) {
+        log.info("PUT /api/solicitudes-tarjetas/{}/aprobar-petrolera - Registrar aprobación de la petrolera", id);
+        SolicitudTarjetaDTO aprobada = service.aprobarPorPetrolera(id);
+        return ResponseEntity.ok(aprobada);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
-    @PutMapping("/{id}/aprobar-baja")
-    public ResponseEntity<SolicitudTarjetaDTO> aprobarBaja(
+    @PutMapping("/{id}/aprobar-baja-petrolera")
+    public ResponseEntity<SolicitudTarjetaDTO> aprobarBajaPorPetrolera(
             @PathVariable Long id,
             @Valid @RequestBody AprobarBajaDTO dto) {
-        log.info("PUT /api/solicitudes-tarjetas/{}/aprobar-baja - Aprobar solicitud de BAJA con fecha: {}", id, dto.getFechaBaja());
-        SolicitudTarjetaDTO approved = service.aprobarBaja(id, dto);
-        return ResponseEntity.ok(approved);
+        log.info("PUT /api/solicitudes-tarjetas/{}/aprobar-baja-petrolera - Registrar aprobación de BAJA por la petrolera con fecha: {}", id, dto.getFechaBaja());
+        SolicitudTarjetaDTO aprobada = service.aprobarBajaPorPetrolera(id, dto);
+        return ResponseEntity.ok(aprobada);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
-    @PutMapping("/{id}/aprobar-duplicado")
-    public ResponseEntity<SolicitudTarjetaDTO> aprobarDuplicado(
+    @PutMapping("/{id}/aprobar-duplicado-petrolera")
+    public ResponseEntity<SolicitudTarjetaDTO> aprobarDuplicadoPorPetrolera(
             @PathVariable Long id,
             @Valid @RequestBody AprobarDuplicadoDTO dto) {
-        log.info("PUT /api/solicitudes-tarjetas/{}/aprobar-duplicado - Aprobar solicitud de DUPLICADO con fecha: {}", id, dto.getFechaRespuesta());
-        SolicitudTarjetaDTO approved = service.aprobarDuplicado(id, dto);
-        return ResponseEntity.ok(approved);
+        log.info("PUT /api/solicitudes-tarjetas/{}/aprobar-duplicado-petrolera - Registrar aprobación de DUPLICADO por la petrolera con fecha: {}", id, dto.getFechaRespuesta());
+        SolicitudTarjetaDTO aprobada = service.aprobarDuplicadoPorPetrolera(id, dto);
+        return ResponseEntity.ok(aprobada);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
@@ -121,16 +121,8 @@ public class SolicitudTarjetaController {
     public ResponseEntity<SolicitudTarjetaDTO> marcarEntregada(
             @PathVariable Long id,
             @Valid @RequestBody MarcarEntregadaDTO dto) {
-        log.info("PUT /api/solicitudes-tarjetas/{}/marcar-entregada - Marcar como entregada", id);
+        log.info("PUT /api/solicitudes-tarjetas/{}/marcar-entregada - Marcar como entregada y completar", id);
         SolicitudTarjetaDTO updated = service.marcarEntregada(id, dto);
         return ResponseEntity.ok(updated);
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
-    @PutMapping("/{id}/finalizar")
-    public ResponseEntity<SolicitudTarjetaDTO> finalizar(@PathVariable Long id) {
-        log.info("PUT /api/solicitudes-tarjetas/{}/finalizar - Finalizar solicitud", id);
-        SolicitudTarjetaDTO finalized = service.finalizar(id);
-        return ResponseEntity.ok(finalized);
     }
 }

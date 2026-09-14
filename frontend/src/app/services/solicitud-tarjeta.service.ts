@@ -32,31 +32,32 @@ export class SolicitudTarjetaService {
     return this.http.post<SolicitudTarjeta>(this.apiUrl, solicitud);
   }
 
+  // ATG no aprueba ni rechaza: registra la respuesta que ha dado la petrolera.
   // Quien tramita lo resuelve el backend desde el token: no se envia desde el cliente.
-  rechazar(id: string, motivo: string): Observable<SolicitudTarjeta> {
+  denegarPorPetrolera(id: string, motivo: string): Observable<SolicitudTarjeta> {
     return this.http.put<SolicitudTarjeta>(
-      `${this.apiUrl}/${id}/rechazar`,
+      `${this.apiUrl}/${id}/denegar-petrolera`,
       { motivo }
     );
   }
 
-  aprobar(id: string): Observable<SolicitudTarjeta> {
+  aprobarPorPetrolera(id: string): Observable<SolicitudTarjeta> {
     return this.http.put<SolicitudTarjeta>(
-      `${this.apiUrl}/${id}/aprobar`,
+      `${this.apiUrl}/${id}/aprobar-petrolera`,
       {}
     );
   }
 
-  aprobarBaja(id: string, data: AprobarBajaDTO): Observable<SolicitudTarjeta> {
+  aprobarBajaPorPetrolera(id: string, data: AprobarBajaDTO): Observable<SolicitudTarjeta> {
     return this.http.put<SolicitudTarjeta>(
-      `${this.apiUrl}/${id}/aprobar-baja`,
+      `${this.apiUrl}/${id}/aprobar-baja-petrolera`,
       data
     );
   }
 
-  aprobarDuplicado(id: string, data: AprobarDuplicadoDTO): Observable<SolicitudTarjeta> {
+  aprobarDuplicadoPorPetrolera(id: string, data: AprobarDuplicadoDTO): Observable<SolicitudTarjeta> {
     return this.http.put<SolicitudTarjeta>(
-      `${this.apiUrl}/${id}/aprobar-duplicado`,
+      `${this.apiUrl}/${id}/aprobar-duplicado-petrolera`,
       data
     );
   }
@@ -72,13 +73,6 @@ export class SolicitudTarjetaService {
     return this.http.put<SolicitudTarjeta>(
       `${this.apiUrl}/${id}/marcar-entregada`,
       data
-    );
-  }
-
-  finalizar(id: string): Observable<SolicitudTarjeta> {
-    return this.http.put<SolicitudTarjeta>(
-      `${this.apiUrl}/${id}/finalizar`,
-      {}
     );
   }
 }

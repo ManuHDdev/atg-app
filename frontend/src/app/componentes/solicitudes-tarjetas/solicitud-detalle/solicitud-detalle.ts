@@ -115,7 +115,7 @@ export class SolicitudDetalle implements OnInit {
     });
   }
 
-  aprobar(): void {
+  registrarAprobacionPetrolera(): void {
     if (!this.solicitud?.id) return;
 
     // Para solicitudes de BAJA, abrir modal para ingresar fecha
@@ -130,40 +130,40 @@ export class SolicitudDetalle implements OnInit {
       return;
     }
 
-    // Para otros tipos, aprobar directamente
-    if (!confirm('¿Está seguro de aprobar esta solicitud?')) return;
+    // Para los demás tipos, registrar la aprobación directamente
+    if (!confirm('¿Confirma que la petrolera ha aprobado esta solicitud?')) return;
 
     this.loading = true;
-    this.solicitudService.aprobar(this.solicitud.id).subscribe({
+    this.solicitudService.aprobarPorPetrolera(this.solicitud.id).subscribe({
       next: () => {
-        this.success = 'Solicitud aprobada exitosamente';
+        this.success = 'Aprobación de la petrolera registrada correctamente';
         this.cargarSolicitud(this.solicitud!.id!);
       },
       error: (err) => {
-        console.error('Error al aprobar:', err);
+        console.error('Error al registrar la aprobación de la petrolera:', err);
         this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
     });
   }
 
-  rechazar(): void {
+  registrarDenegacionPetrolera(): void {
     this.motivoRechazo = '';
     this.showRechazoModal = true;
   }
 
-  confirmarRechazo(): void {
+  confirmarDenegacionPetrolera(): void {
     if (!this.solicitud?.id || !this.motivoRechazo.trim()) return;
 
     this.showRechazoModal = false;
     this.loading = true;
-    this.solicitudService.rechazar(this.solicitud.id, this.motivoRechazo).subscribe({
+    this.solicitudService.denegarPorPetrolera(this.solicitud.id, this.motivoRechazo).subscribe({
       next: () => {
-        this.success = 'Solicitud rechazada';
+        this.success = 'Denegación de la petrolera registrada correctamente';
         this.cargarSolicitud(this.solicitud!.id!);
       },
       error: (err) => {
-        console.error('Error al rechazar:', err);
+        console.error('Error al registrar la denegación de la petrolera:', err);
         this.error = this.errorHandler.getMensaje(err);
         this.loading = false;
       }
@@ -202,7 +202,7 @@ export class SolicitudDetalle implements OnInit {
     this.loading = true;
     this.solicitudService.marcarEntregada(this.solicitud.id, this.entregadaForm.value).subscribe({
       next: () => {
-        this.success = 'Solicitud marcada como entregada exitosamente';
+        this.success = 'Entrega registrada: la solicitud queda completada';
         this.showEntregadaModal = false;
         this.cargarSolicitud(this.solicitud!.id!);
       },
@@ -214,37 +214,19 @@ export class SolicitudDetalle implements OnInit {
     });
   }
 
-  finalizar(): void {
-    if (!this.solicitud?.id || !confirm('¿Está seguro de finalizar esta solicitud?')) return;
-
-    this.loading = true;
-    this.solicitudService.finalizar(this.solicitud.id).subscribe({
-      next: () => {
-        this.success = 'Solicitud finalizada exitosamente';
-        this.cargarSolicitud(this.solicitud!.id!);
-      },
-      error: (err) => {
-        console.error('Error al finalizar:', err);
-        this.error = this.errorHandler.getMensaje(err);
-        this.loading = false;
-      }
-    });
-  }
-
-  get puedeAprobar(): boolean {
-    return this.solicitud?.estado === 'PENDIENTE';
+  // Las acciones dependen del estado Y del tipo: una LLEGADA nace ya registrada, así que
+  // nunca hay que pedirle respuesta a la petrolera ni volver a registrar su llegada.
+  get puedeRegistrarRespuestaPetrolera(): boolean {
+    return this.solicitud?.estado === 'PENDIENTE' && this.solicitud?.tipo !== 'LLEGADA';
   }
 
   get puedeRegistrarLlegada(): boolean {
-    return this.solicitud?.estado === 'APROBADA';
+    return this.solicitud?.estado === 'APROBADA' && this.solicitud?.tipo === 'ALTA';
   }
 
   get puedeMarcarEntregada(): boolean {
-    return this.solicitud?.estado === 'TARJETA_LLEGADA';
-  }
-
-  get puedeFinalizar(): boolean {
-    return this.solicitud?.estado === 'ENTREGADA';
+    return this.solicitud?.estado === 'TARJETA_LLEGADA'
+      && (this.solicitud?.tipo === 'ALTA' || this.solicitud?.tipo === 'LLEGADA');
   }
 
   formatearFecha(fecha: Date | string | undefined): string {
@@ -269,13 +251,13 @@ export class SolicitudDetalle implements OnInit {
     this.showBajaModal = true;
   }
 
-  aprobarBaja(): void {
+  registrarAprobacionBajaPetrolera(): void {
     if (this.bajaForm.invalid || !this.solicitud?.id) return;
 
     this.loading = true;
-    this.solicitudService.aprobarBaja(this.solicitud.id, this.bajaForm.value).subscribe({
+    this.solicitudService.aprobarBajaPorPetrolera(this.solicitud.id, this.bajaForm.value).subscribe({
       next: () => {
-        this.success = 'Solicitud de BAJA aprobada exitosamente. La tarjeta ha sido dada de baja.';
+        this.success = 'Baja aprobada por la petrolera. La tarjeta ha sido dada de baja.';
         this.showBajaModal = false;
         this.cargarSolicitud(this.solicitud!.id!);
       },
@@ -294,13 +276,13 @@ export class SolicitudDetalle implements OnInit {
     this.showDuplicadoModal = true;
   }
 
-  aprobarDuplicado(): void {
+  registrarAprobacionDuplicadoPetrolera(): void {
     if (this.duplicadoForm.invalid || !this.solicitud?.id) return;
 
     this.loading = true;
-    this.solicitudService.aprobarDuplicado(this.solicitud.id, this.duplicadoForm.value).subscribe({
+    this.solicitudService.aprobarDuplicadoPorPetrolera(this.solicitud.id, this.duplicadoForm.value).subscribe({
       next: () => {
-        this.success = 'Solicitud de DUPLICADO aprobada exitosamente. Se ha incrementado la cantidad de tarjetas.';
+        this.success = 'Duplicado aprobado por la petrolera. Se ha incrementado la cantidad de tarjetas.';
         this.showDuplicadoModal = false;
         this.cargarSolicitud(this.solicitud!.id!);
       },

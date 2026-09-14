@@ -5,7 +5,7 @@ export interface SolicitudTarjeta {
   matricula: string;  // Obligatorio - cada solicitud debe tener matrícula
   numeroContrato?: string;  // Opcional
   tipo: 'LLEGADA' | 'ALTA' | 'BAJA' | 'DUPLICADO';
-  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'TARJETA_LLEGADA' | 'ENTREGADA' | 'COMPLETADA';
+  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'TARJETA_LLEGADA' | 'COMPLETADA';
   fechaSolicitud?: Date;
   fechaProcesado?: Date;
   observaciones?: string;
