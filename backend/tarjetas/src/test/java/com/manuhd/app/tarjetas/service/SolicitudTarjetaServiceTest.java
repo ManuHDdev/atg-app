@@ -1,5 +1,6 @@
 package com.manuhd.app.tarjetas.service;
 
+import com.manuhd.app.tarjetas.client.PetrolerasClient;
 import com.manuhd.app.tarjetas.dto.AprobarBajaDTO;
 import com.manuhd.app.tarjetas.dto.AprobarDuplicadoDTO;
 import com.manuhd.app.tarjetas.dto.CrearSolicitudDTO;
@@ -16,12 +17,16 @@ import com.manuhd.app.tarjetas.model.SolicitudTarjeta;
 import com.manuhd.app.tarjetas.model.Tarjeta;
 import com.manuhd.app.tarjetas.model.TipoPlantilla;
 import com.manuhd.app.tarjetas.model.TipoSolicitud;
+import com.manuhd.app.tarjetas.exception.BusinessValidationException;
 import com.manuhd.app.tarjetas.repository.SolicitudTarjetaRepository;
 import com.manuhd.app.tarjetas.security.UsuarioActualService;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullSource;
@@ -34,10 +39,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.Map;
 import java.util.Optional;
 
@@ -82,12 +94,23 @@ class SolicitudTarjetaServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
+    @Mock
+    private PetrolerasClient petrolerasClient;
+
     // Colaborador real: los tests ejercitan la lectura del JWT, no un doble de prueba.
     @Spy
     private UsuarioActualService usuarioActual = new UsuarioActualService();
 
+    // Colaborador real sobre un directorio temporal: el circuito del documento firmado se
+    // apoya en ficheros de verdad, y comprobar que existen es la mitad de lo que se valida.
+    @Spy
+    private PdfService pdfService = new PdfService();
+
     @InjectMocks
     private SolicitudTarjetaService service;
+
+    @TempDir
+    Path storageTarjetas;
 
     private SocioDTO socio;
     private PetroleraDTO petrolera;
@@ -97,6 +120,7 @@ class SolicitudTarjetaServiceTest {
         socio = new SocioDTO(SOCIO_ID, "Transportes Ejemplo SL", EMAIL_SOCIO, "600111222",
                 "Calle Mayor 1", "Alcalá de Henares", "28801", "Madrid", "S-001");
         petrolera = new PetroleraDTO(PETROLERA_ID, "Repsol", "petrolera@example.com");
+        ReflectionTestUtils.setField(pdfService, "tarjetasPath", storageTarjetas.toString());
         autenticarComo(USUARIO_TOKEN);
     }
 
@@ -181,6 +205,62 @@ class SolicitudTarjetaServiceTest {
         ArgumentCaptor<Map<String, String>> captor = ArgumentCaptor.forClass(Map.class);
         verify(emailService).enviarCorreoConPlantilla(anyString(), anyString(), anyString(),
                 captor.capture(), eq(tipo.name()));
+        return captor.getValue();
+    }
+
+    // ---------- helpers del circuito del documento firmado ----------
+
+    private static final String NUMERO_SOLICITUD = "TAR-2026-00001";
+
+    /** Solicitud ya dentro del circuito: tiene número, y por tanto directorio propio en disco. */
+    private SolicitudTarjeta solicitudEnCircuito(TipoSolicitud tipo, EstadoSolicitud estado) {
+        SolicitudTarjeta solicitud = solicitud(tipo);
+        solicitud.setNumeroSolicitud(NUMERO_SOLICITUD);
+        solicitud.setEstado(estado);
+        return solicitud;
+    }
+
+    /** PDF mínimo pero válido: PDFBox tiene que poder abrirlo para aplanarlo. */
+    private byte[] pdfDeUnaPagina() throws IOException {
+        try (PDDocument documento = new PDDocument()) {
+            documento.addPage(new PDPage());
+            ByteArrayOutputStream salida = new ByteArrayOutputStream();
+            documento.save(salida);
+            return salida.toByteArray();
+        }
+    }
+
+    /** Deja un PDF real en el directorio de la solicitud y devuelve su ruta. */
+    private String pdfEnDisco(String nombre) throws IOException {
+        Path directorio = storageTarjetas.resolve(NUMERO_SOLICITUD);
+        Files.createDirectories(directorio);
+        Path ruta = directorio.resolve(nombre);
+        Files.write(ruta, pdfDeUnaPagina());
+        return ruta.toString();
+    }
+
+    private MockMultipartFile multipartPdf(String nombre) throws IOException {
+        return new MockMultipartFile("file", nombre, "application/pdf", pdfDeUnaPagina());
+    }
+
+    /** La petrolera sí tiene impreso configurado para el tipo de solicitud. */
+    private void mockPlantillaDocumentoDescargable() throws IOException {
+        when(petrolerasClient.obtenerPlantillaDocumento(eq(PETROLERA_ID), any(TipoSolicitud.class)))
+                .thenReturn(pdfDeUnaPagina());
+    }
+
+    private void mockPlantillaConAdjunto(TipoPlantilla tipo) {
+        when(plantillaService.buscarPlantillaActiva(tipo)).thenReturn(Optional.of(plantilla(tipo)));
+        when(emailService.enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
+                eq(tipo.name()), any(Path.class), anyString()))
+                .thenReturn(new EnvioCorreoResult(true, tipo.name(), EMAIL_SOCIO));
+    }
+
+    /** Ruta del PDF que se ha adjuntado realmente al correo del tipo indicado. */
+    private Path capturarAdjunto(TipoPlantilla tipo) {
+        ArgumentCaptor<Path> captor = ArgumentCaptor.forClass(Path.class);
+        verify(emailService).enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
+                eq(tipo.name()), captor.capture(), anyString());
         return captor.getValue();
     }
 
@@ -602,9 +682,10 @@ class SolicitudTarjetaServiceTest {
     }
 
     @Test
-    void crearDuplicadoGuardaElMotivoYLoExponeALaPlantilla() {
+    void crearDuplicadoGuardaElMotivoYLoExponeALaPlantilla() throws IOException {
         mockGuardadoDeNuevaSolicitud();
         mockServiciosExternos();
+        mockPlantillaDocumentoDescargable();
         mockPlantillaObligatoria(TipoPlantilla.DUPLICADO_SOCIO);
 
         CrearSolicitudDTO dto = crearDTO(TipoSolicitud.DUPLICADO, null);
@@ -613,7 +694,8 @@ class SolicitudTarjetaServiceTest {
 
         SolicitudTarjetaDTO resultado = service.create(dto);
 
-        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.PENDIENTE);
+        // Un duplicado también lleva impreso firmado: nace en borrador, no presentado.
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.BORRADOR);
         assertThat(resultado.getMotivoDuplicado()).isEqualTo(MotivoDuplicado.EXTRAVIO);
         // La plantilla recibe la etiqueta legible, no el nombre del enum.
         assertThat(capturarVariables(TipoPlantilla.DUPLICADO_SOCIO)).containsEntry("motivoDuplicado", "Extravío");
@@ -694,20 +776,284 @@ class SolicitudTarjetaServiceTest {
         assertThat(resultado.getFechaEntrega()).isAfterOrEqualTo(antes);
     }
 
+    // ---------- circuito del documento firmado ----------
+
+    @Test
+    void crearAltaNaceEnBorradorConElImpresoDeLaPetroleraEnDisco() throws IOException {
+        mockGuardadoDeNuevaSolicitud();
+        mockServiciosExternos();
+        mockPlantillaDocumentoDescargable();
+        mockPlantillaObligatoria(TipoPlantilla.ALTA_SOCIO);
+        mockPlantillaObligatoria(TipoPlantilla.ALTA_PETROLERA);
+
+        SolicitudTarjetaDTO resultado = service.create(crearDTO(TipoSolicitud.ALTA, null));
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.BORRADOR);
+        assertThat(resultado.getNumeroSolicitud()).isEqualTo("TAR-" + Year.now().getValue() + "-00001");
+        // La plantilla queda guardada dos veces: el original intacto y la copia editable.
+        Path directorio = storageTarjetas.resolve(resultado.getNumeroSolicitud());
+        assertThat(directorio.resolve("plantilla_original.pdf")).exists();
+        assertThat(directorio.resolve("editable.pdf")).exists();
+        assertThat(resultado.getRutaPdfEditable()).isEqualTo(directorio.resolve("editable.pdf").toString());
+    }
+
+    @Test
+    void crearAltaSinPlantillaConfiguradaNoLlegaACrearLaSolicitud() throws IOException {
+        when(petrolerasClient.obtenerPlantillaDocumento(eq(PETROLERA_ID), eq(TipoSolicitud.ALTA)))
+                .thenThrow(new IOException("PLANTILLA_NO_CONFIGURADA: La petrolera no tiene configurada una plantilla"));
+
+        assertThatThrownBy(() -> service.create(crearDTO(TipoSolicitud.ALTA, null)))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("no tiene configurada una plantilla");
+
+        verify(repository, never()).save(any(SolicitudTarjeta.class));
+    }
+
+    /** Una LLEGADA no tiene papeleo: no descarga impreso ni pasa por el circuito de firma. */
+    @Test
+    void crearLlegadaNoEntraEnElCircuitoDeFirma() throws IOException {
+        mockGuardadoDeNuevaSolicitud();
+        mockServiciosExternos();
+        mockPlantillaObligatoria(TipoPlantilla.LLEGADA_MADRID);
+
+        SolicitudTarjetaDTO resultado = service.create(crearDTO(TipoSolicitud.LLEGADA, LocalDate.of(2026, 4, 10)));
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.TARJETA_LLEGADA);
+        assertThat(resultado.getRutaPdfEditable()).isNull();
+        verify(petrolerasClient, never()).obtenerPlantillaDocumento(any(), any());
+    }
+
+    @Test
+    void enviarASocioExigeQueLaSolicitudSigaEnBorrador() throws IOException {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.ENVIADO_SOCIO);
+        when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(solicitud));
+
+        assertThatThrownBy(() -> service.enviarASocio(SOLICITUD_ID))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("en borrador");
+
+        verify(repository, never()).save(any(SolicitudTarjeta.class));
+        verify(emailService, never()).enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
+                anyString(), any(Path.class), anyString());
+    }
+
+    /** Sin impreso en disco no se puede pedir una firma: ni cambia el estado ni sale correo. */
+    @Test
+    void enviarASocioSinImpresoNiCambiaElEstadoNiEnviaCorreo() {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.BORRADOR);
+        solicitud.setRutaPdfEditable(storageTarjetas.resolve(NUMERO_SOLICITUD).resolve("editable.pdf").toString());
+        when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(solicitud));
+
+        assertThatThrownBy(() -> service.enviarASocio(SOLICITUD_ID))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("falta el impreso");
+
+        assertThat(solicitud.getEstado()).isEqualTo(EstadoSolicitud.BORRADOR);
+        verify(repository, never()).save(any(SolicitudTarjeta.class));
+        verify(emailService, never()).enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
+                anyString(), any(Path.class), anyString());
+    }
+
+    @Test
+    void enviarASocioAplanaElImpresoLoAdjuntaYPasaAEnviadoSocio() throws IOException {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.BORRADOR);
+        solicitud.setRutaPdfEditable(pdfEnDisco("editable.pdf"));
+        mockSolicitudGuardada(solicitud);
+        mockServiciosExternos();
+        mockPlantillaConAdjunto(TipoPlantilla.DOCUMENTO_SOCIO);
+
+        SolicitudTarjetaDTO resultado = service.enviarASocio(SOLICITUD_ID);
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.ENVIADO_SOCIO);
+        assertThat(resultado.getFechaEnvioSocio()).isNotNull();
+        // Lo que viaja adjunto es el aplanado, no el editable.
+        Path adjunto = capturarAdjunto(TipoPlantilla.DOCUMENTO_SOCIO);
+        assertThat(adjunto).exists().hasFileName("enviado.pdf");
+        assertThat(resultado.getCorreosEnviados()).contains(TipoPlantilla.DOCUMENTO_SOCIO.name());
+    }
+
+    @Test
+    void enviarASocioSinPlantillaDeCorreoNoRompeLaTransicion() throws IOException {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.BORRADOR);
+        solicitud.setRutaPdfEditable(pdfEnDisco("editable.pdf"));
+        mockSolicitudGuardada(solicitud);
+        mockServiciosExternos();
+        when(plantillaService.buscarPlantillaActiva(TipoPlantilla.DOCUMENTO_SOCIO)).thenReturn(Optional.empty());
+
+        SolicitudTarjetaDTO resultado = service.enviarASocio(SOLICITUD_ID);
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.ENVIADO_SOCIO);
+        assertThat(resultado.getCorreosEnviados()).isNull();
+        verify(emailService, never()).enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
+                anyString(), any(Path.class), anyString());
+    }
+
+    /** El escaneado puede venir mal: se puede reemplazar, así que el estado no avanza solo. */
+    @Test
+    void subirPdfFirmadoGuardaElDocumentoPeroNoCambiaElEstadoNiEnviaCorreo() throws IOException {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.ENVIADO_SOCIO);
+        mockSolicitudGuardada(solicitud);
+
+        SolicitudTarjetaDTO resultado = service.subirPdfFirmado(SOLICITUD_ID, multipartPdf("escaneo.pdf"));
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.ENVIADO_SOCIO);
+        assertThat(resultado.getFechaRecepcionFirmado()).isNotNull();
+        assertThat(resultado.getNombrePdfFirmado()).isEqualTo("escaneo.pdf");
+        assertThat(storageTarjetas.resolve(NUMERO_SOLICITUD).resolve("firmado.pdf")).exists();
+        verify(emailService, never()).enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), anyString());
+        verify(emailService, never()).enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
+                anyString(), any(Path.class), anyString());
+    }
+
+    @Test
+    void subirPdfFirmadoExigeQueElImpresoSeHayaEnviadoAlSocio() throws IOException {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.BORRADOR);
+        when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(solicitud));
+        MockMultipartFile escaneo = multipartPdf("escaneo.pdf");
+
+        assertThatThrownBy(() -> service.subirPdfFirmado(SOLICITUD_ID, escaneo))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("enviada al socio");
+
+        verify(repository, never()).save(any(SolicitudTarjeta.class));
+    }
+
+    @Test
+    void aceptarFirmaSocioExigeTenerElImpresoFirmado() {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.ENVIADO_SOCIO);
+        when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(solicitud));
+
+        assertThatThrownBy(() -> service.aceptarFirmaSocio(SOLICITUD_ID))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("impreso firmado");
+
+        assertThat(solicitud.getEstado()).isEqualTo(EstadoSolicitud.ENVIADO_SOCIO);
+        verify(repository, never()).save(any(SolicitudTarjeta.class));
+    }
+
+    @Test
+    void aceptarFirmaSocioPasaAFirmadoSocio() throws IOException {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.ENVIADO_SOCIO);
+        solicitud.setRutaPdfFirmado(pdfEnDisco("firmado.pdf"));
+        mockSolicitudGuardada(solicitud);
+
+        assertThat(service.aceptarFirmaSocio(SOLICITUD_ID).getEstado()).isEqualTo(EstadoSolicitud.FIRMADO_SOCIO);
+    }
+
+    @Test
+    void enviarAPetroleraExigeQueLaFirmaEsteAceptada() throws IOException {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.ENVIADO_SOCIO);
+        solicitud.setRutaPdfFirmado(pdfEnDisco("firmado.pdf"));
+        when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(solicitud));
+
+        assertThatThrownBy(() -> service.enviarAPetrolera(SOLICITUD_ID))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("firma del socio aceptada");
+
+        verify(repository, never()).save(any(SolicitudTarjeta.class));
+        verify(emailService, never()).enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
+                anyString(), any(Path.class), anyString());
+    }
+
+    /** Sin el impreso firmado no hay nada que presentar: la solicitud no llega a PENDIENTE. */
+    @Test
+    void enviarAPetroleraSinImpresoFirmadoNiCambiaElEstadoNiEnviaCorreo() {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.FIRMADO_SOCIO);
+        when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(solicitud));
+
+        assertThatThrownBy(() -> service.enviarAPetrolera(SOLICITUD_ID))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("falta el impreso firmado");
+
+        assertThat(solicitud.getEstado()).isEqualTo(EstadoSolicitud.FIRMADO_SOCIO);
+        verify(repository, never()).save(any(SolicitudTarjeta.class));
+        verify(emailService, never()).enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
+                anyString(), any(Path.class), anyString());
+    }
+
+    @Test
+    void enviarAPetroleraAdjuntaElImpresoFirmadoYPasaAPendiente() throws IOException {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.FIRMADO_SOCIO);
+        solicitud.setRutaPdfFirmado(pdfEnDisco("firmado.pdf"));
+        mockSolicitudGuardada(solicitud);
+        mockServiciosExternos();
+        mockPlantillaConAdjunto(TipoPlantilla.DOCUMENTO_PETROLERA);
+
+        SolicitudTarjetaDTO resultado = service.enviarAPetrolera(SOLICITUD_ID);
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.PENDIENTE);
+        assertThat(resultado.getFechaEnvioPetrolera()).isNotNull();
+        // Un correo por solicitud, a la petrolera, con la copia final adjunta.
+        verify(emailService, times(1)).enviarCorreoConPlantillaYAdjunto(eq(petrolera.getEmail()), anyString(),
+                anyString(), any(), eq(TipoPlantilla.DOCUMENTO_PETROLERA.name()), any(Path.class), anyString());
+        assertThat(capturarAdjunto(TipoPlantilla.DOCUMENTO_PETROLERA)).exists().hasFileName("final.pdf");
+    }
+
+    /** Este correo es el que presenta la solicitud: sin plantilla sale igual, con texto propio. */
+    @Test
+    void enviarAPetroleraSinPlantillaUsaElTextoPorDefectoYEnviaIgual() throws IOException {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.FIRMADO_SOCIO);
+        solicitud.setRutaPdfFirmado(pdfEnDisco("firmado.pdf"));
+        mockSolicitudGuardada(solicitud);
+        mockServiciosExternos();
+        when(plantillaService.buscarPlantillaActiva(TipoPlantilla.DOCUMENTO_PETROLERA)).thenReturn(Optional.empty());
+        when(emailService.enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
+                eq(TipoPlantilla.DOCUMENTO_PETROLERA.name()), any(Path.class), anyString()))
+                .thenReturn(new EnvioCorreoResult(true, TipoPlantilla.DOCUMENTO_PETROLERA.name(), petrolera.getEmail()));
+
+        SolicitudTarjetaDTO resultado = service.enviarAPetrolera(SOLICITUD_ID);
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.PENDIENTE);
+        ArgumentCaptor<String> cuerpo = ArgumentCaptor.forClass(String.class);
+        verify(emailService).enviarCorreoConPlantillaYAdjunto(eq(petrolera.getEmail()), anyString(),
+                cuerpo.capture(), any(), eq(TipoPlantilla.DOCUMENTO_PETROLERA.name()), any(Path.class), anyString());
+        // El cuerpo por defecto lleva los datos del socio que la petrolera necesita.
+        assertThat(cuerpo.getValue()).contains(NUMERO_SOLICITUD).contains("{nombre}").contains("{direccionCompleta}");
+    }
+
+    /** Las solicitudes anteriores al circuito no tienen número, y sin número no hay directorio. */
+    @Test
+    void unaSolicitudSinNumeroNoPuedeEntrarEnElCircuito() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
+        solicitud.setEstado(EstadoSolicitud.BORRADOR);
+        solicitud.setNumeroSolicitud(null);
+        when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(solicitud));
+
+        assertThatThrownBy(() -> service.enviarASocio(SOLICITUD_ID))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessageContaining("no tiene número asignado");
+    }
+
+    @Test
+    void denegarPorPetroleraGuardaElMotivoEnSuPropioCampo() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
+        mockSolicitudGuardada(solicitud);
+        mockServiciosExternos();
+        mockPlantillaActiva(TipoPlantilla.ALTA_RECHAZADA);
+
+        SolicitudTarjetaDTO resultado = service.denegarPorPetrolera(SOLICITUD_ID, "Contrato no vigente");
+
+        assertThat(resultado.getMotivoRechazo()).isEqualTo("Contrato no vigente");
+    }
+
     // ---------- recorrido completo del ALTA ----------
 
     @Test
-    void unAltaRecorreTodoSuCaminoHastaCompletada() {
+    void unAltaRecorreTodoSuCaminoHastaCompletada() throws IOException {
         mockGuardadoDeNuevaSolicitud();
         mockServiciosExternos();
+        mockPlantillaDocumentoDescargable();
         mockPlantillaObligatoria(TipoPlantilla.ALTA_SOCIO);
         mockPlantillaObligatoria(TipoPlantilla.ALTA_PETROLERA);
         mockPlantillaObligatoria(TipoPlantilla.LLEGADA_MADRID);
+        mockPlantillaConAdjunto(TipoPlantilla.DOCUMENTO_SOCIO);
+        mockPlantillaConAdjunto(TipoPlantilla.DOCUMENTO_PETROLERA);
         when(plantillaService.buscarPlantillaActiva(TipoPlantilla.ALTA_APROBADA)).thenReturn(Optional.empty());
 
-        // 1. Se presenta el alta a la petrolera: queda pendiente de su respuesta.
+        // 1. El alta nace con el impreso de la petrolera descargado y todavía editable.
         SolicitudTarjetaDTO creada = service.create(crearDTO(TipoSolicitud.ALTA, null));
-        assertThat(creada.getEstado()).isEqualTo(EstadoSolicitud.PENDIENTE);
+        assertThat(creada.getEstado()).isEqualTo(EstadoSolicitud.BORRADOR);
+        assertThat(creada.getNumeroSolicitud()).startsWith("TAR-" + Year.now().getValue() + "-");
         verify(emailService).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
                 eq(TipoPlantilla.ALTA_SOCIO.name()));
 
@@ -718,7 +1064,18 @@ class SolicitudTarjetaServiceTest {
         enCurso.setId(SOLICITUD_ID);
         when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(enCurso));
 
-        // 2. La petrolera responde que si.
+        // 2. Se manda al socio para que lo firme.
+        assertThat(service.enviarASocio(SOLICITUD_ID).getEstado()).isEqualTo(EstadoSolicitud.ENVIADO_SOCIO);
+
+        // 3. El socio lo devuelve firmado y la oficina da la firma por buena.
+        service.subirPdfFirmado(SOLICITUD_ID, multipartPdf("firmado-escaneado.pdf"));
+        assertThat(service.aceptarFirmaSocio(SOLICITUD_ID).getEstado()).isEqualTo(EstadoSolicitud.FIRMADO_SOCIO);
+
+        // 4. Solo entonces se presenta a la petrolera, con el impreso firmado adjunto.
+        assertThat(service.enviarAPetrolera(SOLICITUD_ID).getEstado()).isEqualTo(EstadoSolicitud.PENDIENTE);
+        assertThat(capturarAdjunto(TipoPlantilla.DOCUMENTO_PETROLERA)).exists();
+
+        // 5. La petrolera responde que si.
         assertThat(service.aprobarPorPetrolera(SOLICITUD_ID).getEstado()).isEqualTo(EstadoSolicitud.APROBADA);
 
         // 3. Llega la tarjeta fisica y se avisa al socio.

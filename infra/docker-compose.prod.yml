@@ -135,8 +135,12 @@ services:
       - KEYCLOAK_ISSUER_URI=https://${DOMAIN}/keycloak/realms/atg
       - KEYCLOAK_REALM=atg
       - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
+      - SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=50MB
+      - SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=50MB
       - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
       - APP_SOCIOS_URL=http://socios:8080
+      - MICROSERVICES_PETROLERAS_URL=http://petroleras:8080
+      - STORAGE_TARJETAS=/app/storage/tarjetas/solicitudes
       - SPRING_MAIL_HOST=${MAIL_HOST:-mailhog}
       - SPRING_MAIL_PORT=${MAIL_PORT:-1025}
       - SPRING_MAIL_USERNAME=${MAIL_USERNAME:-notificaciones@atg.es}
@@ -144,6 +148,8 @@ services:
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-false}
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
       - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
+    volumes:
+      - tarjetas_storage:/app/storage
     depends_on:
       mysql:
         condition: service_healthy
@@ -328,6 +334,7 @@ volumes:
   certbot_www:
   petroleras_storage:
   contratos_storage:
+  tarjetas_storage:
   keycloak_data:
 
 # ─── Redes ────────────────────────────────────────────────────────────────────

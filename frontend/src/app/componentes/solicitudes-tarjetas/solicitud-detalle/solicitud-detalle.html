@@ -51,6 +51,10 @@
           <span class="info-value">{{ formatearFecha(solicitud.fechaEntrega) }}</span>
         </div>
       </div>
+      <div class="info-item full-width" *ngIf="solicitud.motivoRechazo">
+        <span class="info-label">Motivo de la denegación:</span>
+        <p class="info-value">{{ solicitud.motivoRechazo }}</p>
+      </div>
       <div class="info-item full-width" *ngIf="solicitud.observaciones">
         <span class="info-label">Observaciones:</span>
         <p class="info-value">{{ solicitud.observaciones }}</p>
@@ -98,6 +102,231 @@
     <!-- Correos Enviados -->
     <div class="info-card">
       <app-email-logs [correosEnviados]="solicitud.correosEnviados || ''"></app-email-logs>
+    </div>
+
+    <!-- Circuito del documento firmado: el impreso se genera, se firma fuera del sistema
+         y vuelve escaneado. Solo entonces la solicitud se presenta a la petrolera. -->
+    <div class="workflow-card" *ngIf="tieneCircuitoDeFirma">
+      <h3>Documento de la solicitud</h3>
+      <p class="workflow-intro">
+        Nº de solicitud: <strong>{{ solicitud.numeroSolicitud }}</strong>
+      </p>
+
+      <!-- Paso 1: BORRADOR -->
+      <div class="workflow-step" [class.active]="solicitud.estado === 'BORRADOR'">
+        <div class="step-header">
+          <span class="step-number">1</span>
+          <h4>Preparación del impreso</h4>
+          <span class="step-badge badge-activo" *ngIf="solicitud.estado === 'BORRADOR'">Paso actual</span>
+          <span class="step-badge badge-hecho" *ngIf="solicitud.fechaEnvioSocio">
+            <i class="bi bi-check-circle"></i> Completado
+          </span>
+        </div>
+
+        <div class="step-content">
+          <p>El impreso se ha generado a partir de la plantilla configurada por la petrolera.</p>
+
+          <div class="pdf-file-info" *ngIf="solicitud.rutaPdfEditable">
+            <span class="file-label"><i class="bi bi-file-earmark-pdf"></i> Impreso:</span>
+            <span class="file-name">{{ solicitud.nombrePdfEditable }}</span>
+            <div class="button-group">
+              <button type="button" class="btn btn-primary" (click)="verPdf('editable')">
+                <i class="bi bi-eye"></i> Ver
+              </button>
+              <button type="button" class="btn btn-secondary" (click)="descargarPdf('editable')">
+                <i class="bi bi-download"></i> Descargar
+              </button>
+            </div>
+          </div>
+
+          <ng-container *ngIf="puedeEditarImpreso">
+            <div class="upload-section">
+              <label class="upload-label" for="pdfEditable">Subir el impreso ya cumplimentado:</label>
+              <input
+                id="pdfEditable"
+                type="file"
+                accept="application/pdf"
+                (change)="onFicheroEditableSeleccionado($event)"
+                #inputPdfEditable />
+              <button
+                type="button"
+                class="btn btn-primary"
+                *ngIf="ficheroEditable"
+                [disabled]="procesandoDocumento"
+                (click)="guardarPdfEditado()"
+              >
+                <i class="bi bi-save"></i> Guardar impreso
+              </button>
+              <small class="help-text">
+                Descargue el impreso, cumpliméntelo con un editor de PDF y vuelva a subirlo aquí.
+              </small>
+            </div>
+
+            <div class="step-action" *ngIf="puedeEnviarASocio">
+              <button
+                type="button"
+                class="btn btn-success"
+                [disabled]="procesandoDocumento"
+                (click)="enviarASocio()"
+              >
+                <i class="bi bi-envelope-paper"></i> Enviar al socio para firma
+              </button>
+              <small class="help-text">
+                El impreso se enviará por correo al socio y dejará de ser editable.
+              </small>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <!-- Paso 2: ENVIADO_SOCIO -->
+      <div class="workflow-step" [class.active]="solicitud.estado === 'ENVIADO_SOCIO'">
+        <div class="step-header">
+          <span class="step-number">2</span>
+          <h4>Firma del socio</h4>
+          <span class="step-badge badge-activo" *ngIf="solicitud.estado === 'ENVIADO_SOCIO'">Paso actual</span>
+          <span class="step-badge badge-hecho" *ngIf="solicitud.estado !== 'ENVIADO_SOCIO' && solicitud.fechaEnvioPetrolera">
+            <i class="bi bi-check-circle"></i> Completado
+          </span>
+          <span class="step-badge badge-pendiente" *ngIf="!solicitud.fechaEnvioSocio">Pendiente</span>
+        </div>
+
+        <div class="step-content">
+          <ng-container *ngIf="solicitud.fechaEnvioSocio; else pendienteEnvioSocio">
+            <p>
+              <strong>Enviado al socio el:</strong>
+              {{ formatearFecha(solicitud.fechaEnvioSocio) }}
+            </p>
+            <p>El socio firma el documento fuera del sistema y lo devuelve por el canal que prefiera.</p>
+
+            <div class="pdf-file-info" *ngIf="solicitud.rutaPdfEnviado">
+              <span class="file-label"><i class="bi bi-envelope-paper"></i> Impreso enviado:</span>
+              <span class="file-name">{{ solicitud.nombrePdfEnviado }}</span>
+              <div class="button-group">
+                <button type="button" class="btn btn-primary" (click)="verPdf('enviado')">
+                  <i class="bi bi-eye"></i> Ver
+                </button>
+                <button type="button" class="btn btn-secondary" (click)="descargarPdf('enviado')">
+                  <i class="bi bi-download"></i> Descargar
+                </button>
+              </div>
+            </div>
+
+            <div class="pdf-file-info" *ngIf="solicitud.rutaPdfFirmado">
+              <span class="file-label"><i class="bi bi-vector-pen"></i> Impreso firmado recibido:</span>
+              <span class="file-name">{{ solicitud.nombrePdfFirmado }}</span>
+              <span class="help-text" *ngIf="solicitud.fechaRecepcionFirmado">
+                Recibido el {{ formatearFecha(solicitud.fechaRecepcionFirmado) }}
+              </span>
+              <div class="button-group">
+                <button type="button" class="btn btn-primary" (click)="verPdf('firmado')">
+                  <i class="bi bi-eye"></i> Ver
+                </button>
+                <button type="button" class="btn btn-secondary" (click)="descargarPdf('firmado')">
+                  <i class="bi bi-download"></i> Descargar
+                </button>
+              </div>
+            </div>
+
+            <ng-container *ngIf="puedeSubirFirmado">
+              <div class="upload-section">
+                <label class="upload-label" for="pdfFirmado">
+                  {{ solicitud.rutaPdfFirmado ? 'Sustituir el impreso firmado:' : 'Subir el impreso firmado por el socio:' }}
+                </label>
+                <input
+                  id="pdfFirmado"
+                  type="file"
+                  accept="application/pdf"
+                  (change)="onFicheroFirmadoSeleccionado($event)"
+                  #inputPdfFirmado />
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  *ngIf="ficheroFirmado"
+                  [disabled]="procesandoDocumento"
+                  (click)="subirPdfFirmado()"
+                >
+                  <i class="bi bi-upload"></i> {{ solicitud.rutaPdfFirmado ? 'Sustituir' : 'Subir' }} impreso firmado
+                </button>
+                <small class="help-text">
+                  Suba el escaneado que haya devuelto el socio. Puede sustituirlo tantas veces como haga falta.
+                </small>
+              </div>
+
+              <div class="step-action" *ngIf="puedeAceptarFirma">
+                <button
+                  type="button"
+                  class="btn btn-success"
+                  [disabled]="procesandoDocumento"
+                  (click)="aceptarFirmaSocio()"
+                >
+                  <i class="bi bi-check-circle"></i> Dar por buena la firma
+                </button>
+                <small class="help-text">
+                  La solicitud quedará lista para presentarla a la petrolera.
+                </small>
+              </div>
+            </ng-container>
+          </ng-container>
+          <ng-template #pendienteEnvioSocio>
+            <p class="pending-text">Pendiente de enviar el impreso al socio.</p>
+          </ng-template>
+        </div>
+      </div>
+
+      <!-- Paso 3: FIRMADO_SOCIO -->
+      <div class="workflow-step" [class.active]="solicitud.estado === 'FIRMADO_SOCIO'">
+        <div class="step-header">
+          <span class="step-number">3</span>
+          <h4>Presentación a la petrolera</h4>
+          <span class="step-badge badge-activo" *ngIf="solicitud.estado === 'FIRMADO_SOCIO'">Paso actual</span>
+          <span class="step-badge badge-hecho" *ngIf="solicitud.fechaEnvioPetrolera">
+            <i class="bi bi-check-circle"></i> Completado
+          </span>
+          <span class="step-badge badge-pendiente" *ngIf="!solicitud.fechaEnvioPetrolera && solicitud.estado !== 'FIRMADO_SOCIO'">
+            Pendiente
+          </span>
+        </div>
+
+        <div class="step-content">
+          <ng-container *ngIf="solicitud.fechaEnvioPetrolera">
+            <p>
+              <strong>Presentada a la petrolera el:</strong>
+              {{ formatearFecha(solicitud.fechaEnvioPetrolera) }}
+            </p>
+            <div class="pdf-file-info" *ngIf="solicitud.rutaPdfFinal">
+              <span class="file-label"><i class="bi bi-send"></i> Documento enviado a la petrolera:</span>
+              <span class="file-name">{{ solicitud.nombrePdfFinal }}</span>
+              <div class="button-group">
+                <button type="button" class="btn btn-primary" (click)="verPdf('final')">
+                  <i class="bi bi-eye"></i> Ver
+                </button>
+                <button type="button" class="btn btn-secondary" (click)="descargarPdf('final')">
+                  <i class="bi bi-download"></i> Descargar
+                </button>
+              </div>
+            </div>
+          </ng-container>
+
+          <div class="step-action" *ngIf="puedeEnviarAPetrolera">
+            <button
+              type="button"
+              class="btn btn-success"
+              [disabled]="procesandoDocumento"
+              (click)="enviarAPetrolera()"
+            >
+              <i class="bi bi-send"></i> Presentar a la petrolera
+            </button>
+            <small class="help-text">
+              Se enviará un correo a la petrolera con el impreso firmado y los datos del socio.
+            </small>
+          </div>
+
+          <p class="pending-text" *ngIf="!solicitud.fechaEnvioPetrolera && !puedeEnviarAPetrolera">
+            Pendiente de recibir y aceptar la firma del socio.
+          </p>
+        </div>
+      </div>
     </div>
 
     <!-- Acciones Disponibles -->

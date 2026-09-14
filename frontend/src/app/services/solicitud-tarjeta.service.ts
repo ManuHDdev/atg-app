@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { SolicitudTarjeta, CrearSolicitudDTO, RegistrarLlegadaDTO, MarcarEntregadaDTO, AprobarBajaDTO, AprobarDuplicadoDTO } from '../models/solicitud-tarjeta.model';
+import { SolicitudTarjeta, CrearSolicitudDTO, RegistrarLlegadaDTO, MarcarEntregadaDTO, AprobarBajaDTO, AprobarDuplicadoDTO, TipoPdfSolicitud } from '../models/solicitud-tarjeta.model';
 
 @Injectable({
   providedIn: 'root'
@@ -74,5 +74,37 @@ export class SolicitudTarjetaService {
       `${this.apiUrl}/${id}/marcar-entregada`,
       data
     );
+  }
+
+  // ---- Circuito del documento firmado ----
+
+  guardarPdfEditado(id: string, file: File): Observable<SolicitudTarjeta> {
+    return this.http.post<SolicitudTarjeta>(`${this.apiUrl}/${id}/pdf/editable`, this.comoFormData(file));
+  }
+
+  enviarASocio(id: string): Observable<SolicitudTarjeta> {
+    return this.http.post<SolicitudTarjeta>(`${this.apiUrl}/${id}/enviar-socio`, {});
+  }
+
+  subirPdfFirmado(id: string, file: File): Observable<SolicitudTarjeta> {
+    return this.http.post<SolicitudTarjeta>(`${this.apiUrl}/${id}/pdf/firmado`, this.comoFormData(file));
+  }
+
+  aceptarFirmaSocio(id: string): Observable<SolicitudTarjeta> {
+    return this.http.post<SolicitudTarjeta>(`${this.apiUrl}/${id}/aceptar-firma`, {});
+  }
+
+  enviarAPetrolera(id: string): Observable<SolicitudTarjeta> {
+    return this.http.post<SolicitudTarjeta>(`${this.apiUrl}/${id}/enviar-petrolera`, {});
+  }
+
+  descargarPdf(id: string, tipo: TipoPdfSolicitud): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${id}/pdf/${tipo}`, { responseType: 'blob' });
+  }
+
+  private comoFormData(file: File): FormData {
+    const formData = new FormData();
+    formData.append('file', file);
+    return formData;
   }
 }
