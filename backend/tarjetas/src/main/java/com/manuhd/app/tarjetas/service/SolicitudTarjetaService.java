@@ -45,6 +45,9 @@ public class SolicitudTarjetaService {
     @Value("${app.socios.url:http://localhost:8081}")
     private String sociosServiceUrl;
 
+    @Value("${microservices.petroleras.url:http://localhost:8082}")
+    private String petrolerasServiceUrl;
+
     @Transactional(readOnly = true)
     public List<SolicitudTarjetaDTO> findAll() {
         log.info("Obteniendo todas las solicitudes de tarjetas");
@@ -706,7 +709,7 @@ public class SolicitudTarjetaService {
                 resultados.addAll(enviarCorreoLlegada(socio, variables));
                 break;
             case ALTA:
-                resultados.addAll(enviarCorreoAlta(socio, petrolera, variables));
+                resultados.addAll(enviarCorreoAlta(socio, variables));
                 break;
             case BAJA:
                 resultados.addAll(enviarCorreoBaja(socio, variables));
@@ -912,11 +915,17 @@ public class SolicitudTarjetaService {
         return resultados;
     }
 
-    private List<EnvioCorreoResult> enviarCorreoAlta(SocioDTO socio, PetroleraDTO petrolera, Map<String, String> variables) {
+    /**
+     * IMPORTANTE - NO REINTRODUCIR EL CORREO A LA PETROLERA AQUI:
+     * al crearse, la solicitud nace en BORRADOR y todavia no se ha presentado nada.
+     * La petrolera se entera en enviarAPetrolera(), que es cuando sale el documento
+     * firmado por el socio (DOCUMENTO_PETROLERA). Avisarla tambien al crear duplicaba
+     * el envio y anunciaba una solicitud que aun no existia para ella.
+     */
+    private List<EnvioCorreoResult> enviarCorreoAlta(SocioDTO socio, Map<String, String> variables) {
         List<EnvioCorreoResult> resultados = new java.util.ArrayList<>();
-        log.info("Enviando correos de alta al socio y petrolera");
+        log.info("Enviando correo de alta al socio: {}", socio.getNombre());
 
-        // Correo al socio
         PlantillaTarjeta plantillaSocio = plantillaService.obtenerPlantillaActiva(TipoPlantilla.ALTA_SOCIO);
         EnvioCorreoResult resultadoSocio = emailService.enviarCorreoConPlantilla(
                 socio.getEmail(),
@@ -926,17 +935,6 @@ public class SolicitudTarjetaService {
                 TipoPlantilla.ALTA_SOCIO.name()
         );
         resultados.add(resultadoSocio);
-
-        // Correo a la petrolera
-        PlantillaTarjeta plantillaPetrolera = plantillaService.obtenerPlantillaActiva(TipoPlantilla.ALTA_PETROLERA);
-        EnvioCorreoResult resultadoPetrolera = emailService.enviarCorreoConPlantilla(
-                petrolera.getEmail(),
-                plantillaPetrolera.getAsunto(),
-                plantillaPetrolera.getCuerpo(),
-                variables,
-                TipoPlantilla.ALTA_PETROLERA.name()
-        );
-        resultados.add(resultadoPetrolera);
         return resultados;
     }
 
@@ -1017,7 +1015,7 @@ public class SolicitudTarjetaService {
 
     private PetroleraDTO obtenerPetrolera(Long petroleraId) {
         try {
-            String url = "http://localhost:8082/api/petroleras/" + petroleraId;
+            String url = petrolerasServiceUrl + "/api/petroleras/" + petroleraId;
             log.info("Obteniendo datos de la petrolera desde: {}", url);
             return restTemplate.getForObject(url, PetroleraDTO.class);
         } catch (Exception e) {

@@ -779,12 +779,26 @@ class SolicitudTarjetaServiceTest {
     // ---------- circuito del documento firmado ----------
 
     @Test
+    void crearUnAltaNoAvisaTodaviaALaPetrolera() throws IOException {
+        mockGuardadoDeNuevaSolicitud();
+        mockServiciosExternos();
+        mockPlantillaDocumentoDescargable();
+        mockPlantillaObligatoria(TipoPlantilla.ALTA_SOCIO);
+
+        service.create(crearDTO(TipoSolicitud.ALTA, null));
+
+        // La solicitud nace en BORRADOR: a la petrolera se le escribe en enviarAPetrolera(),
+        // cuando ya existe el documento firmado por el socio, no antes.
+        verify(emailService, never()).enviarCorreoConPlantilla(
+                anyString(), anyString(), anyString(), any(), eq(TipoPlantilla.ALTA_PETROLERA.name()));
+    }
+
+    @Test
     void crearAltaNaceEnBorradorConElImpresoDeLaPetroleraEnDisco() throws IOException {
         mockGuardadoDeNuevaSolicitud();
         mockServiciosExternos();
         mockPlantillaDocumentoDescargable();
         mockPlantillaObligatoria(TipoPlantilla.ALTA_SOCIO);
-        mockPlantillaObligatoria(TipoPlantilla.ALTA_PETROLERA);
 
         SolicitudTarjetaDTO resultado = service.create(crearDTO(TipoSolicitud.ALTA, null));
 
@@ -1044,7 +1058,6 @@ class SolicitudTarjetaServiceTest {
         mockServiciosExternos();
         mockPlantillaDocumentoDescargable();
         mockPlantillaObligatoria(TipoPlantilla.ALTA_SOCIO);
-        mockPlantillaObligatoria(TipoPlantilla.ALTA_PETROLERA);
         mockPlantillaObligatoria(TipoPlantilla.LLEGADA_MADRID);
         mockPlantillaConAdjunto(TipoPlantilla.DOCUMENTO_SOCIO);
         mockPlantillaConAdjunto(TipoPlantilla.DOCUMENTO_PETROLERA);
