@@ -12,7 +12,7 @@ import { NotificationService } from '../../../services/notification.service';
 import { ErrorHandlerService } from '../../../services/error-handler.service';
 import { TipoContrato } from '../../../models/tipo-contrato.model';
 import { TipoSolicitud } from '../../../models/tipo-solicitud.model';
-import { Petrolera } from '../../../models/petrolera.model';
+import { Petrolera, petroleraPermite } from '../../../models/petrolera.model';
 import { Socio } from '../../../models/socio.model';
 import { Empresa } from '../../../models/empresa.model';
 import { CrearSolicitudDTO, TipoSolicitudContrato } from '../../../models/solicitud-contrato.model';
@@ -101,7 +101,8 @@ export class ContratoForm implements OnInit {
     // Cargar petroleras
     this.petroleraService.getAll().subscribe({
       next: (petroleras) => {
-        this.petroleras = petroleras.filter(p => p.activa);
+        // Solo petroleras activas que operan con contratos (null = sin restricción)
+        this.petroleras = petroleras.filter(p => p.activa && petroleraPermite(p.operaContratos));
         this.petrolerasFiltradas = this.petroleras; // Inicialmente mostrar todas
       },
       error: (err) => {

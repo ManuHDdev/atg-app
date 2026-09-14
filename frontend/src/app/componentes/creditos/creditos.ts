@@ -10,7 +10,7 @@ import { ErrorHandlerService } from '../../services/error-handler.service';
 import { Credito, CrearCreditoDTO, TipoCredito, EstadoCredito } from '../../models/credito.model';
 import { Socio } from '../../models/socio.model';
 import { Empresa } from '../../models/empresa.model';
-import { Petrolera } from '../../models/petrolera.model';
+import { Petrolera, petroleraPermite } from '../../models/petrolera.model';
 import { EmailLogs } from '../solicitudes-tarjetas/email-logs/email-logs';
 import { SocioAutocomplete } from '../shared/socio-autocomplete/socio-autocomplete';
 
@@ -113,7 +113,8 @@ export class Creditos implements OnInit {
   cargarPetroleras(): void {
     this.petroleraService.listar().subscribe({
       next: (data) => {
-        this.petroleras = data.filter(p => p.activa);
+        // Solo petroleras activas que operan con créditos (null = sin restricción)
+        this.petroleras = data.filter(p => p.activa && petroleraPermite(p.operaCreditos));
       },
       error: (error) => {
         console.error('Error al cargar petroleras:', error);

@@ -15,6 +15,17 @@ describe('Dispositivos', () => {
   let fixture: ComponentFixture<Dispositivos>;
   let dispositivoServiceSpy: jasmine.SpyObj<DispositivoService>;
   let notificationServiceSpy: jasmine.SpyObj<NotificationService>;
+  let petroleraServiceSpy: jasmine.SpyObj<PetroleraService>;
+
+  // Cepsa/Moeve: opera y admite crédito. Repsol: opera pero sin crédito.
+  // Galp: no opera con dispositivos. Sin configurar: flags a null => sin restricción.
+  const petroleras = [
+    { id: 1, nombre: 'Cepsa (Moeve)', activa: true, operaDispositivos: true, permiteCreditoDispositivo: true },
+    { id: 2, nombre: 'Repsol', activa: true, operaDispositivos: true, permiteCreditoDispositivo: false },
+    { id: 3, nombre: 'Galp', activa: true, operaDispositivos: false, permiteCreditoDispositivo: false },
+    { id: 4, nombre: 'Sin configurar', activa: true, operaDispositivos: null, permiteCreditoDispositivo: null },
+    { id: 5, nombre: 'Inactiva', activa: false, operaDispositivos: true, permiteCreditoDispositivo: true }
+  ];
 
   const solicitud = {
     id: 1,
@@ -40,8 +51,8 @@ describe('Dispositivos', () => {
     const empresaServiceSpy = jasmine.createSpyObj('EmpresaService', ['getBySocioId']);
     empresaServiceSpy.getBySocioId.and.returnValue(of([]));
 
-    const petroleraServiceSpy = jasmine.createSpyObj('PetroleraService', ['listar']);
-    petroleraServiceSpy.listar.and.returnValue(of([]));
+    petroleraServiceSpy = jasmine.createSpyObj('PetroleraService', ['listar']);
+    petroleraServiceSpy.listar.and.returnValue(of(petroleras as any));
 
     await TestBed.configureTestingModule({
       imports: [Dispositivos],
@@ -66,6 +77,38 @@ describe('Dispositivos', () => {
 
   it('carga la lista de solicitudes al iniciar', () => {
     expect(dispositivoServiceSpy.listarSolicitudes).toHaveBeenCalled();
+  });
+
+  describe('petroleras disponibles', () => {
+    it('solo ofrece petroleras activas que operan con dispositivos', () => {
+      expect(component.petroleras.map(p => p.id)).toEqual([1, 2, 4]);
+    });
+
+    it('restringe la lista a las que admiten crédito cuando el tipo es Solicitud de Crédito', () => {
+      component.nuevaSolicitud.tipoSolicitud = TipoSolicitudDispositivo.SOLICITUD_CREDITO;
+
+      expect(component.petroleras.map(p => p.id)).toEqual([1, 4]);
+    });
+
+    it('deselecciona la petrolera si deja de ser válida al cambiar de tipo', () => {
+      component.nuevaSolicitud.petroleraId = 2; // Repsol: no admite crédito
+      component.nuevaSolicitud.tipoSolicitud = TipoSolicitudDispositivo.SOLICITUD_CREDITO;
+
+      component.onTipoSolicitudChange();
+
+      expect(component.nuevaSolicitud.petroleraId).toBe(0);
+      expect(notificationServiceSpy.warning).toHaveBeenCalled();
+    });
+
+    it('mantiene la petrolera si sigue siendo válida al cambiar de tipo', () => {
+      component.nuevaSolicitud.petroleraId = 1; // Cepsa/Moeve: admite crédito
+      component.nuevaSolicitud.tipoSolicitud = TipoSolicitudDispositivo.SOLICITUD_CREDITO;
+
+      component.onTipoSolicitudChange();
+
+      expect(component.nuevaSolicitud.petroleraId).toBe(1);
+      expect(notificationServiceSpy.warning).not.toHaveBeenCalled();
+    });
   });
 
   describe('guardarSolicitud', () => {

@@ -48,6 +48,9 @@ public class SolicitudContratoService {
         log.info("Creando nueva solicitud para socio: {}, petrolera: {}, tipo: {}",
             dto.getSocioId(), dto.getPetroleraId(), dto.getTipoContratoId());
 
+        // 0. La petrolera debe operar con contratos según el procedimiento de ATG
+        validarPetroleraOperaContratos(dto.getPetroleraId());
+
         String rutaPdfEditable = null;
 
         // 1. Generar número de solicitud automático
@@ -625,6 +628,31 @@ public class SolicitudContratoService {
     private SolicitudContrato obtenerSolicitudPorId(Long id) {
         return solicitudRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con ID: " + id));
+    }
+
+    /**
+     * Comprueba que la petrolera seleccionada opera con contratos.
+     *
+     * Un flag a null significa "sin restricción configurada" y por tanto se permite: las
+     * petroleras que ya existían en base de datos no tienen valor y deben seguir funcionando
+     * igual hasta que un administrador marque la restricción.
+     */
+    private void validarPetroleraOperaContratos(Long petroleraId) {
+        if (petroleraId == null) {
+            return;
+        }
+
+        PetrolerasClient.PetroleraDTO petrolera = petrolerasClient.obtenerPetrolera(petroleraId);
+        if (petrolera == null) {
+            return;
+        }
+
+        // null = sin restricción => permitido
+        Boolean operaContratos = petrolera.getOperaContratos();
+        if (operaContratos != null && !operaContratos) {
+            String nombre = petrolera.getNombre() != null ? petrolera.getNombre() : "seleccionada";
+            throw new RuntimeException("La petrolera " + nombre + " no opera con contratos");
+        }
     }
 
     private String generarNumeroSolicitud() {

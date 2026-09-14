@@ -39,7 +39,12 @@ describe('Creditos', () => {
     empresaServiceSpy.getBySocioId.and.returnValue(of([]));
 
     const petroleraServiceSpy = jasmine.createSpyObj('PetroleraService', ['listar']);
-    petroleraServiceSpy.listar.and.returnValue(of([]));
+    petroleraServiceSpy.listar.and.returnValue(of([
+      { id: 1, nombre: 'Cepsa (Moeve)', activa: true, operaCreditos: true },
+      { id: 2, nombre: 'Solred', activa: true, operaCreditos: false },
+      { id: 3, nombre: 'Sin configurar', activa: true, operaCreditos: null },
+      { id: 4, nombre: 'Inactiva', activa: false, operaCreditos: true }
+    ] as any));
 
     await TestBed.configureTestingModule({
       imports: [Creditos],
@@ -56,6 +61,10 @@ describe('Creditos', () => {
     fixture = TestBed.createComponent(Creditos);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it('solo ofrece petroleras activas que operan con créditos (null = sin restricción)', () => {
+    expect(component.petroleras.map(p => p.id)).toEqual([1, 3]);
   });
 
   it('should create', () => {

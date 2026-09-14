@@ -71,6 +71,31 @@
         }
       </div>
 
+      <!-- Disponibilidad por modulo -->
+      <div class="form-group full-width">
+        <label>Disponibilidad por módulo</label>
+        <small class="help-text-form">
+          <i class="bi bi-info-circle"></i>
+          Dejar un módulo en <strong>Sin configurar</strong> significa sin restricción: la petrolera
+          seguirá apareciendo en ese módulo. Marque <strong>No opera</strong> solo para excluirla.
+        </small>
+        <div class="disponibilidad-grid">
+          @for (modulo of modulosDisponibilidad; track modulo.control) {
+            <div class="disponibilidad-item">
+              <label [attr.for]="modulo.control">{{ modulo.label }}</label>
+              <select
+                [id]="modulo.control"
+                class="form-input"
+                [formControlName]="modulo.control">
+                <option [ngValue]="null">Sin configurar (sin restricción)</option>
+                <option [ngValue]="true">Sí opera</option>
+                <option [ngValue]="false">No opera</option>
+              </select>
+            </div>
+          }
+        </div>
+      </div>
+
       <!-- Activa -->
       <div class="form-group">
         <label class="checkbox-label">

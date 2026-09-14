@@ -16,7 +16,7 @@ import {
 } from '../../models/dispositivo.model';
 import { Socio } from '../../models/socio.model';
 import { Empresa } from '../../models/empresa.model';
-import { Petrolera } from '../../models/petrolera.model';
+import { Petrolera, petroleraPermite } from '../../models/petrolera.model';
 import { EmailLogs } from '../solicitudes-tarjetas/email-logs/email-logs';
 import { SocioAutocomplete } from '../shared/socio-autocomplete/socio-autocomplete';
 
@@ -31,7 +31,8 @@ export class Dispositivos implements OnInit {
   solicitudes: SolicitudDispositivo[] = [];
   socios: Socio[] = [];
   empresas: Empresa[] = [];
-  petroleras: Petrolera[] = [];
+  /** Petroleras activas que operan con dispositivos (null = sin restricción). */
+  petrolerasDispositivos: Petrolera[] = [];
   dispositivosSocio: Dispositivo[] = [];
 
   mostrarFormulario = false;
@@ -121,7 +122,7 @@ export class Dispositivos implements OnInit {
   cargarPetroleras(): void {
     this.petroleraService.listar().subscribe({
       next: (data) => {
-        this.petroleras = data.filter(p => p.activa);
+        this.petrolerasDispositivos = data.filter(p => p.activa && petroleraPermite(p.operaDispositivos));
       },
       error: (error) => {
         console.error('Error al cargar petroleras:', error);
@@ -186,12 +187,33 @@ export class Dispositivos implements OnInit {
     this.onSocioChange();
   }
 
+  /**
+   * Petroleras ofrecidas en el desplegable del formulario.
+   * Para "Solicitud de Crédito" el procedimiento restringe aún más la lista
+   * (flag permiteCreditoDispositivo).
+   */
+  get petroleras(): Petrolera[] {
+    if (this.nuevaSolicitud.tipoSolicitud === TipoSolicitudDispositivo.SOLICITUD_CREDITO) {
+      return this.petrolerasDispositivos.filter(p => petroleraPermite(p.permiteCreditoDispositivo));
+    }
+    return this.petrolerasDispositivos;
+  }
+
   onTipoSolicitudChange(): void {
     // Limpiar campos condicionales al cambiar tipo
     this.nuevaSolicitud.dispositivoId = undefined;
     this.nuevaSolicitud.matricula = undefined;
     this.nuevaSolicitud.matriculaDestino = undefined;
     this.nuevaSolicitud.monto = undefined;
+
+    // La petrolera ya elegida puede no admitir el nuevo tipo: no dejar una combinación imposible
+    const petroleraId = Number(this.nuevaSolicitud.petroleraId);
+    if (petroleraId && !this.petroleras.some(p => p.id === petroleraId)) {
+      this.nuevaSolicitud.petroleraId = 0;
+      this.notificationService.warning(
+        'La petrolera seleccionada no admite este tipo de solicitud. Seleccione otra petrolera.'
+      );
+    }
   }
 
   guardarSolicitud(): void {

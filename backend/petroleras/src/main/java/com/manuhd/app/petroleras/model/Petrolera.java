@@ -40,6 +40,33 @@ public class Petrolera {
     @Column(name = "dias_envio_creditos", length = 100)
     private String diasEnvioCreditos;
 
+    // --- Disponibilidad por modulo -------------------------------------------------
+    // Estos flags configuran en que negocios opera cada petrolera (el procedimiento de
+    // ATG restringe, por ejemplo, que dispositivos solo trabaja con Cepsa/Moeve y Repsol).
+    //
+    // IMPORTANTE: null significa "sin restriccion" (permitido) en todas las validaciones.
+    // El esquema se genera con ddl-auto=update sobre una base de datos en produccion, por lo
+    // que las filas ya existentes quedan con valor null. Interpretar null como permitido
+    // mantiene intacto el comportamiento actual y deja que el cliente active cada
+    // restriccion desde la pantalla de administracion, en lugar de bloquear trabajo
+    // silenciosamente a la manana siguiente del despliegue.
+
+    @Column(name = "opera_tarjetas")
+    private Boolean operaTarjetas;
+
+    @Column(name = "opera_contratos")
+    private Boolean operaContratos;
+
+    @Column(name = "opera_creditos")
+    private Boolean operaCreditos;
+
+    @Column(name = "opera_dispositivos")
+    private Boolean operaDispositivos;
+
+    // Regla fina del procedimiento: "Solicitud credito SOLO CEPSA" para dispositivos.
+    @Column(name = "permite_credito_dispositivo")
+    private Boolean permiteCreditoDispositivo;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
