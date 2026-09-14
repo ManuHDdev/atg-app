@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 import { SolicitudTarjetaService } from '../../services/solicitud-tarjeta.service';
 import { SocioService } from '../../services/socio.service';
 import { PetroleraService } from '../../services/petrolera.service';
-import { SolicitudTarjeta } from '../../models/solicitud-tarjeta.model';
+import { MotivoDuplicado, SolicitudTarjeta, getMotivoDuplicadoLabel } from '../../models/solicitud-tarjeta.model';
 import { Socio } from '../../models/socio.model';
 import { Petrolera } from '../../models/petrolera.model';
 import { EstadoBadge } from './estado-badge/estado-badge';
@@ -256,6 +256,11 @@ export class SolicitudesDashboard implements OnInit {
       case 'RECHAZADA': return 'badge-danger';
       default: return 'badge-secondary';
     }
+  }
+
+  /** Texto legible del motivo del duplicado ("Deterioro" / "Extravío"). */
+  getMotivoDuplicado(motivo: MotivoDuplicado | undefined): string {
+    return getMotivoDuplicadoLabel(motivo);
   }
 
   getTipoBadgeClass(tipo: string): string {

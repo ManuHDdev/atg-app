@@ -38,6 +38,10 @@
           <span class="info-label">Procesado Por:</span>
           <span class="info-value">{{ solicitud.procesadoPor }}</span>
         </div>
+        <div class="info-item" *ngIf="solicitud.motivoDuplicado">
+          <span class="info-label">Motivo del Duplicado:</span>
+          <span class="info-value">{{ motivoDuplicadoTexto }}</span>
+        </div>
         <div class="info-item" *ngIf="solicitud.fechaLlegadaEstimada">
           <span class="info-label">Fecha Llegada Estimada:</span>
           <span class="info-value">{{ formatearFecha(solicitud.fechaLlegadaEstimada) }}</span>
@@ -292,7 +296,7 @@
     </div>
     <form [formGroup]="duplicadoForm" (ngSubmit)="registrarAprobacionDuplicadoPetrolera()">
       <div class="alert alert-info">
-        <strong>Información:</strong> Al registrar la aprobación de la petrolera, se incrementará el contador de tarjetas físicas (cantidad) para esta matrícula.
+        <strong>Información:</strong> La solicitud quedará aprobada a la espera de la tarjeta. El contador de tarjetas físicas (cantidad) de esta matrícula se incrementará cuando se registre la entrega al socio.
       </div>
       <div class="form-group">
         <label for="fechaRespuesta">Fecha de Respuesta *</label>

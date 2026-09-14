@@ -90,6 +90,21 @@
         </div>
       </div>
 
+      <!-- Motivo del duplicado (solo para DUPLICADO) -->
+      <div class="form-group full-width" *ngIf="tipo === 'DUPLICADO'">
+        <label for="motivoDuplicado">Motivo del Duplicado *</label>
+        <select id="motivoDuplicado" formControlName="motivoDuplicado" class="form-control">
+          <option value="">Seleccione el motivo</option>
+          <option *ngFor="let motivo of motivosDuplicado" [value]="motivo.valor">
+            {{ motivo.etiqueta }}
+          </option>
+        </select>
+        <small class="form-text">Indica por qué se pide el duplicado: la petrolera necesita conocerlo</small>
+        <span class="error-text" *ngIf="campoInvalido('motivoDuplicado')">
+          Selecciona el motivo del duplicado
+        </span>
+      </div>
+
       <!-- Campo Matrícula -->
       <div class="form-group full-width">
         <label for="matricula">Matrícula *</label>

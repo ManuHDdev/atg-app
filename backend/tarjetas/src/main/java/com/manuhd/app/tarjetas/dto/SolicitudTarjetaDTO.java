@@ -1,6 +1,7 @@
 package com.manuhd.app.tarjetas.dto;
 
 import com.manuhd.app.tarjetas.model.EstadoSolicitud;
+import com.manuhd.app.tarjetas.model.MotivoDuplicado;
 import com.manuhd.app.tarjetas.model.TipoSolicitud;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,6 +27,7 @@ public class SolicitudTarjetaDTO {
     private String procesadoPor;
     private String solicitadoPor;  // Persona de oficina
     private Long tarjetaId;  // Para BAJA
+    private MotivoDuplicado motivoDuplicado;  // Solo para DUPLICADO
     private LocalDate fechaLlegadaEstimada;
     private LocalDateTime fechaEntrega;
     private String correosEnviados;

@@ -1,5 +1,6 @@
 package com.manuhd.app.tarjetas.dto;
 
+import com.manuhd.app.tarjetas.model.MotivoDuplicado;
 import com.manuhd.app.tarjetas.model.TipoSolicitud;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -38,6 +39,9 @@ public class CrearSolicitudDTO {
     private String solicitadoPor;  // Persona de oficina (requerido en frontend para ALTA)
 
     private Long tarjetaId;  // ID de tarjeta a dar de baja (para BAJA)
+
+    // Obligatorio para DUPLICADO (se valida en el servicio), ignorado en el resto de tipos
+    private MotivoDuplicado motivoDuplicado;
 
     // Campo para solicitudes de LLEGADA - fecha estimada de entrega/recogida
     private LocalDate fechaLlegadaEstimada;

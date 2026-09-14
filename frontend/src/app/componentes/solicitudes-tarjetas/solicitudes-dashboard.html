@@ -129,6 +129,12 @@
                 <span class="detail-value">{{ solicitudDetalle.numeroContrato }}</span>
               </div>
             }
+            @if (solicitudDetalle.motivoDuplicado) {
+              <div class="detail-item">
+                <span class="detail-label">Motivo del Duplicado</span>
+                <span class="detail-value">{{ getMotivoDuplicado(solicitudDetalle.motivoDuplicado) }}</span>
+              </div>
+            }
             @if (solicitudDetalle.solicitadoPor) {
               <div class="detail-item">
                 <span class="detail-label">Solicitado por</span>

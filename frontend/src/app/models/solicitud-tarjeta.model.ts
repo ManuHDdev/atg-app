@@ -1,3 +1,21 @@
+export type MotivoDuplicado = 'DETERIORO' | 'EXTRAVIO';
+
+/** Etiquetas legibles del motivo de un duplicado, tal y como se muestran al usuario. */
+export const MOTIVO_DUPLICADO_LABELS: Record<MotivoDuplicado, string> = {
+  DETERIORO: 'Deterioro',
+  EXTRAVIO: 'Extravío'
+};
+
+/** Opciones del desplegable de motivo, en el orden en que se ofrecen al usuario. */
+export const MOTIVOS_DUPLICADO: { valor: MotivoDuplicado; etiqueta: string }[] = [
+  { valor: 'DETERIORO', etiqueta: MOTIVO_DUPLICADO_LABELS.DETERIORO },
+  { valor: 'EXTRAVIO', etiqueta: MOTIVO_DUPLICADO_LABELS.EXTRAVIO }
+];
+
+export function getMotivoDuplicadoLabel(motivo: MotivoDuplicado | undefined): string {
+  return motivo ? MOTIVO_DUPLICADO_LABELS[motivo] : '';
+}
+
 export interface SolicitudTarjeta {
   id?: string;
   socioId: string;
@@ -15,6 +33,7 @@ export interface SolicitudTarjeta {
   fechaEntrega?: Date;
   correosEnviados?: string;
   tarjetaId?: string;  // Para solicitudes de BAJA
+  motivoDuplicado?: MotivoDuplicado;  // Solo para solicitudes de DUPLICADO
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -29,6 +48,7 @@ export interface CrearSolicitudDTO {
   fechaLlegadaEstimada?: string;  // ISO date string for LLEGADA type
   solicitadoPor?: string;  // Persona de oficina (requerido en frontend para ALTA)
   tarjetaId?: string;  // Para solicitudes de BAJA
+  motivoDuplicado?: MotivoDuplicado;  // Obligatorio para solicitudes de DUPLICADO
 }
 
 export interface RegistrarLlegadaDTO {

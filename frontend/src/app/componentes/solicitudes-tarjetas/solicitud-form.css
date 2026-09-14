@@ -116,3 +116,11 @@
     width: 100%;
   }
 }
+
+/* Aviso de validación en línea (misma convención que el resto de formularios) */
+.error-text {
+  display: block;
+  color: var(--danger-color);
+  font-size: 0.75rem;
+  margin-top: 0.125rem;
+}

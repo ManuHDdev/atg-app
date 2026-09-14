@@ -11,6 +11,7 @@ import { Petrolera } from '../../models/petrolera.model';
 import { Tarjeta } from '../../models/tarjeta.model';
 import { SocioAutocomplete } from '../shared/socio-autocomplete/socio-autocomplete';
 import { ErrorHandlerService } from '../../services/error-handler.service';
+import { MOTIVOS_DUPLICADO } from '../../models/solicitud-tarjeta.model';
 
 @Component({
   selector: 'app-solicitud-form',
@@ -32,6 +33,10 @@ export class SolicitudForm implements OnInit {
   loading: boolean = false;
   error: string | null = null;
   success: boolean = false;
+  intentoGuardar: boolean = false;
+
+  // Los dos únicos motivos reales de un duplicado (impreso DOCUMENTO 7)
+  readonly motivosDuplicado = MOTIVOS_DUPLICADO;
 
   constructor(
     private fb: FormBuilder,
@@ -76,6 +81,7 @@ export class SolicitudForm implements OnInit {
 
       case 'DUPLICADO':
         formConfig.tarjetaId = ['', Validators.required];  // Tarjeta a duplicar
+        formConfig.motivoDuplicado = ['', Validators.required];  // Deterioro o extravío
         break;
     }
 
@@ -111,7 +117,16 @@ export class SolicitudForm implements OnInit {
     });
   }
 
+  /** Un campo se marca en rojo cuando ya se ha intentado guardar o el usuario lo ha tocado. */
+  campoInvalido(nombre: string): boolean {
+    const control = this.formulario.get(nombre);
+    if (!control) return false;
+    return control.invalid && (this.intentoGuardar || control.touched);
+  }
+
   onSubmit(): void {
+    this.intentoGuardar = true;
+
     if (this.formulario.invalid) {
       Object.keys(this.formulario.controls).forEach(key => {
         this.formulario.get(key)?.markAsTouched();
@@ -239,7 +254,7 @@ export class SolicitudForm implements OnInit {
       case 'BAJA':
         return 'Solicita la baja de una tarjeta existente. Se enviará un correo al socio.';
       case 'DUPLICADO':
-        return 'Solicita un duplicado de tarjeta. Se enviará un correo al socio.';
+        return 'Solicita un duplicado de tarjeta indicando el motivo. Se enviará un correo al socio y quedará pendiente de la respuesta de la petrolera. Después habrá que registrar la llegada y la entrega, como en un alta.';
       default: return '';
     }
   }
