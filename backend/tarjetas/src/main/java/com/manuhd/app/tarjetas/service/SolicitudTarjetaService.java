@@ -82,6 +82,16 @@ public class SolicitudTarjetaService {
         solicitud.setTarjetaId(dto.getTarjetaId());
         solicitud.setFechaSolicitud(LocalDateTime.now());
 
+        // El impreso de duplicado es el del alta con el motivo escrito a mano: sin motivo
+        // la solicitud no se puede presentar a la petrolera. En el resto de tipos el campo
+        // no aplica y se deja a null aunque el cliente lo mande.
+        if (dto.getTipo() == TipoSolicitud.DUPLICADO) {
+            if (dto.getMotivoDuplicado() == null) {
+                throw new RuntimeException("El motivo del duplicado es obligatorio (deterioro o extravío)");
+            }
+            solicitud.setMotivoDuplicado(dto.getMotivoDuplicado());
+        }
+
         // Una LLEGADA no es una petición que haya que tramitar: es el registro de que las
         // tarjetas ya han llegado. Nace directamente en TARJETA_LLEGADA, con su fecha, y el
         // correo de aviso al socio (recogida en Madrid / envío postal fuera) sale una sola
@@ -287,7 +297,11 @@ public class SolicitudTarjetaService {
         return convertToDTO(updated);
     }
 
-    /** Registra el duplicado confirmado por la petrolera y cierra la solicitud. */
+    /**
+     * Registra el duplicado confirmado por la petrolera. No cierra la solicitud: un duplicado
+     * es una tarjeta física que todavía tiene que llegar y entregarse al socio, igual que un
+     * alta, así que queda APROBADA a la espera de registrar su llegada.
+     */
     @Transactional
     public SolicitudTarjetaDTO aprobarDuplicadoPorPetrolera(Long id, AprobarDuplicadoDTO dto) {
         log.info("Registrando aprobación de la petrolera para la solicitud de DUPLICADO con id: {}", id);
@@ -307,18 +321,17 @@ public class SolicitudTarjetaService {
             throw new RuntimeException("La solicitud de DUPLICADO debe tener una tarjeta asociada");
         }
 
-        // Buscar la tarjeta e incrementar la cantidad
+        // Se consulta la tarjeta para comprobar que existe y para poder anunciar al socio con
+        // cuántas tarjetas se quedará. El incremento real NO se aplica aquí: la tarjeta física
+        // todavía no existe. Se aplica al entregarla (marcarEntregada).
         Tarjeta tarjeta = tarjetaService.findById(solicitud.getTarjetaId());
+        int cantidadTrasElDuplicado = (tarjeta.getCantidad() != null ? tarjeta.getCantidad() : 1) + 1;
 
-        // Incrementar cantidad (nueva tarjeta física duplicada)
-        Integer cantidadActual = tarjeta.getCantidad() != null ? tarjeta.getCantidad() : 1;
-        tarjeta.setCantidad(cantidadActual + 1);
-        tarjetaService.update(tarjeta.getId(), tarjeta);
+        log.info("Duplicado confirmado por la petrolera para la tarjeta {}. Cantidad prevista tras la entrega: {}",
+                tarjeta.getId(), cantidadTrasElDuplicado);
 
-        log.info("Tarjeta {} duplicada. Nueva cantidad: {}", tarjeta.getId(), tarjeta.getCantidad());
-
-        // Marcar solicitud como COMPLETADA
-        solicitud.setEstado(EstadoSolicitud.COMPLETADA);
+        // Queda APROBADA: aún falta registrar la llegada y la entrega al socio
+        solicitud.setEstado(EstadoSolicitud.APROBADA);
         solicitud.setFechaProcesado(LocalDateTime.now());
         solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
         if (dto.getObservaciones() != null && !dto.getObservaciones().isEmpty()) {
@@ -326,7 +339,7 @@ public class SolicitudTarjetaService {
         }
 
         SolicitudTarjeta updated = repository.save(solicitud);
-        log.info("Solicitud de DUPLICADO completada con id: {}", updated.getId());
+        log.info("Solicitud de DUPLICADO aprobada por la petrolera con id: {}", updated.getId());
 
         // Enviar correo de confirmación al socio
         StringBuilder correosEnviados = new StringBuilder(updated.getCorreosEnviados() != null ? updated.getCorreosEnviados() : "");
@@ -335,7 +348,7 @@ public class SolicitudTarjetaService {
             PetroleraDTO petrolera = obtenerPetrolera(solicitud.getPetroleraId());
             Map<String, String> variables = crearMapaVariables(socio, petrolera, solicitud);
             variables.put("fechaRespuesta", dto.getFechaRespuesta().toString());
-            variables.put("cantidad", String.valueOf(tarjeta.getCantidad()));
+            variables.put("cantidad", String.valueOf(cantidadTrasElDuplicado));
 
             // DUPLICADO_CONFIRMADA (no DUPLICADO_SOCIO): la petrolera ya ha confirmado el
             // duplicado, el correo de trámite se envió al crear la solicitud.
@@ -359,9 +372,10 @@ public class SolicitudTarjetaService {
     }
 
     /**
-     * Paso intermedio del ALTA: la petrolera ya la aprobó y ahora llega la tarjeta física.
-     * No aplica a una solicitud de tipo LLEGADA, que nace ya en TARJETA_LLEGADA con su correo
-     * enviado; volver a pasar por aquí duplicaría el aviso al socio.
+     * Paso intermedio del ALTA y del DUPLICADO: la petrolera ya los aprobó y ahora llega la
+     * tarjeta física, así que hay que avisar al socio (recogida en Madrid / envío postal fuera).
+     * No aplica a una BAJA, donde no llega nada, ni a una solicitud de tipo LLEGADA, que nace ya
+     * en TARJETA_LLEGADA con su correo enviado; volver a pasar por aquí duplicaría el aviso.
      */
     @Transactional
     public SolicitudTarjetaDTO registrarLlegada(Long id, RegistrarLlegadaDTO dto) {
@@ -370,8 +384,12 @@ public class SolicitudTarjetaService {
         SolicitudTarjeta solicitud = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con id: " + id));
 
-        if (solicitud.getTipo() != TipoSolicitud.ALTA) {
-            throw new RuntimeException("Solo se puede registrar la llegada de solicitudes de ALTA");
+        if (solicitud.getTipo() == TipoSolicitud.LLEGADA) {
+            throw new RuntimeException("Una solicitud de LLEGADA ya nace con la llegada registrada: no se puede registrar otra vez");
+        }
+
+        if (solicitud.getTipo() == TipoSolicitud.BAJA) {
+            throw new RuntimeException("Una solicitud de BAJA no espera ninguna tarjeta: no se puede registrar su llegada");
         }
 
         if (solicitud.getEstado() != EstadoSolicitud.APROBADA) {
@@ -431,11 +449,13 @@ public class SolicitudTarjetaService {
             solicitud.setObservaciones(dto.getObservaciones());
         }
 
-        // Crear la tarjeta activa. Solo el ALTA crea una Tarjeta nueva: un DUPLICADO no
-        // genera fila propia porque aprobarDuplicado incrementa la cantidad de la tarjeta
-        // existente y cierra la solicitud sin pasar por llegada/entrega.
+        // El efecto físico se aplica al entregar, que es cuando el socio tiene la tarjeta en la
+        // mano: el ALTA crea una Tarjeta nueva y el DUPLICADO suma una unidad a la existente
+        // (no genera fila propia, porque es la misma tarjeta repetida).
         if (solicitud.getTipo() == TipoSolicitud.ALTA) {
             crearTarjeta(solicitud);
+        } else if (solicitud.getTipo() == TipoSolicitud.DUPLICADO) {
+            incrementarCantidadTarjeta(solicitud);
         }
 
         SolicitudTarjeta updated = repository.save(solicitud);
@@ -609,6 +629,23 @@ public class SolicitudTarjetaService {
         log.info("Tarjeta creada para matrícula: {}", tarjeta.getMatricula());
     }
 
+    /**
+     * Suma una unidad a la tarjeta duplicada: el socio pasa a tener una tarjeta física más
+     * de la misma matrícula y petrolera.
+     */
+    private void incrementarCantidadTarjeta(SolicitudTarjeta solicitud) {
+        if (solicitud.getTarjetaId() == null) {
+            throw new RuntimeException("La solicitud de DUPLICADO debe tener una tarjeta asociada");
+        }
+
+        Tarjeta tarjeta = tarjetaService.findById(solicitud.getTarjetaId());
+        Integer cantidadActual = tarjeta.getCantidad() != null ? tarjeta.getCantidad() : 1;
+        tarjeta.setCantidad(cantidadActual + 1);
+        tarjetaService.update(tarjeta.getId(), tarjeta);
+
+        log.info("Tarjeta {} duplicada al entregarla. Nueva cantidad: {}", tarjeta.getId(), tarjeta.getCantidad());
+    }
+
     private SocioDTO obtenerSocio(Long socioId) {
         try {
             String url = sociosServiceUrl + "/api/socios/" + socioId;
@@ -653,6 +690,9 @@ public class SolicitudTarjetaService {
         variables.put("matricula", solicitud.getMatricula());
         variables.put("numeroContrato", solicitud.getNumeroContrato() != null ? solicitud.getNumeroContrato() : "");
         variables.put("fecha", LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+        // Solo un DUPLICADO tiene motivo; en el resto de tipos la plantilla lo resuelve a vacío
+        variables.put("motivoDuplicado",
+                solicitud.getMotivoDuplicado() != null ? solicitud.getMotivoDuplicado().getEtiqueta() : "");
 
         return variables;
     }
@@ -709,6 +749,7 @@ public class SolicitudTarjetaService {
         dto.setProcesadoPor(entity.getProcesadoPor());
         dto.setSolicitadoPor(entity.getSolicitadoPor());
         dto.setTarjetaId(entity.getTarjetaId());
+        dto.setMotivoDuplicado(entity.getMotivoDuplicado());
         dto.setFechaLlegadaEstimada(entity.getFechaLlegadaEstimada());
         dto.setFechaEntrega(entity.getFechaEntrega());
         dto.setCorreosEnviados(entity.getCorreosEnviados());

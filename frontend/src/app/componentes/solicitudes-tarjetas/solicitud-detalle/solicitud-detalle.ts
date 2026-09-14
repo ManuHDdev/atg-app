@@ -5,7 +5,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { SolicitudTarjetaService } from '../../../services/solicitud-tarjeta.service';
 import { SocioService } from '../../../services/socio.service';
 import { PetroleraService } from '../../../services/petrolera.service';
-import { SolicitudTarjeta } from '../../../models/solicitud-tarjeta.model';
+import { SolicitudTarjeta, getMotivoDuplicadoLabel } from '../../../models/solicitud-tarjeta.model';
 import { Socio } from '../../../models/socio.model';
 import { Petrolera } from '../../../models/petrolera.model';
 import { EstadoBadge } from '../estado-badge/estado-badge';
@@ -220,13 +220,22 @@ export class SolicitudDetalle implements OnInit {
     return this.solicitud?.estado === 'PENDIENTE' && this.solicitud?.tipo !== 'LLEGADA';
   }
 
+  // Un duplicado también es una tarjeta física que llega y hay que entregar, así que recorre
+  // llegada y entrega igual que un alta.
   get puedeRegistrarLlegada(): boolean {
-    return this.solicitud?.estado === 'APROBADA' && this.solicitud?.tipo === 'ALTA';
+    return this.solicitud?.estado === 'APROBADA'
+      && (this.solicitud?.tipo === 'ALTA' || this.solicitud?.tipo === 'DUPLICADO');
   }
 
   get puedeMarcarEntregada(): boolean {
     return this.solicitud?.estado === 'TARJETA_LLEGADA'
-      && (this.solicitud?.tipo === 'ALTA' || this.solicitud?.tipo === 'LLEGADA');
+      && (this.solicitud?.tipo === 'ALTA' || this.solicitud?.tipo === 'LLEGADA'
+        || this.solicitud?.tipo === 'DUPLICADO');
+  }
+
+  /** Texto legible del motivo del duplicado ("Deterioro" / "Extravío"). */
+  get motivoDuplicadoTexto(): string {
+    return getMotivoDuplicadoLabel(this.solicitud?.motivoDuplicado);
   }
 
   formatearFecha(fecha: Date | string | undefined): string {
@@ -282,7 +291,7 @@ export class SolicitudDetalle implements OnInit {
     this.loading = true;
     this.solicitudService.aprobarDuplicadoPorPetrolera(this.solicitud.id, this.duplicadoForm.value).subscribe({
       next: () => {
-        this.success = 'Duplicado aprobado por la petrolera. Se ha incrementado la cantidad de tarjetas.';
+        this.success = 'Duplicado aprobado por la petrolera. Queda pendiente de registrar su llegada y la entrega al socio.';
         this.showDuplicadoModal = false;
         this.cargarSolicitud(this.solicitud!.id!);
       },

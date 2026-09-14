@@ -10,6 +10,7 @@ import com.manuhd.app.tarjetas.dto.RegistrarLlegadaDTO;
 import com.manuhd.app.tarjetas.dto.SocioDTO;
 import com.manuhd.app.tarjetas.dto.SolicitudTarjetaDTO;
 import com.manuhd.app.tarjetas.model.EstadoSolicitud;
+import com.manuhd.app.tarjetas.model.MotivoDuplicado;
 import com.manuhd.app.tarjetas.model.PlantillaTarjeta;
 import com.manuhd.app.tarjetas.model.SolicitudTarjeta;
 import com.manuhd.app.tarjetas.model.Tarjeta;
@@ -264,8 +265,12 @@ class SolicitudTarjetaServiceTest {
         assertThat(solicitud.getCorreosEnviados()).contains(TipoPlantilla.BAJA_CONFIRMADA.name());
     }
 
+    /**
+     * Un duplicado es una tarjeta física que todavía tiene que llegar y entregarse: la respuesta
+     * de la petrolera lo deja APROBADA, no cerrado, y no toca aún la cantidad de la tarjeta.
+     */
     @Test
-    void aprobarDuplicadoPorPetroleraEnviaDuplicadoConfirmadaYPasaACompletada() {
+    void aprobarDuplicadoPorPetroleraEnviaDuplicadoConfirmadaYPasaAAprobada() {
         SolicitudTarjeta solicitud = solicitud(TipoSolicitud.DUPLICADO);
         solicitud.setTarjetaId(TARJETA_ID);
         mockSolicitudGuardada(solicitud);
@@ -276,11 +281,30 @@ class SolicitudTarjetaServiceTest {
         AprobarDuplicadoDTO dto = new AprobarDuplicadoDTO(LocalDate.of(2026, 2, 1), null);
         SolicitudTarjetaDTO resultado = service.aprobarDuplicadoPorPetrolera(SOLICITUD_ID, dto);
 
-        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.COMPLETADA);
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.APROBADA);
         verify(emailService).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
                 eq(TipoPlantilla.DUPLICADO_CONFIRMADA.name()));
         verify(plantillaService, never()).obtenerPlantillaActiva(TipoPlantilla.DUPLICADO_SOCIO);
         assertThat(solicitud.getCorreosEnviados()).contains(TipoPlantilla.DUPLICADO_CONFIRMADA.name());
+    }
+
+    @Test
+    void aprobarDuplicadoPorPetroleraNoIncrementaTodaviaLaCantidadDeLaTarjeta() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.DUPLICADO);
+        solicitud.setTarjetaId(TARJETA_ID);
+        mockSolicitudGuardada(solicitud);
+        mockServiciosExternos();
+        Tarjeta tarjeta = tarjeta(1);
+        when(tarjetaService.findById(TARJETA_ID)).thenReturn(tarjeta);
+        mockPlantillaActiva(TipoPlantilla.DUPLICADO_CONFIRMADA);
+
+        service.aprobarDuplicadoPorPetrolera(SOLICITUD_ID, new AprobarDuplicadoDTO(LocalDate.of(2026, 2, 1), null));
+
+        assertThat(tarjeta.getCantidad()).isEqualTo(1);
+        verify(tarjetaService, never()).update(any(), any(Tarjeta.class));
+
+        // Al socio sí se le anuncia con cuántas tarjetas se quedará cuando reciba el duplicado.
+        assertThat(capturarVariables(TipoPlantilla.DUPLICADO_CONFIRMADA)).containsEntry("cantidad", "2");
     }
 
     // ---------- regla Madrid ----------
@@ -289,7 +313,7 @@ class SolicitudTarjetaServiceTest {
     @ValueSource(strings = {"Madrid", "  madrid  ", "MADRID ", "Comunidad de Madrid", "COMUNIDAD DE MADRÍD"})
     void registrarLlegadaUsaLaPlantillaDeMadridParaLaComunidadDeMadrid(String provincia) {
         assertThat(service.esProvinciaMadrid(provincia)).isTrue();
-        registrarLlegadaCon(provincia, TipoPlantilla.LLEGADA_MADRID);
+        registrarLlegadaCon(provincia, TipoPlantilla.LLEGADA_MADRID, TipoSolicitud.ALTA);
     }
 
     @ParameterizedTest
@@ -297,13 +321,30 @@ class SolicitudTarjetaServiceTest {
     @ValueSource(strings = {"Toledo", "", "   "})
     void registrarLlegadaUsaLaPlantillaPostalFueraDeMadrid(String provincia) {
         assertThat(service.esProvinciaMadrid(provincia)).isFalse();
-        registrarLlegadaCon(provincia, TipoPlantilla.LLEGADA_FUERA);
+        registrarLlegadaCon(provincia, TipoPlantilla.LLEGADA_FUERA, TipoSolicitud.ALTA);
     }
 
-    private void registrarLlegadaCon(String provincia, TipoPlantilla esperada) {
+    /**
+     * El duplicado también llega físicamente, así que recorre el mismo aviso al socio que el
+     * alta: recogida en Madrid, envío postal fuera.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"Madrid", "Comunidad de Madrid"})
+    void registrarLlegadaDeUnDuplicadoEnMadridAvisaDeLaRecogida(String provincia) {
+        registrarLlegadaCon(provincia, TipoPlantilla.LLEGADA_MADRID, TipoSolicitud.DUPLICADO);
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"Toledo", "Cuenca"})
+    void registrarLlegadaDeUnDuplicadoFueraDeMadridAvisaDelEnvioPostal(String provincia) {
+        registrarLlegadaCon(provincia, TipoPlantilla.LLEGADA_FUERA, TipoSolicitud.DUPLICADO);
+    }
+
+    private void registrarLlegadaCon(String provincia, TipoPlantilla esperada, TipoSolicitud tipo) {
         socio.setProvincia(provincia);
 
-        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
+        SolicitudTarjeta solicitud = solicitud(tipo);
         solicitud.setEstado(EstadoSolicitud.APROBADA);
         mockSolicitudGuardada(solicitud);
         mockServiciosExternos();
@@ -418,7 +459,7 @@ class SolicitudTarjetaServiceTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = TipoSolicitud.class, names = {"DUPLICADO", "BAJA", "LLEGADA"})
+    @EnumSource(value = TipoSolicitud.class, names = {"BAJA", "LLEGADA"})
     void marcarEntregadaNoCreaTarjetaSiNoEsUnAlta(TipoSolicitud tipo) {
         SolicitudTarjeta solicitud = solicitud(tipo);
         solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
@@ -427,6 +468,43 @@ class SolicitudTarjetaServiceTest {
         service.marcarEntregada(SOLICITUD_ID, new MarcarEntregadaDTO(null, null));
 
         verify(tarjetaService, never()).create(any(Tarjeta.class));
+    }
+
+    /**
+     * El duplicado no crea una tarjeta nueva: suma una unidad a la existente, y lo hace al
+     * entregarla, que es cuando el socio la tiene realmente en la mano.
+     */
+    @Test
+    void marcarEntregadaDeUnDuplicadoIncrementaLaCantidadUnaSolaVezYCompleta() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.DUPLICADO);
+        solicitud.setTarjetaId(TARJETA_ID);
+        solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
+        mockSolicitudGuardada(solicitud);
+        Tarjeta tarjeta = tarjeta(1);
+        when(tarjetaService.findById(TARJETA_ID)).thenReturn(tarjeta);
+
+        SolicitudTarjetaDTO resultado = service.marcarEntregada(SOLICITUD_ID, new MarcarEntregadaDTO(null, null));
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.COMPLETADA);
+        assertThat(resultado.getFechaEntrega()).isNotNull();
+        assertThat(tarjeta.getCantidad()).isEqualTo(2);
+        verify(tarjetaService, times(1)).update(eq(TARJETA_ID), any(Tarjeta.class));
+        verify(tarjetaService, never()).create(any(Tarjeta.class));
+    }
+
+    @Test
+    void marcarEntregadaDeUnDuplicadoSinTarjetaAsociadaNoSeAdmite() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.DUPLICADO);
+        solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
+        when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(solicitud));
+
+        MarcarEntregadaDTO dto = new MarcarEntregadaDTO(null, null);
+
+        assertThatThrownBy(() -> service.marcarEntregada(SOLICITUD_ID, dto))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("tarjeta asociada");
+
+        verify(tarjetaService, never()).update(any(), any(Tarjeta.class));
     }
 
     // ---------- LLEGADA: registro en un solo paso ----------
@@ -487,10 +565,103 @@ class SolicitudTarjetaServiceTest {
 
         assertThatThrownBy(() -> service.registrarLlegada(SOLICITUD_ID, dto))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("solicitudes de ALTA");
+                .hasMessageContaining("ya nace con la llegada registrada");
 
         // Lo importante: no se reenvia el aviso de llegada al socio.
         verify(emailService, never()).enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), anyString());
+    }
+
+    /** En una BAJA no llega ninguna tarjeta: no hay nada que avisar ni que entregar. */
+    @Test
+    void registrarLlegadaNoSeAplicaAUnaSolicitudDeBaja() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.BAJA);
+        solicitud.setEstado(EstadoSolicitud.APROBADA);
+        when(repository.findById(SOLICITUD_ID)).thenReturn(Optional.of(solicitud));
+
+        RegistrarLlegadaDTO dto = new RegistrarLlegadaDTO(LocalDate.of(2026, 3, 1), "CTR-9876", null);
+
+        assertThatThrownBy(() -> service.registrarLlegada(SOLICITUD_ID, dto))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("no espera ninguna tarjeta");
+
+        verify(emailService, never()).enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), anyString());
+    }
+
+    // ---------- DUPLICADO: el motivo es obligatorio ----------
+
+    @Test
+    void crearDuplicadoSinMotivoNoSeAdmite() {
+        CrearSolicitudDTO dto = crearDTO(TipoSolicitud.DUPLICADO, null);
+        dto.setTarjetaId(TARJETA_ID);
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("motivo del duplicado es obligatorio");
+
+        verify(repository, never()).save(any(SolicitudTarjeta.class));
+    }
+
+    @Test
+    void crearDuplicadoGuardaElMotivoYLoExponeALaPlantilla() {
+        mockGuardadoDeNuevaSolicitud();
+        mockServiciosExternos();
+        mockPlantillaObligatoria(TipoPlantilla.DUPLICADO_SOCIO);
+
+        CrearSolicitudDTO dto = crearDTO(TipoSolicitud.DUPLICADO, null);
+        dto.setTarjetaId(TARJETA_ID);
+        dto.setMotivoDuplicado(MotivoDuplicado.EXTRAVIO);
+
+        SolicitudTarjetaDTO resultado = service.create(dto);
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.PENDIENTE);
+        assertThat(resultado.getMotivoDuplicado()).isEqualTo(MotivoDuplicado.EXTRAVIO);
+        // La plantilla recibe la etiqueta legible, no el nombre del enum.
+        assertThat(capturarVariables(TipoPlantilla.DUPLICADO_SOCIO)).containsEntry("motivoDuplicado", "Extravío");
+    }
+
+    @Test
+    void elMotivoDelDuplicadoNoSeAplicaAOtrosTiposYLlegaVacioALaPlantilla() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
+        mockSolicitudGuardada(solicitud);
+        mockServiciosExternos();
+        mockPlantillaActiva(TipoPlantilla.ALTA_APROBADA);
+
+        service.aprobarPorPetrolera(SOLICITUD_ID);
+
+        assertThat(capturarVariables(TipoPlantilla.ALTA_APROBADA)).containsEntry("motivoDuplicado", "");
+    }
+
+    /** Recorrido completo del duplicado: llega y se entrega, igual que un alta. */
+    @Test
+    void unDuplicadoRecorreLlegadaYEntregaHastaCompletada() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.DUPLICADO);
+        solicitud.setTarjetaId(TARJETA_ID);
+        solicitud.setMotivoDuplicado(MotivoDuplicado.DETERIORO);
+        mockSolicitudGuardada(solicitud);
+        mockServiciosExternos();
+        Tarjeta tarjeta = tarjeta(1);
+        when(tarjetaService.findById(TARJETA_ID)).thenReturn(tarjeta);
+        when(plantillaService.buscarPlantillaActiva(TipoPlantilla.DUPLICADO_CONFIRMADA)).thenReturn(Optional.empty());
+        mockPlantillaObligatoria(TipoPlantilla.LLEGADA_MADRID);
+
+        // 1. La petrolera confirma el duplicado: queda aprobado, pendiente de que llegue.
+        assertThat(service.aprobarDuplicadoPorPetrolera(SOLICITUD_ID,
+                new AprobarDuplicadoDTO(LocalDate.of(2026, 2, 1), null)).getEstado())
+                .isEqualTo(EstadoSolicitud.APROBADA);
+        assertThat(tarjeta.getCantidad()).isEqualTo(1);
+
+        // 2. Llega la tarjeta física y se avisa al socio (recogida en Madrid).
+        assertThat(service.registrarLlegada(SOLICITUD_ID,
+                new RegistrarLlegadaDTO(LocalDate.of(2026, 3, 1), "CTR-9876", null)).getEstado())
+                .isEqualTo(EstadoSolicitud.TARJETA_LLEGADA);
+        verify(emailService).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
+                eq(TipoPlantilla.LLEGADA_MADRID.name()));
+
+        // 3. Se entrega: ahora sí sube la cantidad y el proceso queda cerrado.
+        assertThat(service.marcarEntregada(SOLICITUD_ID, new MarcarEntregadaDTO(null, null)).getEstado())
+                .isEqualTo(EstadoSolicitud.COMPLETADA);
+        assertThat(tarjeta.getCantidad()).isEqualTo(2);
+        verify(tarjetaService, never()).create(any(Tarjeta.class));
     }
 
     // ---------- entrega: cierra el proceso ----------

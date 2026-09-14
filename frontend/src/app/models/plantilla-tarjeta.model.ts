@@ -69,5 +69,6 @@ export const VARIABLES_DISPONIBLES = [
   { variable: '{fecha}', descripcion: 'Fecha actual' },
   { variable: '{nombrePetrolera}', descripcion: 'Nombre de la petrolera' },
   { variable: '{emailPetrolera}', descripcion: 'Email de la petrolera' },
-  { variable: '{motivo}', descripcion: 'Motivo del rechazo (solo Alta rechazada)' }
+  { variable: '{motivo}', descripcion: 'Motivo del rechazo (solo Alta rechazada)' },
+  { variable: '{motivoDuplicado}', descripcion: 'Motivo del duplicado: Deterioro o Extravío (solo Duplicado)' }
 ];

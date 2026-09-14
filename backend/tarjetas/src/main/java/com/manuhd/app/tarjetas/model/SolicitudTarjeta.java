@@ -81,6 +81,13 @@ public class SolicitudTarjeta {
     @Column(name = "tarjeta_id")
     private Long tarjetaId;  // ID de la tarjeta a dar de baja (para BAJA)
 
+    // Solo tiene sentido en un DUPLICADO: por qué se pide la tarjeta nueva. En el resto
+    // de tipos queda a null. Se valida como obligatorio en el servicio, no aquí, porque
+    // la obligatoriedad depende del tipo de solicitud.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "motivo_duplicado", length = 20)
+    private MotivoDuplicado motivoDuplicado;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
