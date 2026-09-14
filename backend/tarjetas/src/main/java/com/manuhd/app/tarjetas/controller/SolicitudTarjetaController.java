@@ -68,36 +68,21 @@ public class SolicitudTarjetaController {
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
-    @PutMapping("/{id}/completar")
-    public ResponseEntity<SolicitudTarjetaDTO> completar(
-            @PathVariable Long id,
-            @RequestBody(required = false) Map<String, String> body) {
-        log.info("PUT /api/solicitudes-tarjetas/{}/completar - Completar solicitud", id);
-        String procesadoPor = body != null ? body.get("procesadoPor") : "Sistema";
-        SolicitudTarjetaDTO completed = service.completar(id, procesadoPor);
-        return ResponseEntity.ok(completed);
-    }
-
-    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}/rechazar")
     public ResponseEntity<SolicitudTarjetaDTO> rechazar(
             @PathVariable Long id,
             @RequestBody Map<String, String> body) {
         log.info("PUT /api/solicitudes-tarjetas/{}/rechazar - Rechazar solicitud", id);
         String motivo = body.getOrDefault("motivo", "Sin especificar");
-        String procesadoPor = body.getOrDefault("procesadoPor", "Sistema");
-        SolicitudTarjetaDTO rejected = service.rechazar(id, motivo, procesadoPor);
+        SolicitudTarjetaDTO rejected = service.rechazar(id, motivo);
         return ResponseEntity.ok(rejected);
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PutMapping("/{id}/aprobar")
-    public ResponseEntity<SolicitudTarjetaDTO> aprobar(
-            @PathVariable Long id,
-            @RequestBody(required = false) Map<String, String> body) {
+    public ResponseEntity<SolicitudTarjetaDTO> aprobar(@PathVariable Long id) {
         log.info("PUT /api/solicitudes-tarjetas/{}/aprobar - Aprobar solicitud", id);
-        String procesadoPor = body != null ? body.getOrDefault("procesadoPor", "Sistema") : "Sistema";
-        SolicitudTarjetaDTO approved = service.aprobar(id, procesadoPor);
+        SolicitudTarjetaDTO approved = service.aprobar(id);
         return ResponseEntity.ok(approved);
     }
 

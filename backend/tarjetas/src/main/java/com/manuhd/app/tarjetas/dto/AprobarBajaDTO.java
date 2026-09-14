@@ -15,8 +15,5 @@ public class AprobarBajaDTO {
     @NotNull(message = "La fecha de baja es obligatoria")
     private LocalDate fechaBaja;
 
-    @NotNull(message = "El procesadoPor es obligatorio")
-    private String procesadoPor;
-
     private String observaciones;  // Opcional
 }

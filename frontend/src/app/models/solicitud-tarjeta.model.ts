@@ -35,23 +35,19 @@ export interface RegistrarLlegadaDTO {
   fechaLlegadaEstimada: string;  // ISO date string
   numeroContrato?: string;  // Opcional
   observaciones?: string;
-  procesadoPor: string;
 }
 
 export interface MarcarEntregadaDTO {
   fechaEntrega?: Date;
   observaciones?: string;
-  procesadoPor: string;
 }
 
 export interface AprobarBajaDTO {
   fechaBaja: string;  // ISO date string (YYYY-MM-DD)
-  procesadoPor: string;
   observaciones?: string;
 }
 
 export interface AprobarDuplicadoDTO {
   fechaRespuesta: string;  // ISO date string (YYYY-MM-DD)
-  procesadoPor: string;
   observaciones?: string;
 }

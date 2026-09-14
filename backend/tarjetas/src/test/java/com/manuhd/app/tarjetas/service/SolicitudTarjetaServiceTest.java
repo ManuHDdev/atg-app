@@ -3,6 +3,7 @@ package com.manuhd.app.tarjetas.service;
 import com.manuhd.app.tarjetas.dto.AprobarBajaDTO;
 import com.manuhd.app.tarjetas.dto.AprobarDuplicadoDTO;
 import com.manuhd.app.tarjetas.dto.EnvioCorreoResult;
+import com.manuhd.app.tarjetas.dto.MarcarEntregadaDTO;
 import com.manuhd.app.tarjetas.dto.PetroleraDTO;
 import com.manuhd.app.tarjetas.dto.RegistrarLlegadaDTO;
 import com.manuhd.app.tarjetas.dto.SocioDTO;
@@ -14,16 +15,23 @@ import com.manuhd.app.tarjetas.model.Tarjeta;
 import com.manuhd.app.tarjetas.model.TipoPlantilla;
 import com.manuhd.app.tarjetas.model.TipoSolicitud;
 import com.manuhd.app.tarjetas.repository.SolicitudTarjetaRepository;
+import com.manuhd.app.tarjetas.security.UsuarioActualService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
@@ -36,6 +44,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -51,6 +60,7 @@ class SolicitudTarjetaServiceTest {
     private static final Long PETROLERA_ID = 20L;
     private static final Long TARJETA_ID = 30L;
     private static final String EMAIL_SOCIO = "socio@example.com";
+    private static final String USUARIO_TOKEN = "cristina";
 
     @Mock
     private SolicitudTarjetaRepository repository;
@@ -67,6 +77,10 @@ class SolicitudTarjetaServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
+    // Colaborador real: los tests ejercitan la lectura del JWT, no un doble de prueba.
+    @Spy
+    private UsuarioActualService usuarioActual = new UsuarioActualService();
+
     @InjectMocks
     private SolicitudTarjetaService service;
 
@@ -78,6 +92,21 @@ class SolicitudTarjetaServiceTest {
         socio = new SocioDTO(SOCIO_ID, "Transportes Ejemplo SL", EMAIL_SOCIO, "600111222",
                 "Calle Mayor 1", "Alcalá de Henares", "28801", "Madrid", "S-001");
         petrolera = new PetroleraDTO(PETROLERA_ID, "Repsol", "petrolera@example.com");
+        autenticarComo(USUARIO_TOKEN);
+    }
+
+    @AfterEach
+    void limpiarContextoDeSeguridad() {
+        SecurityContextHolder.clearContext();
+    }
+
+    /** Deja en el contexto un token de Keycloak con el preferred_username indicado. */
+    private void autenticarComo(String preferredUsername) {
+        Jwt jwt = Jwt.withTokenValue("token-de-prueba")
+                .header("alg", "none")
+                .claim("preferred_username", preferredUsername)
+                .build();
+        SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
     }
 
     // ---------- helpers ----------
@@ -147,7 +176,7 @@ class SolicitudTarjetaServiceTest {
         mockServiciosExternos();
         mockPlantillaActiva(TipoPlantilla.ALTA_APROBADA);
 
-        SolicitudTarjetaDTO resultado = service.aprobar(SOLICITUD_ID, "oficina");
+        SolicitudTarjetaDTO resultado = service.aprobar(SOLICITUD_ID);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.APROBADA);
         verify(emailService).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
@@ -162,7 +191,7 @@ class SolicitudTarjetaServiceTest {
         mockServiciosExternos();
         when(plantillaService.buscarPlantillaActiva(TipoPlantilla.ALTA_APROBADA)).thenReturn(Optional.empty());
 
-        SolicitudTarjetaDTO resultado = service.aprobar(SOLICITUD_ID, "oficina");
+        SolicitudTarjetaDTO resultado = service.aprobar(SOLICITUD_ID);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.APROBADA);
         assertThat(solicitud.getCorreosEnviados()).isNull();
@@ -178,7 +207,7 @@ class SolicitudTarjetaServiceTest {
         mockServiciosExternos();
         mockPlantillaActiva(TipoPlantilla.ALTA_RECHAZADA);
 
-        SolicitudTarjetaDTO resultado = service.rechazar(SOLICITUD_ID, "Contrato no vigente", "oficina");
+        SolicitudTarjetaDTO resultado = service.rechazar(SOLICITUD_ID, "Contrato no vigente");
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.RECHAZADA);
         assertThat(capturarVariables(TipoPlantilla.ALTA_RECHAZADA))
@@ -197,7 +226,7 @@ class SolicitudTarjetaServiceTest {
         when(tarjetaService.findById(TARJETA_ID)).thenReturn(tarjeta(1));
         mockPlantillaActiva(TipoPlantilla.BAJA_CONFIRMADA);
 
-        AprobarBajaDTO dto = new AprobarBajaDTO(LocalDate.of(2026, 1, 15), "oficina", null);
+        AprobarBajaDTO dto = new AprobarBajaDTO(LocalDate.of(2026, 1, 15), null);
         SolicitudTarjetaDTO resultado = service.aprobarBaja(SOLICITUD_ID, dto);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.COMPLETADA);
@@ -217,7 +246,7 @@ class SolicitudTarjetaServiceTest {
         when(tarjetaService.findById(TARJETA_ID)).thenReturn(tarjeta(1));
         mockPlantillaActiva(TipoPlantilla.DUPLICADO_CONFIRMADA);
 
-        AprobarDuplicadoDTO dto = new AprobarDuplicadoDTO(LocalDate.of(2026, 2, 1), "oficina", null);
+        AprobarDuplicadoDTO dto = new AprobarDuplicadoDTO(LocalDate.of(2026, 2, 1), null);
         SolicitudTarjetaDTO resultado = service.aprobarDuplicado(SOLICITUD_ID, dto);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.COMPLETADA);
@@ -255,7 +284,7 @@ class SolicitudTarjetaServiceTest {
         when(emailService.enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), eq(esperada.name())))
                 .thenReturn(new EnvioCorreoResult(true, esperada.name(), EMAIL_SOCIO));
 
-        RegistrarLlegadaDTO dto = new RegistrarLlegadaDTO(LocalDate.of(2026, 3, 1), "CTR-9876", null, "oficina");
+        RegistrarLlegadaDTO dto = new RegistrarLlegadaDTO(LocalDate.of(2026, 3, 1), "CTR-9876", null);
         SolicitudTarjetaDTO resultado = service.registrarLlegada(SOLICITUD_ID, dto);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.TARJETA_LLEGADA);
@@ -272,7 +301,7 @@ class SolicitudTarjetaServiceTest {
         mockServiciosExternos();
         mockPlantillaActiva(TipoPlantilla.ALTA_APROBADA);
 
-        service.aprobar(SOLICITUD_ID, "oficina");
+        service.aprobar(SOLICITUD_ID);
 
         assertThat(capturarVariables(TipoPlantilla.ALTA_APROBADA))
                 .containsEntry("numeroContrato", "CTR-9876")
@@ -290,8 +319,86 @@ class SolicitudTarjetaServiceTest {
         mockServiciosExternos();
         mockPlantillaActiva(TipoPlantilla.ALTA_APROBADA);
 
-        service.aprobar(SOLICITUD_ID, "oficina");
+        service.aprobar(SOLICITUD_ID);
 
         assertThat(capturarVariables(TipoPlantilla.ALTA_APROBADA)).containsEntry("numeroContrato", "");
+    }
+
+    // ---------- trazabilidad: quien tramita sale del token ----------
+
+    @Test
+    void aprobarBajaRegistraElUsuarioDelTokenComoProcesadoPor() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.BAJA);
+        solicitud.setTarjetaId(TARJETA_ID);
+        mockSolicitudGuardada(solicitud);
+        mockServiciosExternos();
+        when(tarjetaService.findById(TARJETA_ID)).thenReturn(tarjeta(1));
+        when(plantillaService.buscarPlantillaActiva(TipoPlantilla.BAJA_CONFIRMADA)).thenReturn(Optional.empty());
+
+        SolicitudTarjetaDTO resultado = service.aprobarBaja(SOLICITUD_ID,
+                new AprobarBajaDTO(LocalDate.of(2026, 1, 15), null));
+
+        assertThat(resultado.getProcesadoPor()).isEqualTo(USUARIO_TOKEN);
+        assertThat(solicitud.getProcesadoPor()).isEqualTo(USUARIO_TOKEN);
+    }
+
+    @Test
+    void registrarLlegadaRegistraElUsuarioDelTokenComoProcesadoPor() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
+        solicitud.setEstado(EstadoSolicitud.APROBADA);
+        mockSolicitudGuardada(solicitud);
+        mockServiciosExternos();
+        when(plantillaService.obtenerPlantillaActiva(TipoPlantilla.LLEGADA_MADRID))
+                .thenReturn(plantilla(TipoPlantilla.LLEGADA_MADRID));
+        when(emailService.enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(),
+                eq(TipoPlantilla.LLEGADA_MADRID.name())))
+                .thenReturn(new EnvioCorreoResult(true, TipoPlantilla.LLEGADA_MADRID.name(), EMAIL_SOCIO));
+
+        SolicitudTarjetaDTO resultado = service.registrarLlegada(SOLICITUD_ID,
+                new RegistrarLlegadaDTO(LocalDate.of(2026, 3, 1), "CTR-9876", null));
+
+        assertThat(resultado.getProcesadoPor()).isEqualTo(USUARIO_TOKEN);
+    }
+
+    @Test
+    void marcarEntregadaRegistraElUsuarioDelTokenAunqueCambieElOperador() {
+        autenticarComo("gema");
+
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
+        solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
+        mockSolicitudGuardada(solicitud);
+
+        SolicitudTarjetaDTO resultado = service.marcarEntregada(SOLICITUD_ID, new MarcarEntregadaDTO(null, null));
+
+        assertThat(resultado.getProcesadoPor()).isEqualTo("gema");
+    }
+
+    // ---------- marcarEntregada: alta de la tarjeta ----------
+
+    @Test
+    void marcarEntregadaCreaUnaUnicaTarjetaParaUnAlta() {
+        SolicitudTarjeta solicitud = solicitud(TipoSolicitud.ALTA);
+        solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
+        mockSolicitudGuardada(solicitud);
+
+        SolicitudTarjetaDTO resultado = service.marcarEntregada(SOLICITUD_ID, new MarcarEntregadaDTO(null, null));
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.ENTREGADA);
+        ArgumentCaptor<Tarjeta> captor = ArgumentCaptor.forClass(Tarjeta.class);
+        verify(tarjetaService, times(1)).create(captor.capture());
+        assertThat(captor.getValue().getSolicitudId()).isEqualTo(SOLICITUD_ID);
+        assertThat(captor.getValue().getActiva()).isTrue();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TipoSolicitud.class, names = {"DUPLICADO", "BAJA", "LLEGADA"})
+    void marcarEntregadaNoCreaTarjetaSiNoEsUnAlta(TipoSolicitud tipo) {
+        SolicitudTarjeta solicitud = solicitud(tipo);
+        solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
+        mockSolicitudGuardada(solicitud);
+
+        service.marcarEntregada(SOLICITUD_ID, new MarcarEntregadaDTO(null, null));
+
+        verify(tarjetaService, never()).create(any(Tarjeta.class));
     }
 }

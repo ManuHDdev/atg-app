@@ -44,13 +44,11 @@ export class SolicitudesDashboard implements OnInit {
   // Sub-modal BAJA
   mostrarModalBaja: boolean = false;
   fechaBaja: string = '';
-  procesadoPorBaja: string = 'Admin';
   observacionesBaja: string = '';
 
   // Sub-modal DUPLICADO
   mostrarModalDuplicado: boolean = false;
   fechaDuplicado: string = '';
-  procesadoPorDuplicado: string = 'Admin';
   observacionesDuplicado: string = '';
 
   loadingAccion: boolean = false;
@@ -159,7 +157,6 @@ export class SolicitudesDashboard implements OnInit {
     if (this.solicitudDetalle.tipo === 'BAJA') {
       const hoy = new Date().toISOString().split('T')[0];
       this.fechaBaja = hoy;
-      this.procesadoPorBaja = 'Admin';
       this.observacionesBaja = '';
       this.mostrarModalBaja = true;
       return;
@@ -168,7 +165,6 @@ export class SolicitudesDashboard implements OnInit {
     if (this.solicitudDetalle.tipo === 'DUPLICADO') {
       const hoy = new Date().toISOString().split('T')[0];
       this.fechaDuplicado = hoy;
-      this.procesadoPorDuplicado = 'Admin';
       this.observacionesDuplicado = '';
       this.mostrarModalDuplicado = true;
       return;
@@ -176,7 +172,7 @@ export class SolicitudesDashboard implements OnInit {
 
     // ALTA u otros: aprobar directamente
     this.loadingAccion = true;
-    this.solicitudService.aprobar(this.solicitudDetalle.id!, 'Admin').subscribe({
+    this.solicitudService.aprobar(this.solicitudDetalle.id!).subscribe({
       next: () => {
         this.loadingAccion = false;
         this.cerrarDetalle();
@@ -198,7 +194,7 @@ export class SolicitudesDashboard implements OnInit {
     if (!this.solicitudDetalle?.id || !this.motivoRechazo.trim()) return;
 
     this.loadingAccion = true;
-    this.solicitudService.rechazar(this.solicitudDetalle.id, this.motivoRechazo, 'Admin').subscribe({
+    this.solicitudService.rechazar(this.solicitudDetalle.id, this.motivoRechazo).subscribe({
       next: () => {
         this.loadingAccion = false;
         this.cerrarDetalle();
@@ -217,7 +213,6 @@ export class SolicitudesDashboard implements OnInit {
     this.loadingAccion = true;
     this.solicitudService.aprobarBaja(this.solicitudDetalle.id, {
       fechaBaja: this.fechaBaja,
-      procesadoPor: this.procesadoPorBaja,
       observaciones: this.observacionesBaja
     }).subscribe({
       next: () => {
@@ -238,7 +233,6 @@ export class SolicitudesDashboard implements OnInit {
     this.loadingAccion = true;
     this.solicitudService.aprobarDuplicado(this.solicitudDetalle.id, {
       fechaRespuesta: this.fechaDuplicado,
-      procesadoPor: this.procesadoPorDuplicado,
       observaciones: this.observacionesDuplicado
     }).subscribe({
       next: () => {

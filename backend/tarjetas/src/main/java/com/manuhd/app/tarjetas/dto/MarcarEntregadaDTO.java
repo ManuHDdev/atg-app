@@ -5,15 +5,13 @@ import java.time.LocalDateTime;
 public class MarcarEntregadaDTO {
     private LocalDateTime fechaEntrega;
     private String observaciones;
-    private String procesadoPor;
 
     public MarcarEntregadaDTO() {
     }
 
-    public MarcarEntregadaDTO(LocalDateTime fechaEntrega, String observaciones, String procesadoPor) {
+    public MarcarEntregadaDTO(LocalDateTime fechaEntrega, String observaciones) {
         this.fechaEntrega = fechaEntrega;
         this.observaciones = observaciones;
-        this.procesadoPor = procesadoPor;
     }
 
     public LocalDateTime getFechaEntrega() {
@@ -30,13 +28,5 @@ public class MarcarEntregadaDTO {
 
     public void setObservaciones(String observaciones) {
         this.observaciones = observaciones;
-    }
-
-    public String getProcesadoPor() {
-        return procesadoPor;
-    }
-
-    public void setProcesadoPor(String procesadoPor) {
-        this.procesadoPor = procesadoPor;
     }
 }

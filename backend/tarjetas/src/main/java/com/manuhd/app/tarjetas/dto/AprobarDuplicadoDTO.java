@@ -15,8 +15,5 @@ public class AprobarDuplicadoDTO {
     @NotNull(message = "La fecha de respuesta es obligatoria")
     private LocalDate fechaRespuesta;
 
-    @NotNull(message = "El procesadoPor es obligatorio")
-    private String procesadoPor;
-
     private String observaciones;  // Opcional
 }

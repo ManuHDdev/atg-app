@@ -62,28 +62,24 @@ export class SolicitudDetalle implements OnInit {
     this.llegadaForm = this.fb.group({
       fechaLlegadaEstimada: ['', Validators.required],
       numeroContrato: [''],  // Opcional
-      observaciones: [''],
-      procesadoPor: ['Admin', Validators.required]
+      observaciones: ['']
     });
 
     this.entregadaForm = this.fb.group({
-      observaciones: [''],
-      procesadoPor: ['Admin', Validators.required]
+      observaciones: ['']
     });
 
     // Formulario para aprobar BAJA con fecha por defecto = hoy
     const hoy = new Date().toISOString().split('T')[0];
     this.bajaForm = this.fb.group({
       fechaBaja: [hoy, Validators.required],
-      observaciones: [''],
-      procesadoPor: ['Admin', Validators.required]
+      observaciones: ['']
     });
 
     // Formulario para aprobar DUPLICADO con fecha por defecto = hoy
     this.duplicadoForm = this.fb.group({
       fechaRespuesta: [hoy, Validators.required],
-      observaciones: [''],
-      procesadoPor: ['Admin', Validators.required]
+      observaciones: ['']
     });
   }
 
@@ -138,7 +134,7 @@ export class SolicitudDetalle implements OnInit {
     if (!confirm('¿Está seguro de aprobar esta solicitud?')) return;
 
     this.loading = true;
-    this.solicitudService.aprobar(this.solicitud.id, 'Admin').subscribe({
+    this.solicitudService.aprobar(this.solicitud.id).subscribe({
       next: () => {
         this.success = 'Solicitud aprobada exitosamente';
         this.cargarSolicitud(this.solicitud!.id!);
@@ -161,7 +157,7 @@ export class SolicitudDetalle implements OnInit {
 
     this.showRechazoModal = false;
     this.loading = true;
-    this.solicitudService.rechazar(this.solicitud.id, this.motivoRechazo, 'Admin').subscribe({
+    this.solicitudService.rechazar(this.solicitud.id, this.motivoRechazo).subscribe({
       next: () => {
         this.success = 'Solicitud rechazada';
         this.cargarSolicitud(this.solicitud!.id!);
