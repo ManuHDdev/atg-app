@@ -3,7 +3,6 @@ package com.manuhd.app.contratos;
 import com.manuhd.app.contratos.model.*;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Random;
@@ -93,23 +92,6 @@ public abstract class TestBase {
         contrato.setFechaVigenciaDesde(LocalDate.now());
         contrato.setFechaVigenciaHasta(LocalDate.now().plusYears(1));
         return contrato;
-    }
-
-    /**
-     * Create a test Credito
-     */
-    protected Credito createCredito(TipoCredito tipoCredito, EstadoCredito estado) {
-        Credito credito = new Credito();
-        credito.setSocioId(TEST_SOCIO_ID);
-        credito.setEmpresaId(TEST_EMPRESA_ID);
-        credito.setPetroleraId(TEST_PETROLERA_ID);
-        credito.setTipoCredito(tipoCredito);
-        credito.setEstado(estado);
-        credito.setMonto(new BigDecimal("5000.00"));
-        credito.setObservaciones("Crédito de prueba");
-        credito.setProgramadoEnvio(false);
-        credito.setCreatedAt(LocalDateTime.now());
-        return credito;
     }
 
     /**

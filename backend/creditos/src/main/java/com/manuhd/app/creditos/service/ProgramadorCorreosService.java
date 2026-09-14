@@ -41,9 +41,16 @@ public class ProgramadorCorreosService {
     @Scheduled(cron = "0 0 9 * * *")
     @Transactional
     public void procesarCreditosProgramados() {
+        procesarCreditosProgramados(LocalDate.now());
+    }
+
+    /**
+     * Sobrecarga con la fecha inyectada para poder testear el job sin depender del día real.
+     */
+    @Transactional
+    void procesarCreditosProgramados(LocalDate hoy) {
         log.info("Iniciando procesamiento de créditos programados");
 
-        LocalDate hoy = LocalDate.now();
         List<Credito> creditosProgramados = creditoRepository
                 .findByProgramadoEnvioTrueAndFechaProgramadaEnvio(hoy);
 
@@ -69,10 +76,29 @@ public class ProgramadorCorreosService {
     @Scheduled(cron = "0 0 8 * * *")
     @Transactional
     public void procesarCreditosPorDiaSemana() {
-        String diaHoy = mapearDiaSemana(LocalDate.now().getDayOfWeek());
+        procesarCreditosPorDiaSemana(LocalDate.now());
+    }
+
+    /**
+     * Sobrecarga con la fecha inyectada para poder testear el job sin depender del día real.
+     */
+    @Transactional
+    void procesarCreditosPorDiaSemana(LocalDate hoy) {
+        String diaHoy = mapearDiaSemana(hoy.getDayOfWeek());
         log.info("Procesando envíos automáticos por día de semana: {}", diaHoy);
 
-        List<Credito> creditosPendientes = creditoRepository.findByEstado(EstadoCredito.PENDIENTE);
+        // IMPORTANTE - NO SIMPLIFICAR:
+        // Solo entran aquí los créditos SIN fecha de envío programada propia.
+        // Un crédito que el gestor programó para una fecha concreta es responsabilidad
+        // exclusiva del job diario procesarCreditosProgramados. Si este job por día de
+        // semana los incluyera, un crédito programado para el día 20 saldría el día 15
+        // simplemente porque su petrolera envía los lunes, contradiciendo la intención
+        // explícita del gestor.
+        List<Credito> creditosPendientes = creditoRepository
+                .findByEstadoSinProgramacionPropia(EstadoCredito.PENDIENTE)
+                .stream()
+                .filter(this::sinProgramacionPropia)
+                .collect(Collectors.toList());
         if (creditosPendientes.isEmpty()) {
             log.info("No hay créditos pendientes para enviar");
             return;
@@ -130,6 +156,17 @@ public class ProgramadorCorreosService {
         creditoRepository.save(credito);
 
         log.info("Crédito {} reprogramado para {}", creditoId, nuevaFecha);
+    }
+
+    /**
+     * Un crédito tiene programación propia cuando el gestor marcó el envío programado
+     * y fijó una fecha concreta. Segunda barrera defensiva sobre la consulta del
+     * repositorio: la regla de negocio queda escrita también aquí para que no se pierda
+     * si alguien toca la query.
+     */
+    private boolean sinProgramacionPropia(Credito credito) {
+        return !(Boolean.TRUE.equals(credito.getProgramadoEnvio())
+                && credito.getFechaProgramadaEnvio() != null);
     }
 
     private String mapearDiaSemana(DayOfWeek dia) {
