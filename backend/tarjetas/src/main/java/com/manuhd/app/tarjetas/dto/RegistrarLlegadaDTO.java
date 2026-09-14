@@ -6,16 +6,14 @@ public class RegistrarLlegadaDTO {
     private LocalDate fechaLlegadaEstimada;
     private String numeroContrato;  // Opcional
     private String observaciones;
-    private String procesadoPor;
 
     public RegistrarLlegadaDTO() {
     }
 
-    public RegistrarLlegadaDTO(LocalDate fechaLlegadaEstimada, String numeroContrato, String observaciones, String procesadoPor) {
+    public RegistrarLlegadaDTO(LocalDate fechaLlegadaEstimada, String numeroContrato, String observaciones) {
         this.fechaLlegadaEstimada = fechaLlegadaEstimada;
         this.numeroContrato = numeroContrato;
         this.observaciones = observaciones;
-        this.procesadoPor = procesadoPor;
     }
 
     public LocalDate getFechaLlegadaEstimada() {
@@ -40,13 +38,5 @@ public class RegistrarLlegadaDTO {
 
     public void setObservaciones(String observaciones) {
         this.observaciones = observaciones;
-    }
-
-    public String getProcesadoPor() {
-        return procesadoPor;
-    }
-
-    public void setProcesadoPor(String procesadoPor) {
-        this.procesadoPor = procesadoPor;
     }
 }

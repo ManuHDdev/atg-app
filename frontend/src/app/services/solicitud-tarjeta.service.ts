@@ -32,24 +32,18 @@ export class SolicitudTarjetaService {
     return this.http.post<SolicitudTarjeta>(this.apiUrl, solicitud);
   }
 
-  completar(id: string, procesadoPor?: string): Observable<SolicitudTarjeta> {
-    return this.http.put<SolicitudTarjeta>(
-      `${this.apiUrl}/${id}/completar`,
-      { procesadoPor: procesadoPor || 'Admin' }
-    );
-  }
-
-  rechazar(id: string, motivo: string, procesadoPor?: string): Observable<SolicitudTarjeta> {
+  // Quien tramita lo resuelve el backend desde el token: no se envia desde el cliente.
+  rechazar(id: string, motivo: string): Observable<SolicitudTarjeta> {
     return this.http.put<SolicitudTarjeta>(
       `${this.apiUrl}/${id}/rechazar`,
-      { motivo, procesadoPor: procesadoPor || 'Admin' }
+      { motivo }
     );
   }
 
-  aprobar(id: string, procesadoPor?: string): Observable<SolicitudTarjeta> {
+  aprobar(id: string): Observable<SolicitudTarjeta> {
     return this.http.put<SolicitudTarjeta>(
       `${this.apiUrl}/${id}/aprobar`,
-      { procesadoPor: procesadoPor || 'Admin' }
+      {}
     );
   }
 

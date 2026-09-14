@@ -3,6 +3,7 @@ package com.manuhd.app.tarjetas.service;
 import com.manuhd.app.tarjetas.dto.*;
 import com.manuhd.app.tarjetas.model.*;
 import com.manuhd.app.tarjetas.repository.SolicitudTarjetaRepository;
+import com.manuhd.app.tarjetas.security.UsuarioActualService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,7 @@ public class SolicitudTarjetaService {
     private final EmailService emailService;
     private final TarjetaService tarjetaService;
     private final RestTemplate restTemplate;
+    private final UsuarioActualService usuarioActual;
 
     @Value("${app.socios.url:http://localhost:8081}")
     private String sociosServiceUrl;
@@ -109,31 +111,7 @@ public class SolicitudTarjetaService {
     }
 
     @Transactional
-    public SolicitudTarjetaDTO completar(Long id, String procesadoPor) {
-        log.info("Completando solicitud con id: {}", id);
-
-        SolicitudTarjeta solicitud = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con id: " + id));
-
-        if (solicitud.getEstado() == EstadoSolicitud.COMPLETADA) {
-            throw new RuntimeException("La solicitud ya está completada");
-        }
-
-        solicitud.setEstado(EstadoSolicitud.COMPLETADA);
-        solicitud.setFechaProcesado(LocalDateTime.now());
-        solicitud.setProcesadoPor(procesadoPor);
-
-        // Ejecutar acción según el tipo
-        ejecutarAccionCompletado(solicitud);
-
-        SolicitudTarjeta updated = repository.save(solicitud);
-        log.info("Solicitud completada con id: {}", updated.getId());
-
-        return convertToDTO(updated);
-    }
-
-    @Transactional
-    public SolicitudTarjetaDTO rechazar(Long id, String motivo, String procesadoPor) {
+    public SolicitudTarjetaDTO rechazar(Long id, String motivo) {
         log.info("Rechazando solicitud con id: {}", id);
 
         SolicitudTarjeta solicitud = repository.findById(id)
@@ -145,7 +123,7 @@ public class SolicitudTarjetaService {
 
         solicitud.setEstado(EstadoSolicitud.RECHAZADA);
         solicitud.setFechaProcesado(LocalDateTime.now());
-        solicitud.setProcesadoPor(procesadoPor);
+        solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
         solicitud.setObservaciones(motivo);
 
         SolicitudTarjeta updated = repository.save(solicitud);
@@ -179,7 +157,7 @@ public class SolicitudTarjetaService {
     }
 
     @Transactional
-    public SolicitudTarjetaDTO aprobar(Long id, String procesadoPor) {
+    public SolicitudTarjetaDTO aprobar(Long id) {
         log.info("Aprobando solicitud con id: {}", id);
 
         SolicitudTarjeta solicitud = repository.findById(id)
@@ -191,7 +169,7 @@ public class SolicitudTarjetaService {
 
         solicitud.setEstado(EstadoSolicitud.APROBADA);
         solicitud.setFechaProcesado(LocalDateTime.now());
-        solicitud.setProcesadoPor(procesadoPor);
+        solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
 
         SolicitudTarjeta updated = repository.save(solicitud);
         log.info("Solicitud aprobada con id: {}", updated.getId());
@@ -252,7 +230,7 @@ public class SolicitudTarjetaService {
         // Marcar solicitud como COMPLETADA (no APROBADA, porque ya terminó el proceso)
         solicitud.setEstado(EstadoSolicitud.COMPLETADA);
         solicitud.setFechaProcesado(LocalDateTime.now());
-        solicitud.setProcesadoPor(dto.getProcesadoPor());
+        solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
         if (dto.getObservaciones() != null && !dto.getObservaciones().isEmpty()) {
             solicitud.setObservaciones(dto.getObservaciones());
         }
@@ -321,7 +299,7 @@ public class SolicitudTarjetaService {
         // Marcar solicitud como COMPLETADA
         solicitud.setEstado(EstadoSolicitud.COMPLETADA);
         solicitud.setFechaProcesado(LocalDateTime.now());
-        solicitud.setProcesadoPor(dto.getProcesadoPor());
+        solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
         if (dto.getObservaciones() != null && !dto.getObservaciones().isEmpty()) {
             solicitud.setObservaciones(dto.getObservaciones());
         }
@@ -373,7 +351,7 @@ public class SolicitudTarjetaService {
         solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
         solicitud.setFechaLlegadaEstimada(dto.getFechaLlegadaEstimada());
         solicitud.setNumeroContrato(dto.getNumeroContrato());  // Actualizar numeroContrato si se proporciona
-        solicitud.setProcesadoPor(dto.getProcesadoPor());
+        solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
         if (dto.getObservaciones() != null) {
             solicitud.setObservaciones(dto.getObservaciones());
         }
@@ -414,13 +392,15 @@ public class SolicitudTarjetaService {
 
         solicitud.setEstado(EstadoSolicitud.ENTREGADA);
         solicitud.setFechaEntrega(dto.getFechaEntrega() != null ? dto.getFechaEntrega() : LocalDateTime.now());
-        solicitud.setProcesadoPor(dto.getProcesadoPor());
+        solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
         if (dto.getObservaciones() != null) {
             solicitud.setObservaciones(dto.getObservaciones());
         }
 
-        // Crear la tarjeta activa
-        if (solicitud.getTipo() == TipoSolicitud.ALTA || solicitud.getTipo() == TipoSolicitud.DUPLICADO) {
+        // Crear la tarjeta activa. Solo el ALTA crea una Tarjeta nueva: un DUPLICADO no
+        // genera fila propia porque aprobarDuplicado incrementa la cantidad de la tarjeta
+        // existente y cierra la solicitud sin pasar por llegada/entrega.
+        if (solicitud.getTipo() == TipoSolicitud.ALTA) {
             crearTarjeta(solicitud);
         }
 
@@ -599,23 +579,6 @@ public class SolicitudTarjetaService {
         return resultados;
     }
 
-    private void ejecutarAccionCompletado(SolicitudTarjeta solicitud) {
-        log.info("Ejecutando acción de completado para tipo: {}", solicitud.getTipo());
-
-        switch (solicitud.getTipo()) {
-            case ALTA:
-                crearTarjeta(solicitud);
-                break;
-            case BAJA:
-                desactivarTarjeta(solicitud);
-                break;
-            case LLEGADA:
-            case DUPLICADO:
-                // No requieren acción adicional
-                break;
-        }
-    }
-
     private void crearTarjeta(SolicitudTarjeta solicitud) {
         log.info("Creando tarjeta para solicitud: {}", solicitud.getId());
 
@@ -629,24 +592,6 @@ public class SolicitudTarjetaService {
 
         tarjetaService.create(tarjeta);
         log.info("Tarjeta creada para matrícula: {}", tarjeta.getMatricula());
-    }
-
-    private void desactivarTarjeta(SolicitudTarjeta solicitud) {
-        log.info("Desactivando tarjeta con matrícula: {}", solicitud.getMatricula());
-
-        List<Tarjeta> tarjetas = tarjetaService.findByMatricula(solicitud.getMatricula());
-        if (tarjetas.isEmpty()) {
-            log.warn("No se encontraron tarjetas con matrícula: {}", solicitud.getMatricula());
-            return;
-        }
-
-        for (Tarjeta tarjeta : tarjetas) {
-            if (tarjeta.getActiva() && tarjeta.getSocioId().equals(solicitud.getSocioId())) {
-                tarjeta.setActiva(false);
-                tarjetaService.update(tarjeta.getId(), tarjeta);
-                log.info("Tarjeta desactivada: {}", tarjeta.getId());
-            }
-        }
     }
 
     private SocioDTO obtenerSocio(Long socioId) {
