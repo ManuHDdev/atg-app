@@ -24,6 +24,16 @@ public interface CreditoRepository extends JpaRepository<Credito, Long> {
 
     List<Credito> findByProgramadoEnvioTrueAndFechaProgramadaEnvio(LocalDate fecha);
 
+    /**
+     * Créditos en un estado dado que NO llevan una fecha de envío programada propia.
+     * Los créditos con programación explícita quedan reservados al job diario
+     * {@code procesarCreditosProgramados}: si un gestor fija el envío para el día 20,
+     * el envío por día de semana no debe adelantarlo al 15.
+     */
+    @Query("SELECT c FROM Credito c WHERE c.estado = :estado " +
+            "AND (c.programadoEnvio IS NULL OR c.programadoEnvio = false OR c.fechaProgramadaEnvio IS NULL)")
+    List<Credito> findByEstadoSinProgramacionPropia(@Param("estado") EstadoCredito estado);
+
     @Query("SELECT c FROM Credito c WHERE c.socioId = :socioId AND c.estado = :estado")
     List<Credito> findBySocioIdAndEstado(@Param("socioId") Long socioId, @Param("estado") EstadoCredito estado);
 
