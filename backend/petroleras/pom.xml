@@ -15,6 +15,7 @@
 	<description>Microservicio que maneja las petroleras adjuntas a la ATG</description>
 	<properties>
 		<java.version>25</java.version>
+		<swagger-annotations.version>2.2.30</swagger-annotations.version>
 		<sonar.projectKey>atg-petroleras</sonar.projectKey>
 		<sonar.projectName>ATG - Petroleras</sonar.projectName>
 		<sonar.host.url>http://localhost:9000</sonar.host.url>
@@ -47,6 +48,17 @@
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
+		</dependency>
+
+		<!--
+			Solo las anotaciones OpenAPI 3 (@Operation, @ApiResponse) que exige la convención
+			del proyecto. No se añade springdoc-openapi completo porque ningún microservicio
+			lo tiene todavía y arrastraría la UI y su cadena de dependencias.
+		-->
+		<dependency>
+			<groupId>io.swagger.core.v3</groupId>
+			<artifactId>swagger-annotations-jakarta</artifactId>
+			<version>${swagger-annotations.version}</version>
 		</dependency>
 
 		<dependency>
