@@ -244,12 +244,12 @@
         <a class="btn btn-primary" [routerLink]="['/solicitudes-tarjetas/detalle', solicitudDetalle.id]">
           <i class="bi bi-box-arrow-up-right"></i> Abrir página completa
         </a>
-        @if (puedeAprobar) {
-          <button class="btn btn-danger" (click)="abrirModalRechazo()" [disabled]="loadingAccion">
-            <i class="bi bi-x-circle"></i> Rechazar
+        @if (puedeRegistrarRespuestaPetrolera) {
+          <button class="btn btn-danger" (click)="abrirModalDenegacion()" [disabled]="loadingAccion">
+            <i class="bi bi-x-circle"></i> Registrar denegación de la petrolera
           </button>
-          <button class="btn btn-success" (click)="aprobar()" [disabled]="loadingAccion">
-            <i class="bi bi-check-circle"></i> Aprobar
+          <button class="btn btn-success" (click)="registrarAprobacionPetrolera()" [disabled]="loadingAccion">
+            <i class="bi bi-check-circle"></i> Registrar aprobación de la petrolera
           </button>
         }
       </div>
@@ -257,43 +257,43 @@
   </div>
 }
 
-<!-- ===== Sub-modal: Rechazo ===== -->
+<!-- ===== Sub-modal: Denegación de la petrolera ===== -->
 @if (mostrarModalRechazo) {
   <div class="modal-overlay" (click)="mostrarModalRechazo = false">
     <div class="modal-container modal-sm" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2 class="modal-title">Rechazar Solicitud</h2>
+        <h2 class="modal-title">Registrar denegación de la petrolera</h2>
         <button class="btn-close" (click)="mostrarModalRechazo = false">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Motivo del rechazo *</label>
+          <label class="form-label">Motivo indicado por la petrolera *</label>
           <textarea
             class="form-input"
             [(ngModel)]="motivoRechazo"
             rows="4"
-            placeholder="Ingrese el motivo del rechazo...">
+            placeholder="Motivo por el que la petrolera ha denegado la solicitud...">
           </textarea>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="mostrarModalRechazo = false">Cancelar</button>
-        <button class="btn btn-danger" (click)="confirmarRechazo()" [disabled]="!motivoRechazo.trim() || loadingAccion">
-          <i class="bi bi-x-circle"></i> Confirmar Rechazo
+        <button class="btn btn-danger" (click)="confirmarDenegacionPetrolera()" [disabled]="!motivoRechazo.trim() || loadingAccion">
+          <i class="bi bi-x-circle"></i> Registrar denegación
         </button>
       </div>
     </div>
   </div>
 }
 
-<!-- ===== Sub-modal: Aprobar BAJA ===== -->
+<!-- ===== Sub-modal: Aprobación de BAJA por la petrolera ===== -->
 @if (mostrarModalBaja) {
   <div class="modal-overlay" (click)="mostrarModalBaja = false">
     <div class="modal-container modal-sm" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2 class="modal-title">Aprobar Solicitud de Baja</h2>
+        <h2 class="modal-title">Registrar aprobación de la baja por la petrolera</h2>
         <button class="btn-close" (click)="mostrarModalBaja = false">
           <i class="bi bi-x-lg"></i>
         </button>
@@ -311,19 +311,19 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="mostrarModalBaja = false">Cancelar</button>
         <button class="btn btn-success" (click)="confirmarBaja()" [disabled]="!fechaBaja || loadingAccion">
-          <i class="bi bi-check-circle"></i> Aprobar Baja
+          <i class="bi bi-check-circle"></i> Registrar aprobación
         </button>
       </div>
     </div>
   </div>
 }
 
-<!-- ===== Sub-modal: Aprobar DUPLICADO ===== -->
+<!-- ===== Sub-modal: Aprobación de DUPLICADO por la petrolera ===== -->
 @if (mostrarModalDuplicado) {
   <div class="modal-overlay" (click)="mostrarModalDuplicado = false">
     <div class="modal-container modal-sm" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2 class="modal-title">Aprobar Solicitud de Duplicado</h2>
+        <h2 class="modal-title">Registrar aprobación del duplicado por la petrolera</h2>
         <button class="btn-close" (click)="mostrarModalDuplicado = false">
           <i class="bi bi-x-lg"></i>
         </button>
@@ -341,7 +341,7 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="mostrarModalDuplicado = false">Cancelar</button>
         <button class="btn btn-success" (click)="confirmarDuplicado()" [disabled]="!fechaDuplicado || loadingAccion">
-          <i class="bi bi-check-circle"></i> Aprobar Duplicado
+          <i class="bi bi-check-circle"></i> Registrar aprobación
         </button>
       </div>
     </div>

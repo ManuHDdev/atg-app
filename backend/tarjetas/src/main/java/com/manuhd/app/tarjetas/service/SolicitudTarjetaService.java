@@ -77,15 +77,24 @@ public class SolicitudTarjetaService {
         solicitud.setMatricula(dto.getMatricula());
         solicitud.setNumeroContrato(dto.getNumeroContrato());
         solicitud.setTipo(dto.getTipo());
-        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
         solicitud.setObservaciones(dto.getObservaciones());
         solicitud.setSolicitadoPor(dto.getSolicitadoPor());
         solicitud.setTarjetaId(dto.getTarjetaId());
         solicitud.setFechaSolicitud(LocalDateTime.now());
 
-        // Para LLEGADA, si viene con fecha estimada, la registramos
-        if (dto.getTipo() == TipoSolicitud.LLEGADA && dto.getFechaLlegadaEstimada() != null) {
+        // Una LLEGADA no es una petición que haya que tramitar: es el registro de que las
+        // tarjetas ya han llegado. Nace directamente en TARJETA_LLEGADA, con su fecha, y el
+        // correo de aviso al socio (recogida en Madrid / envío postal fuera) sale una sola
+        // vez, en este mismo momento. Lo único que queda después es registrar la entrega.
+        if (dto.getTipo() == TipoSolicitud.LLEGADA) {
+            if (dto.getFechaLlegadaEstimada() == null) {
+                throw new RuntimeException("La fecha de llegada es obligatoria para registrar la llegada de tarjetas");
+            }
             solicitud.setFechaLlegadaEstimada(dto.getFechaLlegadaEstimada());
+            solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
+            solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
+        } else {
+            solicitud.setEstado(EstadoSolicitud.PENDIENTE);
         }
 
         SolicitudTarjeta saved = repository.save(solicitud);
@@ -110,24 +119,30 @@ public class SolicitudTarjetaService {
         return convertToDTO(saved);
     }
 
+    /**
+     * Registra que la petrolera ha denegado la solicitud. ATG no decide: solo deja constancia
+     * de la respuesta recibida y avisa al socio.
+     */
     @Transactional
-    public SolicitudTarjetaDTO rechazar(Long id, String motivo) {
-        log.info("Rechazando solicitud con id: {}", id);
+    public SolicitudTarjetaDTO denegarPorPetrolera(Long id, String motivo) {
+        log.info("Registrando denegación de la petrolera para la solicitud con id: {}", id);
 
         SolicitudTarjeta solicitud = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con id: " + id));
 
         if (solicitud.getEstado() != EstadoSolicitud.PENDIENTE) {
-            throw new RuntimeException("Solo se pueden rechazar solicitudes pendientes");
+            throw new RuntimeException("Solo se puede registrar la respuesta de la petrolera en solicitudes pendientes");
         }
 
+        // RECHAZADA sigue siendo el valor persistido (denegada por la petrolera): renombrarlo
+        // exigiría migrar datos sin ganancia real, así que solo cambia la etiqueta de la UI.
         solicitud.setEstado(EstadoSolicitud.RECHAZADA);
         solicitud.setFechaProcesado(LocalDateTime.now());
         solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
         solicitud.setObservaciones(motivo);
 
         SolicitudTarjeta updated = repository.save(solicitud);
-        log.info("Solicitud rechazada con id: {}", updated.getId());
+        log.info("Denegación de la petrolera registrada en la solicitud con id: {}", updated.getId());
 
         // Avisar al socio del rechazo (si existe la plantilla)
         StringBuilder correosEnviados = new StringBuilder(updated.getCorreosEnviados() != null ? updated.getCorreosEnviados() : "");
@@ -146,7 +161,7 @@ public class SolicitudTarjetaService {
                 repository.save(updated);
             }
         } catch (Exception e) {
-            log.error("Error al enviar correo de rechazo: {}", e.getMessage());
+            log.error("Error al enviar correo de denegación: {}", e.getMessage());
             if (correosEnviados.length() > 0) correosEnviados.append("\n");
             correosEnviados.append("ERROR: ").append(e.getMessage());
             updated.setCorreosEnviados(correosEnviados.toString());
@@ -156,15 +171,19 @@ public class SolicitudTarjetaService {
         return convertToDTO(updated);
     }
 
+    /**
+     * Registra que la petrolera ha aprobado la solicitud. ATG no aprueba nada: presenta la
+     * solicitud a la petrolera y aquí deja constancia de la respuesta que ha recibido.
+     */
     @Transactional
-    public SolicitudTarjetaDTO aprobar(Long id) {
-        log.info("Aprobando solicitud con id: {}", id);
+    public SolicitudTarjetaDTO aprobarPorPetrolera(Long id) {
+        log.info("Registrando aprobación de la petrolera para la solicitud con id: {}", id);
 
         SolicitudTarjeta solicitud = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con id: " + id));
 
         if (solicitud.getEstado() != EstadoSolicitud.PENDIENTE) {
-            throw new RuntimeException("Solo se pueden aprobar solicitudes pendientes");
+            throw new RuntimeException("Solo se puede registrar la respuesta de la petrolera en solicitudes pendientes");
         }
 
         solicitud.setEstado(EstadoSolicitud.APROBADA);
@@ -172,7 +191,7 @@ public class SolicitudTarjetaService {
         solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
 
         SolicitudTarjeta updated = repository.save(solicitud);
-        log.info("Solicitud aprobada con id: {}", updated.getId());
+        log.info("Aprobación de la petrolera registrada en la solicitud con id: {}", updated.getId());
 
         // Enviar correo de aprobación al socio (si existe la plantilla)
         StringBuilder correosEnviados = new StringBuilder(updated.getCorreosEnviados() != null ? updated.getCorreosEnviados() : "");
@@ -200,15 +219,16 @@ public class SolicitudTarjetaService {
         return convertToDTO(updated);
     }
 
+    /** Registra la baja confirmada por la petrolera y cierra la solicitud. */
     @Transactional
-    public SolicitudTarjetaDTO aprobarBaja(Long id, AprobarBajaDTO dto) {
-        log.info("Aprobando solicitud de BAJA con id: {}", id);
+    public SolicitudTarjetaDTO aprobarBajaPorPetrolera(Long id, AprobarBajaDTO dto) {
+        log.info("Registrando aprobación de la petrolera para la solicitud de BAJA con id: {}", id);
 
         SolicitudTarjeta solicitud = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con id: " + id));
 
         if (solicitud.getEstado() != EstadoSolicitud.PENDIENTE) {
-            throw new RuntimeException("Solo se pueden aprobar solicitudes pendientes");
+            throw new RuntimeException("Solo se puede registrar la respuesta de la petrolera en solicitudes pendientes");
         }
 
         if (solicitud.getTipo() != TipoSolicitud.BAJA) {
@@ -267,15 +287,16 @@ public class SolicitudTarjetaService {
         return convertToDTO(updated);
     }
 
+    /** Registra el duplicado confirmado por la petrolera y cierra la solicitud. */
     @Transactional
-    public SolicitudTarjetaDTO aprobarDuplicado(Long id, AprobarDuplicadoDTO dto) {
-        log.info("Aprobando solicitud de DUPLICADO con id: {}", id);
+    public SolicitudTarjetaDTO aprobarDuplicadoPorPetrolera(Long id, AprobarDuplicadoDTO dto) {
+        log.info("Registrando aprobación de la petrolera para la solicitud de DUPLICADO con id: {}", id);
 
         SolicitudTarjeta solicitud = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con id: " + id));
 
         if (solicitud.getEstado() != EstadoSolicitud.PENDIENTE) {
-            throw new RuntimeException("Solo se pueden aprobar solicitudes pendientes");
+            throw new RuntimeException("Solo se puede registrar la respuesta de la petrolera en solicitudes pendientes");
         }
 
         if (solicitud.getTipo() != TipoSolicitud.DUPLICADO) {
@@ -337,12 +358,21 @@ public class SolicitudTarjetaService {
         return convertToDTO(updated);
     }
 
+    /**
+     * Paso intermedio del ALTA: la petrolera ya la aprobó y ahora llega la tarjeta física.
+     * No aplica a una solicitud de tipo LLEGADA, que nace ya en TARJETA_LLEGADA con su correo
+     * enviado; volver a pasar por aquí duplicaría el aviso al socio.
+     */
     @Transactional
     public SolicitudTarjetaDTO registrarLlegada(Long id, RegistrarLlegadaDTO dto) {
         log.info("Registrando llegada de tarjeta para solicitud: {}", id);
 
         SolicitudTarjeta solicitud = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con id: " + id));
+
+        if (solicitud.getTipo() != TipoSolicitud.ALTA) {
+            throw new RuntimeException("Solo se puede registrar la llegada de solicitudes de ALTA");
+        }
 
         if (solicitud.getEstado() != EstadoSolicitud.APROBADA) {
             throw new RuntimeException("Solo se puede registrar llegada de solicitudes aprobadas");
@@ -379,6 +409,10 @@ public class SolicitudTarjetaService {
         return convertToDTO(updated);
     }
 
+    /**
+     * Entregar la tarjeta al socio es el último paso: registra la fecha de entrega y cierra la
+     * solicitud. No hay un "finalizar" posterior, porque no aportaba nada más que otro clic.
+     */
     @Transactional
     public SolicitudTarjetaDTO marcarEntregada(Long id, MarcarEntregadaDTO dto) {
         log.info("Marcando como entregada la solicitud: {}", id);
@@ -390,7 +424,7 @@ public class SolicitudTarjetaService {
             throw new RuntimeException("Solo se puede marcar como entregada si la tarjeta ha llegado");
         }
 
-        solicitud.setEstado(EstadoSolicitud.ENTREGADA);
+        solicitud.setEstado(EstadoSolicitud.COMPLETADA);
         solicitud.setFechaEntrega(dto.getFechaEntrega() != null ? dto.getFechaEntrega() : LocalDateTime.now());
         solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
         if (dto.getObservaciones() != null) {
@@ -405,26 +439,7 @@ public class SolicitudTarjetaService {
         }
 
         SolicitudTarjeta updated = repository.save(solicitud);
-        log.info("Solicitud marcada como entregada: {}", updated.getId());
-
-        return convertToDTO(updated);
-    }
-
-    @Transactional
-    public SolicitudTarjetaDTO finalizar(Long id) {
-        log.info("Finalizando solicitud: {}", id);
-
-        SolicitudTarjeta solicitud = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con id: " + id));
-
-        if (solicitud.getEstado() != EstadoSolicitud.ENTREGADA) {
-            throw new RuntimeException("Solo se puede finalizar una solicitud entregada");
-        }
-
-        solicitud.setEstado(EstadoSolicitud.COMPLETADA);
-
-        SolicitudTarjeta updated = repository.save(solicitud);
-        log.info("Solicitud finalizada: {}", updated.getId());
+        log.info("Solicitud entregada y completada: {}", updated.getId());
 
         return convertToDTO(updated);
     }

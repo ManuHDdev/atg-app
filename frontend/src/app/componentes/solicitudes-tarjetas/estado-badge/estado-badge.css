@@ -66,13 +66,6 @@
   border: 1px solid var(--purple-dark);
 }
 
-/* Estado: ENTREGADA */
-.badge-entregada {
-  background: var(--success-light);
-  color: var(--success-dark);
-  border: 1px solid var(--success-color);
-}
-
 /* Estado: COMPLETADA */
 .badge-completada {
   background: var(--success-color);

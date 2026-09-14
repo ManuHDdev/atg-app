@@ -233,9 +233,9 @@ export class SolicitudForm implements OnInit {
   getDescripcionFormulario(): string {
     switch (this.tipoSolicitud) {
       case 'LLEGADA':
-        return 'Registra la llegada de tarjetas. Se enviará automáticamente un correo al socio según su provincia.';
+        return 'Registra la llegada de tarjetas con su fecha. Se enviará automáticamente un correo al socio según su provincia (recogida en Madrid, envío postal fuera). Después solo queda registrar la entrega.';
       case 'ALTA':
-        return 'Solicita el alta de una nueva tarjeta. Se enviarán correos al socio y a la petrolera. Quedará pendiente de aprobación.';
+        return 'Solicita el alta de una nueva tarjeta. Se enviarán correos al socio y a la petrolera. Quedará pendiente de la respuesta de la petrolera.';
       case 'BAJA':
         return 'Solicita la baja de una tarjeta existente. Se enviará un correo al socio.';
       case 'DUPLICADO':

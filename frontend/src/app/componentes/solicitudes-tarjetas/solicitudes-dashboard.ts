@@ -147,11 +147,13 @@ export class SolicitudesDashboard implements OnInit {
     this.mostrarModalDuplicado = false;
   }
 
-  get puedeAprobar(): boolean {
-    return this.solicitudDetalle?.estado === 'PENDIENTE';
+  // Una LLEGADA nace ya registrada (TARJETA_LLEGADA): nunca hay respuesta de la petrolera
+  // que registrar sobre ella.
+  get puedeRegistrarRespuestaPetrolera(): boolean {
+    return this.solicitudDetalle?.estado === 'PENDIENTE' && this.solicitudDetalle?.tipo !== 'LLEGADA';
   }
 
-  aprobar(): void {
+  registrarAprobacionPetrolera(): void {
     if (!this.solicitudDetalle) return;
 
     if (this.solicitudDetalle.tipo === 'BAJA') {
@@ -170,38 +172,38 @@ export class SolicitudesDashboard implements OnInit {
       return;
     }
 
-    // ALTA u otros: aprobar directamente
+    // ALTA u otros: registrar la aprobación directamente
     this.loadingAccion = true;
-    this.solicitudService.aprobar(this.solicitudDetalle.id!).subscribe({
+    this.solicitudService.aprobarPorPetrolera(this.solicitudDetalle.id!).subscribe({
       next: () => {
         this.loadingAccion = false;
         this.cerrarDetalle();
         this.cargarDatos();
       },
       error: (err) => {
-        console.error('Error al aprobar:', err);
+        console.error('Error al registrar la aprobación de la petrolera:', err);
         this.loadingAccion = false;
       }
     });
   }
 
-  abrirModalRechazo(): void {
+  abrirModalDenegacion(): void {
     this.motivoRechazo = '';
     this.mostrarModalRechazo = true;
   }
 
-  confirmarRechazo(): void {
+  confirmarDenegacionPetrolera(): void {
     if (!this.solicitudDetalle?.id || !this.motivoRechazo.trim()) return;
 
     this.loadingAccion = true;
-    this.solicitudService.rechazar(this.solicitudDetalle.id, this.motivoRechazo).subscribe({
+    this.solicitudService.denegarPorPetrolera(this.solicitudDetalle.id, this.motivoRechazo).subscribe({
       next: () => {
         this.loadingAccion = false;
         this.cerrarDetalle();
         this.cargarDatos();
       },
       error: (err) => {
-        console.error('Error al rechazar:', err);
+        console.error('Error al registrar la denegación de la petrolera:', err);
         this.loadingAccion = false;
       }
     });
@@ -211,7 +213,7 @@ export class SolicitudesDashboard implements OnInit {
     if (!this.solicitudDetalle?.id || !this.fechaBaja) return;
 
     this.loadingAccion = true;
-    this.solicitudService.aprobarBaja(this.solicitudDetalle.id, {
+    this.solicitudService.aprobarBajaPorPetrolera(this.solicitudDetalle.id, {
       fechaBaja: this.fechaBaja,
       observaciones: this.observacionesBaja
     }).subscribe({
@@ -221,7 +223,7 @@ export class SolicitudesDashboard implements OnInit {
         this.cargarDatos();
       },
       error: (err) => {
-        console.error('Error al aprobar BAJA:', err);
+        console.error('Error al registrar la aprobación de BAJA por la petrolera:', err);
         this.loadingAccion = false;
       }
     });
@@ -231,7 +233,7 @@ export class SolicitudesDashboard implements OnInit {
     if (!this.solicitudDetalle?.id || !this.fechaDuplicado) return;
 
     this.loadingAccion = true;
-    this.solicitudService.aprobarDuplicado(this.solicitudDetalle.id, {
+    this.solicitudService.aprobarDuplicadoPorPetrolera(this.solicitudDetalle.id, {
       fechaRespuesta: this.fechaDuplicado,
       observaciones: this.observacionesDuplicado
     }).subscribe({
@@ -241,7 +243,7 @@ export class SolicitudesDashboard implements OnInit {
         this.cargarDatos();
       },
       error: (err) => {
-        console.error('Error al aprobar DUPLICADO:', err);
+        console.error('Error al registrar la aprobación de DUPLICADO por la petrolera:', err);
         this.loadingAccion = false;
       }
     });
