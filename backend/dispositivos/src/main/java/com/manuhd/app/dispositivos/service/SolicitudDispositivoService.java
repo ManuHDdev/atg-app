@@ -2,6 +2,7 @@ package com.manuhd.app.dispositivos.service;
 
 import com.manuhd.app.dispositivos.dto.CrearSolicitudDTO;
 import com.manuhd.app.dispositivos.dto.EnvioCorreoResult;
+import com.manuhd.app.dispositivos.dto.PetroleraDTO;
 import com.manuhd.app.dispositivos.dto.SolicitudDispositivoDTO;
 import com.manuhd.app.dispositivos.model.Dispositivo;
 import com.manuhd.app.dispositivos.model.EstadoSolicitud;
@@ -144,6 +145,8 @@ public class SolicitudDispositivoService {
     }
 
     private void validarSolicitud(CrearSolicitudDTO dto) {
+        validarRestriccionesPetrolera(dto);
+
         switch (dto.getTipoSolicitud()) {
             case ALTA_DISPOSITIVO:
                 if (dto.getMatricula() == null || dto.getMatricula().trim().isEmpty()) {
@@ -533,6 +536,55 @@ public class SolicitudDispositivoService {
             registrarEnvioCorreo(solicitud, tipoNotificacion, emailSocio, false, e.getMessage());
             log.error("Error en notificacion {} al socio: {}", tipoNotificacion, e.getMessage());
         }
+    }
+
+    /**
+     * Comprueba que la petrolera seleccionada puede recibir este tipo de solicitud.
+     *
+     * Regla general: un flag a null significa "sin restriccion configurada", por lo que se
+     * permite (petroleras ya existentes no tienen valor y deben seguir funcionando igual).
+     * Solo se bloquea cuando el administrador ha desmarcado explicitamente el flag.
+     */
+    private void validarRestriccionesPetrolera(CrearSolicitudDTO dto) {
+        PetroleraDTO petrolera = obtenerPetroleraParaValidacion(dto.getPetroleraId());
+        String nombre = petrolera.getNombre() != null ? petrolera.getNombre() : "seleccionada";
+
+        if (!permitido(petrolera.getOperaDispositivos())) {
+            throw new RuntimeException("La petrolera " + nombre + " no opera con dispositivos");
+        }
+
+        if (dto.getTipoSolicitud() == TipoSolicitud.SOLICITUD_CREDITO
+                && !permitido(petrolera.getPermiteCreditoDispositivo())) {
+            throw new RuntimeException(
+                    "La petrolera " + nombre + " no admite solicitudes de credito para dispositivos");
+        }
+    }
+
+    /** null = sin restriccion configurada => permitido. */
+    private boolean permitido(Boolean flag) {
+        return flag == null || flag;
+    }
+
+    /**
+     * Obtiene la petrolera para validar. A diferencia de {@link #obtenerDatosPetrolera(Long)},
+     * aqui no se usa un fallback: si no se puede leer la configuracion no se puede comprobar
+     * la restriccion, y es preferible avisar al operador antes que crear una solicitud que el
+     * procedimiento de ATG no permite.
+     */
+    private PetroleraDTO obtenerPetroleraParaValidacion(Long petroleraId) {
+        PetroleraDTO petrolera;
+        try {
+            petrolera = restTemplate.getForObject(
+                    petrolerasBaseUrl + "/api/petroleras/" + petroleraId, PetroleraDTO.class);
+        } catch (Exception e) {
+            log.error("Error al validar la petrolera {}: {}", petroleraId, e.getMessage());
+            throw new RuntimeException(
+                    "No se ha podido verificar la petrolera seleccionada. Intentelo de nuevo mas tarde.");
+        }
+        if (petrolera == null) {
+            throw new RuntimeException("Petrolera no encontrada con id: " + petroleraId);
+        }
+        return petrolera;
     }
 
     private Map<String, Object> obtenerDatosSocio(Long socioId) {

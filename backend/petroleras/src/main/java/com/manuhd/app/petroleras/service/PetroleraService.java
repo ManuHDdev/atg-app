@@ -65,6 +65,11 @@ public class PetroleraService {
         petrolera.setActiva(petroleraActualizada.getActiva());
         petrolera.setEmail(petroleraActualizada.getEmail());
         petrolera.setDiasEnvioCreditos(petroleraActualizada.getDiasEnvioCreditos());
+        petrolera.setOperaTarjetas(petroleraActualizada.getOperaTarjetas());
+        petrolera.setOperaContratos(petroleraActualizada.getOperaContratos());
+        petrolera.setOperaCreditos(petroleraActualizada.getOperaCreditos());
+        petrolera.setOperaDispositivos(petroleraActualizada.getOperaDispositivos());
+        petrolera.setPermiteCreditoDispositivo(petroleraActualizada.getPermiteCreditoDispositivo());
 
         return petroleraRepository.save(petrolera);
     }

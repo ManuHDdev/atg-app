@@ -3,6 +3,7 @@ package com.manuhd.app.creditos.service;
 import com.manuhd.app.creditos.dto.CreditoDTO;
 import com.manuhd.app.creditos.dto.CrearCreditoDTO;
 import com.manuhd.app.creditos.dto.EnvioCorreoResult;
+import com.manuhd.app.creditos.dto.PetroleraDTO;
 import com.manuhd.app.creditos.model.Credito;
 import com.manuhd.app.creditos.model.EstadoCredito;
 import com.manuhd.app.creditos.model.TipoCredito;
@@ -78,6 +79,9 @@ public class CreditoService {
 
     @Transactional
     public CreditoDTO crear(CrearCreditoDTO dto) {
+        // La petrolera debe operar con créditos según el procedimiento de ATG
+        validarPetroleraOperaCreditos(dto.getPetroleraId());
+
         // Validación condicional del monto: obligatorio excepto para DEVOLUCION_AVAL
         if (dto.getTipoCredito() != TipoCredito.DEVOLUCION_AVAL) {
             if (dto.getMonto() != null && dto.getMonto().compareTo(BigDecimal.ZERO) <= 0) {
@@ -318,6 +322,36 @@ public class CreditoService {
         } catch (Exception e) {
             log.error("Error al obtener datos de la empresa: {}", e.getMessage());
             return new HashMap<>();
+        }
+    }
+
+    /**
+     * Comprueba que la petrolera seleccionada opera con créditos.
+     *
+     * Un flag a null significa "sin restricción configurada" y por tanto se permite: las
+     * petroleras que ya existían en base de datos no tienen valor y deben seguir funcionando
+     * igual hasta que un administrador marque la restricción.
+     */
+    private void validarPetroleraOperaCreditos(Long petroleraId) {
+        PetroleraDTO petrolera;
+        try {
+            petrolera = restTemplate.getForObject(
+                    petrolerasBaseUrl + "/api/petroleras/" + petroleraId, PetroleraDTO.class);
+        } catch (Exception e) {
+            log.error("Error al validar la petrolera {}: {}", petroleraId, e.getMessage());
+            throw new RuntimeException(
+                    "No se ha podido verificar la petrolera seleccionada. Inténtelo de nuevo más tarde.");
+        }
+
+        if (petrolera == null) {
+            throw new RuntimeException("Petrolera no encontrada con id: " + petroleraId);
+        }
+
+        // null = sin restricción => permitido
+        Boolean operaCreditos = petrolera.getOperaCreditos();
+        if (operaCreditos != null && !operaCreditos) {
+            String nombre = petrolera.getNombre() != null ? petrolera.getNombre() : "seleccionada";
+            throw new RuntimeException("La petrolera " + nombre + " no opera con créditos");
         }
     }
 

@@ -7,7 +7,7 @@ import { SocioService } from '../../services/socio.service';
 import { PetroleraService } from '../../services/petrolera.service';
 import { TarjetaService } from '../../services/tarjeta.service';
 import { Socio } from '../../models/socio.model';
-import { Petrolera } from '../../models/petrolera.model';
+import { Petrolera, petroleraPermite } from '../../models/petrolera.model';
 import { Tarjeta } from '../../models/tarjeta.model';
 import { SocioAutocomplete } from '../shared/socio-autocomplete/socio-autocomplete';
 import { ErrorHandlerService } from '../../services/error-handler.service';
@@ -107,7 +107,8 @@ export class SolicitudForm implements OnInit {
 
     this.petroleraService.getAll().subscribe({
       next: (petroleras) => {
-        this.petroleras = petroleras.filter(p => p.activa);
+        // Solo petroleras activas que operan con tarjetas (null = sin restricción)
+        this.petroleras = petroleras.filter(p => p.activa && petroleraPermite(p.operaTarjetas));
         this.loading = false;
       },
       error: (err) => {

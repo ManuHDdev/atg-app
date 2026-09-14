@@ -169,5 +169,7 @@ public class PetrolerasClient {
         private String telefono;
         private String direccion;
         private Boolean activa;
+        /** null = sin restriccion: la petrolera opera con contratos. */
+        private Boolean operaContratos;
     }
 }

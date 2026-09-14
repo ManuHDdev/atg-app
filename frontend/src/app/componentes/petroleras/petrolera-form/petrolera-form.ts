@@ -24,6 +24,15 @@ export class PetroleraForm implements OnInit {
   error: string | null = null;
 
   // Días de la semana para envío de créditos
+  // Módulos en los que puede operar una petrolera. Sin marcar = sin restricción.
+  readonly modulosDisponibilidad = [
+    { control: 'operaTarjetas', label: 'Opera con tarjetas' },
+    { control: 'operaContratos', label: 'Opera con contratos' },
+    { control: 'operaCreditos', label: 'Opera con créditos' },
+    { control: 'operaDispositivos', label: 'Opera con dispositivos' },
+    { control: 'permiteCreditoDispositivo', label: 'Admite solicitudes de crédito de dispositivos' }
+  ];
+
   readonly diasSemana = [
     { value: 'LUNES', label: 'Lunes' },
     { value: 'MARTES', label: 'Martes' },
@@ -99,7 +108,13 @@ export class PetroleraForm implements OnInit {
       nombre: ['', [Validators.required, Validators.maxLength(100)]],
       activa: [true],
       email: ['', [Validators.email, Validators.maxLength(255)]],
-      diasEnvioCreditos: [null]
+      diasEnvioCreditos: [null],
+      // Disponibilidad por módulo: sin marcar (null) = sin restricción
+      operaTarjetas: [null],
+      operaContratos: [null],
+      operaCreditos: [null],
+      operaDispositivos: [null],
+      permiteCreditoDispositivo: [null]
     });
   }
 

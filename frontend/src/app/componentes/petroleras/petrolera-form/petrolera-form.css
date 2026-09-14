@@ -448,3 +448,21 @@
     max-height: 90vh;
   }
 }
+
+/* Disponibilidad por módulo */
+.disponibilidad-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.disponibilidad-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.disponibilidad-item label {
+  font-size: 0.85rem;
+}
