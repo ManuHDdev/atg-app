@@ -95,22 +95,6 @@ public abstract class TestBase {
     }
 
     /**
-     * Create a test MapeoPlantillaCampos
-     */
-    protected MapeoPlantillaCampos createMapeoPlantillaCampos(
-            PlantillaContrato plantilla,
-            String nombreCampoPdf,
-            TipoDato tipoDato) {
-        MapeoPlantillaCampos mapeo = new MapeoPlantillaCampos();
-        mapeo.setPlantilla(plantilla);
-        mapeo.setNombreCampoPdf(nombreCampoPdf);
-        mapeo.setTipoDato(tipoDato);
-        mapeo.setCampoEntidad("campo_" + nombreCampoPdf);
-        mapeo.setActivo(true);
-        return mapeo;
-    }
-
-    /**
      * Create a mock PDF file
      */
     protected MockMultipartFile createMockPdfFile(String filename) {

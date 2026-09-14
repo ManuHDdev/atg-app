@@ -22,7 +22,6 @@ public class ContratoSocioService {
 
     private final ContratoSocioRepository contratoRepository;
     private final PlantillaContratoRepository plantillaRepository;
-    private final MapeoPlantillaCamposService mapeoService;
     private final PdfService pdfService;
 
     @Transactional(readOnly = true)
@@ -132,18 +131,8 @@ public class ContratoSocioService {
             throw new RuntimeException("La plantilla no tiene archivo PDF asociado");
         }
 
-        // Obtener mapeos de campos
-        List<MapeoPlantillaCampos> mapeos = mapeoService.findByPlantillaIdActivos(plantilla.getId());
-
-        // Preparar datos para rellenar el PDF
+        // La plantilla se envía tal cual: no se rellenan campos de forma automática
         Map<String, String> datosPdf = new HashMap<>();
-
-        for (MapeoPlantillaCampos mapeo : mapeos) {
-            String valor = obtenerValorCampo(contrato, mapeo.getCampoEntidad());
-            if (valor != null) {
-                datosPdf.put(mapeo.getNombreCampoPdf(), valor);
-            }
-        }
 
         // Agregar datos adicionales
         if (datosAdicionales != null) {
@@ -266,18 +255,5 @@ public class ContratoSocioService {
         log.info("Contrato dado de baja exitosamente. Vigencia hasta: {}", updated.getFechaVigenciaHasta());
 
         return updated;
-    }
-
-    private String obtenerValorCampo(ContratoSocio contrato, String nombreCampo) {
-        if (nombreCampo == null) return null;
-
-        return switch (nombreCampo) {
-            case "socioId" -> contrato.getSocioId() != null ? contrato.getSocioId().toString() : null;
-            case "empresaId" -> contrato.getEmpresaId() != null ? contrato.getEmpresaId().toString() : null;
-            case "tarjetaId" -> contrato.getTarjetaId() != null ? contrato.getTarjetaId().toString() : null;
-            case "petroleraId" -> contrato.getPetroleraId() != null ? contrato.getPetroleraId().toString() : null;
-            case "tipoContrato" -> contrato.getTipoContrato();
-            default -> null;
-        };
     }
 }
