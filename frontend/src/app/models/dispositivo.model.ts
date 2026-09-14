@@ -28,7 +28,10 @@ export interface SolicitudDispositivo {
   estado: EstadoSolicitudDispositivo;
   matricula?: string;
   matriculaDestino?: string;
+  /** Importe solicitado a la petrolera (solo tipo SOLICITUD_CREDITO). */
   monto?: number;
+  /** Importe concedido por la petrolera (null/undefined si no hay respuesta, fue denegada o el tipo no lleva importe). */
+  montoConcedido?: number;
   observaciones?: string;
   fechaEnvioPetrolera?: string;
   fechaRespuestaPetrolera?: string;

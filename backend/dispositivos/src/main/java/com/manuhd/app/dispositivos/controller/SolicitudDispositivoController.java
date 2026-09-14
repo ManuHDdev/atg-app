@@ -79,7 +79,7 @@ public class SolicitudDispositivoController {
             @PathVariable Long id,
             @Valid @RequestBody ResponderPetroleraDTO dto) {
         log.info("POST /api/solicitudes-dispositivo/{}/responder", id);
-        return ResponseEntity.ok(solicitudService.responderPetrolera(id, dto.getAprobado(), dto.getRespuesta()));
+        return ResponseEntity.ok(solicitudService.responderPetrolera(id, dto.getAprobado(), dto.getRespuesta(), dto.getMontoConcedido()));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")

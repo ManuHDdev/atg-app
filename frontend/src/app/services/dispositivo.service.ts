@@ -56,10 +56,11 @@ export class DispositivoService {
     return this.http.post<SolicitudDispositivo>(`${this.solicitudUrl}/${id}/enviar-petrolera`, {});
   }
 
-  responderPetrolera(id: number, aprobado: boolean, respuesta: string): Observable<SolicitudDispositivo> {
+  responderPetrolera(id: number, aprobado: boolean, respuesta: string, montoConcedido?: number | null): Observable<SolicitudDispositivo> {
     return this.http.post<SolicitudDispositivo>(`${this.solicitudUrl}/${id}/responder`, {
       aprobado,
-      respuesta
+      respuesta,
+      montoConcedido: aprobado ? montoConcedido ?? null : null
     });
   }
 

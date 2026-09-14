@@ -40,10 +40,11 @@ export class CreditoService {
     return this.http.post<Credito>(`${this.apiUrl}/${id}/enviar-petrolera`, {});
   }
 
-  responderPetrolera(id: number, aprobado: boolean, respuesta: string): Observable<Credito> {
+  responderPetrolera(id: number, aprobado: boolean, respuesta: string, montoConcedido?: number | null): Observable<Credito> {
     return this.http.post<Credito>(`${this.apiUrl}/${id}/responder`, {
       aprobado,
-      respuesta
+      respuesta,
+      montoConcedido: aprobado ? montoConcedido ?? null : null
     });
   }
 

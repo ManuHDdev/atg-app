@@ -181,8 +181,76 @@ describe('Dispositivos', () => {
 
       component.confirmarRespuesta();
 
-      expect(dispositivoServiceSpy.responderPetrolera).toHaveBeenCalledWith(solicitud.id, true, component.comentarioRespuesta);
+      expect(dispositivoServiceSpy.responderPetrolera).toHaveBeenCalledWith(
+        solicitud.id, true, component.comentarioRespuesta, null);
       expect(notificationServiceSpy.success).toHaveBeenCalled();
+    });
+  });
+
+  describe('importe concedido en el modal de respuesta', () => {
+    const solicitudCredito = {
+      id: 2,
+      socioId: 10,
+      petroleraId: 20,
+      tipoSolicitud: TipoSolicitudDispositivo.SOLICITUD_CREDITO,
+      estado: EstadoSolicitudDispositivo.ENVIADO_PETROLERA,
+      monto: 2000
+    };
+
+    it('precarga el importe concedido con el solicitado al aprobar un credito', () => {
+      component.abrirModalRespuesta(solicitudCredito as any, true);
+
+      expect(component.montoConcedidoRespuesta).toBe(2000);
+    });
+
+    it('no precarga importe al denegar', () => {
+      component.abrirModalRespuesta(solicitudCredito as any, false);
+
+      expect(component.montoConcedidoRespuesta).toBeNull();
+    });
+
+    it('solo exige importe concedido para el tipo Solicitud de Credito', () => {
+      expect(component.requiereImporteConcedido(solicitudCredito as any)).toBeTrue();
+      expect(component.requiereImporteConcedido(solicitud as any)).toBeFalse();
+    });
+
+    it('no llama al backend si se aprueba un credito sin importe concedido', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      component.abrirModalRespuesta(solicitudCredito as any, true);
+      component.montoConcedidoRespuesta = null;
+
+      component.confirmarRespuesta();
+
+      expect(component.intentoGuardar).toBeTrue();
+      expect(dispositivoServiceSpy.responderPetrolera).not.toHaveBeenCalled();
+      expect(notificationServiceSpy.error).toHaveBeenCalled();
+    });
+
+    it('envia el importe concedido cuando difiere del solicitado', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      dispositivoServiceSpy.responderPetrolera.and.returnValue(of(solicitudCredito as any));
+      component.abrirModalRespuesta(solicitudCredito as any, true);
+      component.montoConcedidoRespuesta = 4000;
+
+      component.confirmarRespuesta();
+
+      expect(dispositivoServiceSpy.responderPetrolera).toHaveBeenCalledWith(solicitudCredito.id, true, '', 4000);
+    });
+
+    it('un alta de dispositivo se aprueba sin importe concedido', () => {
+      spyOn(window, 'confirm').and.returnValue(true);
+      dispositivoServiceSpy.responderPetrolera.and.returnValue(of(solicitud as any));
+      component.abrirModalRespuesta(solicitud as any, true);
+
+      component.confirmarRespuesta();
+
+      expect(dispositivoServiceSpy.responderPetrolera).toHaveBeenCalledWith(solicitud.id, true, '', null);
+    });
+
+    it('detecta cuando el importe concedido difiere del solicitado', () => {
+      expect(component.importeDifiere({ ...solicitudCredito, montoConcedido: 4000 } as any)).toBeTrue();
+      expect(component.importeDifiere({ ...solicitudCredito, montoConcedido: 2000 } as any)).toBeFalse();
+      expect(component.importeDifiere(solicitudCredito as any)).toBeFalse();
     });
   });
 });

@@ -44,8 +44,18 @@ public class Credito {
     @Column(nullable = false, length = 30)
     private EstadoCredito estado = EstadoCredito.PENDIENTE;
 
+    /** Importe SOLICITADO a la petrolera por el socio. */
     @Column(precision = 10, scale = 2)
     private BigDecimal monto;
+
+    /**
+     * Importe realmente CONCEDIDO por la petrolera.
+     *
+     * Null mientras no haya respuesta (o si la solicitud fue denegada). Puede diferir del
+     * solicitado: la petrolera concede con frecuencia una cantidad distinta a la pedida.
+     */
+    @Column(name = "monto_concedido", precision = 10, scale = 2)
+    private BigDecimal montoConcedido;
 
     @Column(columnDefinition = "TEXT")
     private String observaciones;

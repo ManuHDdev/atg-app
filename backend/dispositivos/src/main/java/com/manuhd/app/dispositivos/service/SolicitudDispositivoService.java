@@ -263,12 +263,21 @@ public class SolicitudDispositivoService {
     }
 
     @Transactional
-    public SolicitudDispositivoDTO responderPetrolera(Long solicitudId, boolean aprobado, String respuesta) {
+    public SolicitudDispositivoDTO responderPetrolera(Long solicitudId, boolean aprobado, String respuesta,
+            BigDecimal montoConcedido) {
         SolicitudDispositivo solicitud = solicitudRepository.findById(solicitudId)
                 .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con id: " + solicitudId));
 
         if (solicitud.getEstado() != EstadoSolicitud.ENVIADO_PETROLERA) {
             throw new RuntimeException("La solicitud no esta en estado ENVIADO_PETROLERA");
+        }
+
+        // El importe concedido solo aplica a la solicitud de credito y solo al aprobar.
+        // Al denegar (o en cualquier otro tipo) se ignora lo que llegue y se deja a null.
+        if (aprobado) {
+            solicitud.setMontoConcedido(validarMontoConcedido(solicitud, montoConcedido));
+        } else {
+            solicitud.setMontoConcedido(null);
         }
 
         solicitud.setEstado(aprobado ? EstadoSolicitud.APROBADO : EstadoSolicitud.DENEGADO);
@@ -287,6 +296,21 @@ public class SolicitudDispositivoService {
         notificarSocio(solicitudId);
 
         return convertirADTO(actualizada);
+    }
+
+    /**
+     * Valida el importe concedido al aprobar una solicitud.
+     *
+     * Solo la solicitud de credito lleva importe; el resto de tipos se guardan siempre a null.
+     */
+    private BigDecimal validarMontoConcedido(SolicitudDispositivo solicitud, BigDecimal montoConcedido) {
+        if (solicitud.getTipoSolicitud() != TipoSolicitud.SOLICITUD_CREDITO) {
+            return null;
+        }
+        if (montoConcedido == null || montoConcedido.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("El importe concedido es obligatorio y debe ser mayor que 0");
+        }
+        return montoConcedido;
     }
 
     private void ejecutarAccionAprobacion(SolicitudDispositivo solicitud) {
@@ -348,6 +372,7 @@ public class SolicitudDispositivoService {
             "<li>Tipo: %s</li>" +
             "<li>Matricula: %s</li>" +
             "%s" +
+            "%s" +
             "<li>Estado: %s</li>" +
             "<li>Respuesta: %s</li>" +
             "</ul>" +
@@ -360,7 +385,10 @@ public class SolicitudDispositivoService {
             petrolera.get("nombre"),
             tipoLabel,
             solicitud.getMatricula() != null ? solicitud.getMatricula() : "N/A",
-            solicitud.getMonto() != null ? "<li>Monto: " + solicitud.getMonto().toString() + " &euro;</li>" : "",
+            solicitud.getMonto() != null ? "<li>Importe solicitado: " + solicitud.getMonto().toString() + " &euro;</li>" : "",
+            solicitud.getMontoConcedido() != null
+                ? "<li>Importe concedido: " + solicitud.getMontoConcedido().toString() + " &euro;</li>"
+                : "",
             solicitud.getEstado(),
             solicitud.getRespuestaPetrolera() != null ? solicitud.getRespuestaPetrolera() : "Sin comentarios"
         );
@@ -423,6 +451,8 @@ public class SolicitudDispositivoService {
         variables.put("matricula", solicitud.getMatricula() != null ? solicitud.getMatricula() : "");
         variables.put("matricula_destino", solicitud.getMatriculaDestino() != null ? solicitud.getMatriculaDestino() : "");
         variables.put("monto", solicitud.getMonto() != null ? solicitud.getMonto().toString() : "N/A");
+        variables.put("monto_concedido",
+                solicitud.getMontoConcedido() != null ? solicitud.getMontoConcedido().toString() : "N/A");
         variables.put("observaciones", solicitud.getObservaciones() != null ? solicitud.getObservaciones() : "");
 
         return variables;
@@ -643,6 +673,7 @@ public class SolicitudDispositivoService {
         dto.setMatricula(solicitud.getMatricula());
         dto.setMatriculaDestino(solicitud.getMatriculaDestino());
         dto.setMonto(solicitud.getMonto());
+        dto.setMontoConcedido(solicitud.getMontoConcedido());
         dto.setObservaciones(solicitud.getObservaciones());
         dto.setFechaEnvioPetrolera(solicitud.getFechaEnvioPetrolera());
         dto.setFechaRespuestaPetrolera(solicitud.getFechaRespuestaPetrolera());

@@ -79,7 +79,7 @@ public class CreditoController {
             @PathVariable Long id,
             @Valid @RequestBody ResponderPetroleraDTO dto) {
         log.info("POST /api/creditos/{}/responder", id);
-        return ResponseEntity.ok(creditoService.responderPetrolera(id, dto.getAprobado(), dto.getRespuesta()));
+        return ResponseEntity.ok(creditoService.responderPetrolera(id, dto.getAprobado(), dto.getRespuesta(), dto.getMontoConcedido()));
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")

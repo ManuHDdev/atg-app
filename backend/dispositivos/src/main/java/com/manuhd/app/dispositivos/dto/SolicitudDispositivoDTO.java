@@ -37,7 +37,11 @@ public class SolicitudDispositivoDTO {
 
     private String matricula;
     private String matriculaDestino;
+    /** Importe solicitado a la petrolera. */
     private BigDecimal monto;
+
+    /** Importe concedido por la petrolera (null si aun no hay respuesta, fue denegada o el tipo no lleva importe). */
+    private BigDecimal montoConcedido;
     private String observaciones;
 
     private LocalDateTime fechaEnvioPetrolera;
