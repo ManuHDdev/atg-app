@@ -16,14 +16,33 @@ export function getMotivoDuplicadoLabel(motivo: MotivoDuplicado | undefined): st
   return motivo ? MOTIVO_DUPLICADO_LABELS[motivo] : '';
 }
 
+/**
+ * Estados de una solicitud de tarjeta. Los tres primeros son el circuito del documento
+ * firmado: el impreso se genera, se manda al socio y vuelve firmado. Solo entonces la
+ * solicitud se presenta a la petrolera y pasa a PENDIENTE de su respuesta.
+ */
+export type EstadoSolicitudTarjeta =
+  | 'BORRADOR'
+  | 'ENVIADO_SOCIO'
+  | 'FIRMADO_SOCIO'
+  | 'PENDIENTE'
+  | 'APROBADA'
+  | 'RECHAZADA'
+  | 'TARJETA_LLEGADA'
+  | 'COMPLETADA';
+
+/** Etapas del circuito que tienen un PDF descargable. */
+export type TipoPdfSolicitud = 'editable' | 'enviado' | 'firmado' | 'final';
+
 export interface SolicitudTarjeta {
   id?: string;
+  numeroSolicitud?: string;  // "TAR-2026-00001"; ausente en solicitudes anteriores al circuito de firma
   socioId: string;
   petroleraId: string;
   matricula: string;  // Obligatorio - cada solicitud debe tener matrícula
   numeroContrato?: string;  // Opcional
   tipo: 'LLEGADA' | 'ALTA' | 'BAJA' | 'DUPLICADO';
-  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'TARJETA_LLEGADA' | 'COMPLETADA';
+  estado: EstadoSolicitudTarjeta;
   fechaSolicitud?: Date;
   fechaProcesado?: Date;
   observaciones?: string;
@@ -34,6 +53,21 @@ export interface SolicitudTarjeta {
   correosEnviados?: string;
   tarjetaId?: string;  // Para solicitudes de BAJA
   motivoDuplicado?: MotivoDuplicado;  // Solo para solicitudes de DUPLICADO
+
+  // Circuito del documento firmado
+  rutaPdfEditable?: string;
+  nombrePdfEditable?: string;
+  rutaPdfEnviado?: string;
+  nombrePdfEnviado?: string;
+  rutaPdfFirmado?: string;
+  nombrePdfFirmado?: string;
+  rutaPdfFinal?: string;
+  nombrePdfFinal?: string;
+  fechaEnvioSocio?: Date;
+  fechaRecepcionFirmado?: Date;
+  fechaEnvioPetrolera?: Date;
+  motivoRechazo?: string;
+
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -24,6 +24,13 @@ public class SolicitudTarjeta {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Identificador funcional de la solicitud ("TAR-2026-00001"). Da nombre al directorio
+    // en disco donde viven sus PDFs. Las filas anteriores al circuito del documento firmado
+    // lo tienen a null: todo lo que lo lee debe tolerarlo.
+    @Size(max = 20, message = "El número de solicitud no puede exceder 20 caracteres")
+    @Column(name = "numero_solicitud", length = 20, unique = true)
+    private String numeroSolicitud;
+
     @NotNull(message = "El socio es obligatorio")
     @Column(name = "socio_id", nullable = false)
     private Long socioId;
@@ -62,6 +69,55 @@ public class SolicitudTarjeta {
 
     @Column(name = "fecha_entrega")
     private LocalDateTime fechaEntrega;
+
+    // ---- Circuito del documento firmado ----
+    // Un fichero por etapa dentro del directorio de la solicitud: el impreso editable en
+    // oficina, el aplanado que se manda al socio, el que devuelve firmado y el que se
+    // remite a la petrolera.
+
+    @Size(max = 500)
+    @Column(name = "ruta_pdf_editable", length = 500)
+    private String rutaPdfEditable;
+
+    @Size(max = 255)
+    @Column(name = "nombre_pdf_editable", length = 255)
+    private String nombrePdfEditable;
+
+    @Size(max = 500)
+    @Column(name = "ruta_pdf_enviado", length = 500)
+    private String rutaPdfEnviado;
+
+    @Size(max = 255)
+    @Column(name = "nombre_pdf_enviado", length = 255)
+    private String nombrePdfEnviado;
+
+    @Size(max = 500)
+    @Column(name = "ruta_pdf_firmado", length = 500)
+    private String rutaPdfFirmado;
+
+    @Size(max = 255)
+    @Column(name = "nombre_pdf_firmado", length = 255)
+    private String nombrePdfFirmado;
+
+    @Size(max = 500)
+    @Column(name = "ruta_pdf_final", length = 500)
+    private String rutaPdfFinal;
+
+    @Size(max = 255)
+    @Column(name = "nombre_pdf_final", length = 255)
+    private String nombrePdfFinal;
+
+    @Column(name = "fecha_envio_socio")
+    private LocalDateTime fechaEnvioSocio;
+
+    @Column(name = "fecha_recepcion_firmado")
+    private LocalDateTime fechaRecepcionFirmado;
+
+    @Column(name = "fecha_envio_petrolera")
+    private LocalDateTime fechaEnvioPetrolera;
+
+    @Column(name = "motivo_rechazo", columnDefinition = "TEXT")
+    private String motivoRechazo;
 
     @Column(name = "correos_enviados", columnDefinition = "TEXT")
     private String correosEnviados;

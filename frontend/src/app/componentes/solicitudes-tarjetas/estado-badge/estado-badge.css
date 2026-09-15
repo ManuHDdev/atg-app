@@ -38,6 +38,27 @@
   display: inline-block;
 }
 
+/* Estado: BORRADOR */
+.badge-borrador {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-hover);
+}
+
+/* Estado: ENVIADO_SOCIO */
+.badge-enviado-socio {
+  background: var(--orange-light);
+  color: var(--orange-dark);
+  border: 1px solid var(--orange-dark);
+}
+
+/* Estado: FIRMADO_SOCIO */
+.badge-firmado-socio {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border: 1px solid var(--primary-color);
+}
+
 /* Estado: PENDIENTE */
 .badge-pendiente {
   background: var(--warning-light);

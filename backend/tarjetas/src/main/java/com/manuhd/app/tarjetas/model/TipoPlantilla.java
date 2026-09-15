@@ -11,5 +11,9 @@ public enum TipoPlantilla {
     BAJA_CONFIRMADA,
     DUPLICADO_SOCIO,
     DUPLICADO_CONFIRMADA,
-    DUPLICADO_PETROLERA
+    DUPLICADO_PETROLERA,
+    // Circuito del documento firmado: el impreso que se manda al socio para su firma y
+    // el envío a la petrolera con ese mismo impreso ya firmado.
+    DOCUMENTO_SOCIO,
+    DOCUMENTO_PETROLERA
 }

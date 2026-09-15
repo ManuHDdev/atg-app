@@ -1,7 +1,8 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { EstadoSolicitudTarjeta } from '../../../models/solicitud-tarjeta.model';
 
-type EstadoSolicitud = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'TARJETA_LLEGADA' | 'COMPLETADA';
+type EstadoSolicitud = EstadoSolicitudTarjeta;
 
 @Component({
   selector: 'app-estado-badge',
@@ -20,6 +21,9 @@ export class EstadoBadge {
 
   get estadoLabel(): string {
     const labels: Record<EstadoSolicitud, string> = {
+      'BORRADOR': 'Borrador',
+      'ENVIADO_SOCIO': 'Enviada al socio para firma',
+      'FIRMADO_SOCIO': 'Firmada por el socio',
       'PENDIENTE': 'Pendiente',
       'APROBADA': 'Aprobada por la petrolera',
       'RECHAZADA': 'Denegada por la petrolera',
@@ -31,6 +35,9 @@ export class EstadoBadge {
 
   get estadoIcon(): string {
     const icons: Record<EstadoSolicitud, string> = {
+      'BORRADOR': 'bi-file-earmark-text',
+      'ENVIADO_SOCIO': 'bi-envelope-paper',
+      'FIRMADO_SOCIO': 'bi-vector-pen',
       'PENDIENTE': 'bi-hourglass-split',
       'APROBADA': 'bi-check-lg',
       'RECHAZADA': 'bi-x-lg',

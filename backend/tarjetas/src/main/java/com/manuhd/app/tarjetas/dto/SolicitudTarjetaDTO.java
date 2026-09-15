@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class SolicitudTarjetaDTO {
     private Long id;
+    private String numeroSolicitud;  // "TAR-2026-00001"; null en solicitudes anteriores al circuito de firma
     private Long socioId;
     private Long petroleraId;
     private String matricula;  // Opcional
@@ -31,6 +32,21 @@ public class SolicitudTarjetaDTO {
     private LocalDate fechaLlegadaEstimada;
     private LocalDateTime fechaEntrega;
     private String correosEnviados;
+
+    // Circuito del documento firmado
+    private String rutaPdfEditable;
+    private String nombrePdfEditable;
+    private String rutaPdfEnviado;
+    private String nombrePdfEnviado;
+    private String rutaPdfFirmado;
+    private String nombrePdfFirmado;
+    private String rutaPdfFinal;
+    private String nombrePdfFinal;
+    private LocalDateTime fechaEnvioSocio;
+    private LocalDateTime fechaRecepcionFirmado;
+    private LocalDateTime fechaEnvioPetrolera;
+    private String motivoRechazo;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

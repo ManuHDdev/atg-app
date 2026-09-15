@@ -1,11 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { SolicitudTarjetaService } from '../../../services/solicitud-tarjeta.service';
 import { SocioService } from '../../../services/socio.service';
 import { PetroleraService } from '../../../services/petrolera.service';
-import { SolicitudTarjeta, getMotivoDuplicadoLabel } from '../../../models/solicitud-tarjeta.model';
+import { SolicitudTarjeta, TipoPdfSolicitud, getMotivoDuplicadoLabel } from '../../../models/solicitud-tarjeta.model';
 import { Socio } from '../../../models/socio.model';
 import { Petrolera } from '../../../models/petrolera.model';
 import { EstadoBadge } from '../estado-badge/estado-badge';
@@ -39,6 +39,15 @@ export class SolicitudDetalle implements OnInit {
   showDuplicadoModal: boolean = false;
   showRechazoModal: boolean = false;
   motivoRechazo: string = '';
+
+  // Circuito del documento firmado. Cada subida tiene su propio fichero seleccionado y su
+  // propio input: compartirlos haría que elegir el borrador dejara "listo para subir" el
+  // escaneado firmado, y al revés.
+  @ViewChild('inputPdfEditable') inputPdfEditable?: ElementRef<HTMLInputElement>;
+  @ViewChild('inputPdfFirmado') inputPdfFirmado?: ElementRef<HTMLInputElement>;
+  ficheroEditable: File | null = null;
+  ficheroFirmado: File | null = null;
+  procesandoDocumento: boolean = false;
 
   constructor(
     private fb: FormBuilder,
@@ -212,6 +221,179 @@ export class SolicitudDetalle implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  // ---------- circuito del documento firmado ----------
+
+  onFicheroEditableSeleccionado(event: Event): void {
+    this.ficheroEditable = this.leerPdfSeleccionado(event);
+  }
+
+  onFicheroFirmadoSeleccionado(event: Event): void {
+    this.ficheroFirmado = this.leerPdfSeleccionado(event);
+  }
+
+  private leerPdfSeleccionado(event: Event): File | null {
+    const fichero = (event.target as HTMLInputElement).files?.[0] ?? null;
+    if (fichero && fichero.type === 'application/pdf') {
+      return fichero;
+    }
+    if (fichero) {
+      this.error = 'Seleccione un archivo PDF válido';
+    }
+    return null;
+  }
+
+  guardarPdfEditado(): void {
+    if (!this.solicitud?.id || !this.ficheroEditable) return;
+
+    this.procesandoDocumento = true;
+    this.solicitudService.guardarPdfEditado(this.solicitud.id, this.ficheroEditable).subscribe({
+      next: () => {
+        this.success = 'Impreso actualizado correctamente';
+        this.limpiarSeleccionEditable();
+        this.procesandoDocumento = false;
+        this.cargarSolicitud(this.solicitud!.id!);
+      },
+      error: (err) => this.fallo('Error al guardar el impreso editado', err)
+    });
+  }
+
+  enviarASocio(): void {
+    if (!this.solicitud?.id) return;
+    if (!confirm('¿Enviar el impreso al socio para que lo firme? El PDF dejará de ser editable.')) return;
+
+    this.procesandoDocumento = true;
+    this.solicitudService.enviarASocio(this.solicitud.id).subscribe({
+      next: () => {
+        this.success = 'Impreso enviado al socio para su firma';
+        this.limpiarSeleccionEditable();
+        this.procesandoDocumento = false;
+        this.cargarSolicitud(this.solicitud!.id!);
+      },
+      error: (err) => this.fallo('Error al enviar el impreso al socio', err)
+    });
+  }
+
+  subirPdfFirmado(): void {
+    if (!this.solicitud?.id || !this.ficheroFirmado) return;
+
+    this.procesandoDocumento = true;
+    this.solicitudService.subirPdfFirmado(this.solicitud.id, this.ficheroFirmado).subscribe({
+      next: () => {
+        this.success = 'Impreso firmado registrado correctamente';
+        this.limpiarSeleccionFirmado();
+        this.procesandoDocumento = false;
+        this.cargarSolicitud(this.solicitud!.id!);
+      },
+      error: (err) => this.fallo('Error al registrar el impreso firmado', err)
+    });
+  }
+
+  aceptarFirmaSocio(): void {
+    if (!this.solicitud?.id) return;
+    if (!confirm('¿Dar por buena la firma del socio? La solicitud quedará lista para presentarla a la petrolera.')) return;
+
+    this.procesandoDocumento = true;
+    this.solicitudService.aceptarFirmaSocio(this.solicitud.id).subscribe({
+      next: () => {
+        this.success = 'Firma del socio aceptada';
+        this.procesandoDocumento = false;
+        this.cargarSolicitud(this.solicitud!.id!);
+      },
+      error: (err) => this.fallo('Error al aceptar la firma del socio', err)
+    });
+  }
+
+  enviarAPetrolera(): void {
+    if (!this.solicitud?.id) return;
+    if (!confirm('¿Presentar la solicitud a la petrolera? Se le enviará el impreso firmado junto con los datos del socio.')) return;
+
+    this.procesandoDocumento = true;
+    this.solicitudService.enviarAPetrolera(this.solicitud.id).subscribe({
+      next: () => {
+        this.success = 'Solicitud presentada a la petrolera';
+        this.procesandoDocumento = false;
+        this.cargarSolicitud(this.solicitud!.id!);
+      },
+      error: (err) => this.fallo('Error al presentar la solicitud a la petrolera', err)
+    });
+  }
+
+  descargarPdf(tipo: TipoPdfSolicitud): void {
+    if (!this.solicitud?.id) return;
+
+    this.solicitudService.descargarPdf(this.solicitud.id, tipo).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        enlace.download = `${this.solicitud?.numeroSolicitud ?? this.solicitud?.id}_${tipo}.pdf`;
+        enlace.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Error al descargar el impreso:', err);
+        this.error = this.errorHandler.getMensaje(err);
+      }
+    });
+  }
+
+  verPdf(tipo: TipoPdfSolicitud): void {
+    if (!this.solicitud?.id) return;
+
+    this.solicitudService.descargarPdf(this.solicitud.id, tipo).subscribe({
+      next: (blob) => window.open(window.URL.createObjectURL(blob), '_blank'),
+      error: (err) => {
+        console.error('Error al abrir el impreso:', err);
+        this.error = this.errorHandler.getMensaje(err);
+      }
+    });
+  }
+
+  private limpiarSeleccionEditable(): void {
+    this.ficheroEditable = null;
+    if (this.inputPdfEditable?.nativeElement) {
+      this.inputPdfEditable.nativeElement.value = '';
+    }
+  }
+
+  private limpiarSeleccionFirmado(): void {
+    this.ficheroFirmado = null;
+    if (this.inputPdfFirmado?.nativeElement) {
+      this.inputPdfFirmado.nativeElement.value = '';
+    }
+  }
+
+  private fallo(mensaje: string, err: unknown): void {
+    console.error(mensaje, err);
+    this.error = this.errorHandler.getMensaje(err);
+    this.procesandoDocumento = false;
+  }
+
+  /** Una LLEGADA no lleva papeleo: nunca entra en el circuito del documento firmado. */
+  get tieneCircuitoDeFirma(): boolean {
+    return !!this.solicitud && this.solicitud.tipo !== 'LLEGADA' && !!this.solicitud.numeroSolicitud;
+  }
+
+  get puedeEditarImpreso(): boolean {
+    return this.tieneCircuitoDeFirma && this.solicitud?.estado === 'BORRADOR';
+  }
+
+  get puedeEnviarASocio(): boolean {
+    return this.puedeEditarImpreso && !!this.solicitud?.rutaPdfEditable;
+  }
+
+  get puedeSubirFirmado(): boolean {
+    return this.tieneCircuitoDeFirma && this.solicitud?.estado === 'ENVIADO_SOCIO';
+  }
+
+  get puedeAceptarFirma(): boolean {
+    return this.puedeSubirFirmado && !!this.solicitud?.rutaPdfFirmado;
+  }
+
+  get puedeEnviarAPetrolera(): boolean {
+    return this.tieneCircuitoDeFirma && this.solicitud?.estado === 'FIRMADO_SOCIO';
   }
 
   // Las acciones dependen del estado Y del tipo: una LLEGADA nace ya registrada, así que
