@@ -43,7 +43,6 @@ export const environment = {
     contratos: 'https://atg.manuhd.duckdns.org/contratos/api/contratos-socio',
     contratosSocio: 'https://atg.manuhd.duckdns.org/contratos/api/contratos-socio',
     plantillasContrato: 'https://atg.manuhd.duckdns.org/contratos/api/plantillas-contrato',
-    mapeoCampos: 'https://atg.manuhd.duckdns.org/contratos/api/mapeo-campos',
     tiposContrato: 'https://atg.manuhd.duckdns.org/contratos/api/tipos-contrato',
     tiposSolicitudPetrolera: 'https://atg.manuhd.duckdns.org/contratos/api/tipos-solicitud-petrolera',
     plantillas: 'https://atg.manuhd.duckdns.org/contratos/api/plantillas',

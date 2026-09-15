@@ -435,7 +435,6 @@ src/test/
 - [ ] **ContratoSocioController** - API REST
 
 ### Baja Prioridad
-- [ ] **MapeoPlantillaCamposService** - Mapeo de campos PDF
 - [ ] **TipoSolicitudPetroleraService** - Gestión de tipos
 - [ ] **WebConfig** - Configuración CORS
 - [ ] **AppConfig** - Configuración de beans

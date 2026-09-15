@@ -30,7 +30,6 @@ export const environment = {
     contratos: 'http://localhost:8084/api/contratos-socio',
     contratosSocio: 'http://localhost:8084/api/contratos-socio',
     plantillasContrato: 'http://localhost:8084/api/plantillas-contrato',
-    mapeoCampos: 'http://localhost:8084/api/mapeo-campos',
 
     // Nuevos endpoints del sistema de contratos
     tiposContrato: 'http://localhost:8084/api/tipos-contrato',
