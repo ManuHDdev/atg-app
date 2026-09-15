@@ -391,3 +391,144 @@
     max-height: 90vh;
   }
 }
+
+.workflow-card {
+  background: var(--bg-secondary);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.workflow-card h3 {
+  margin: 0 0 var(--spacing-sm) 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.workflow-intro {
+  margin: 0 0 var(--spacing-lg) 0;
+  color: var(--text-secondary);
+}
+
+.workflow-step {
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--border-hover);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.workflow-step:last-child { margin-bottom: 0; }
+
+.workflow-step.active {
+  border-left-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.step-header,
+.step-action,
+.upload-section,
+.pdf-file-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.step-header h4 {
+  margin: 0;
+  flex: 1;
+}
+
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.workflow-step.active .step-number {
+  background: var(--primary-color);
+  color: var(--bg-primary);
+}
+
+.step-badge {
+  padding: 0.25rem 0.625rem;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-activo {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.badge-hecho {
+  background: var(--success-light);
+  color: var(--success-dark);
+}
+
+.badge-pendiente {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.step-content {
+  margin-top: var(--spacing-sm);
+  color: var(--text-secondary);
+}
+
+.step-content p { margin: 0 0 var(--spacing-xs) 0; }
+
+.pending-text {
+  font-style: italic;
+  color: var(--text-tertiary);
+}
+
+.pdf-file-info {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm);
+  margin: var(--spacing-sm) 0;
+}
+
+.file-label,
+.upload-label { font-weight: 600; }
+
+.file-name {
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-left: auto;
+}
+
+.upload-section,
+.step-action {
+  border-top: 1px dashed var(--border-color);
+  padding-top: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+}
+
+.upload-label,
+.help-text {
+  width: 100%;
+}
+
+.help-text {
+  color: var(--text-tertiary);
+  font-size: 0.8125rem;
+}

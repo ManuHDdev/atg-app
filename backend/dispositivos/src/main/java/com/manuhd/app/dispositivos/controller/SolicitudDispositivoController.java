@@ -8,11 +8,15 @@ import com.manuhd.app.dispositivos.service.SolicitudDispositivoService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -66,11 +70,87 @@ public class SolicitudDispositivoController {
                 .body(solicitudService.crear(dto));
     }
 
+    // ---- Circuito del documento firmado ----
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
+    @PostMapping("/{id}/pdf/editable")
+    public ResponseEntity<SolicitudDispositivoDTO> guardarPdfEditado(@PathVariable Long id,
+                                                                     @RequestParam("file") MultipartFile file) {
+        log.info("POST /api/solicitudes-dispositivo/{}/pdf/editable - Guardar impreso editado", id);
+        try {
+            return ResponseEntity.ok(solicitudService.guardarPdfEditado(id, file));
+        } catch (IOException e) {
+            log.error("Error al guardar el impreso editado", e);
+            throw new RuntimeException("Error al guardar el impreso: " + e.getMessage());
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
+    @PostMapping("/{id}/enviar-socio")
+    public ResponseEntity<SolicitudDispositivoDTO> enviarASocio(@PathVariable Long id) {
+        log.info("POST /api/solicitudes-dispositivo/{}/enviar-socio - Enviar el impreso al socio para su firma", id);
+        try {
+            return ResponseEntity.ok(solicitudService.enviarASocio(id));
+        } catch (IOException e) {
+            log.error("Error al enviar el impreso al socio", e);
+            throw new RuntimeException("Error al enviar el impreso al socio: " + e.getMessage());
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
+    @PostMapping("/{id}/pdf/firmado")
+    public ResponseEntity<SolicitudDispositivoDTO> subirPdfFirmado(@PathVariable Long id,
+                                                                   @RequestParam("file") MultipartFile file) {
+        log.info("POST /api/solicitudes-dispositivo/{}/pdf/firmado - Registrar el impreso firmado por el socio", id);
+        try {
+            return ResponseEntity.ok(solicitudService.subirPdfFirmado(id, file));
+        } catch (IOException e) {
+            log.error("Error al registrar el impreso firmado", e);
+            throw new RuntimeException("Error al registrar el impreso firmado: " + e.getMessage());
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
+    @PostMapping("/{id}/aceptar-firma")
+    public ResponseEntity<SolicitudDispositivoDTO> aceptarFirmaSocio(@PathVariable Long id) {
+        log.info("POST /api/solicitudes-dispositivo/{}/aceptar-firma - Aceptar la firma del socio", id);
+        return ResponseEntity.ok(solicitudService.aceptarFirmaSocio(id));
+    }
+
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")
     @PostMapping("/{id}/enviar-petrolera")
     public ResponseEntity<SolicitudDispositivoDTO> enviarAPetrolera(@PathVariable Long id) {
         log.info("POST /api/solicitudes-dispositivo/{}/enviar-petrolera", id);
-        return ResponseEntity.ok(solicitudService.enviarAPetrolera(id));
+        try {
+            return ResponseEntity.ok(solicitudService.enviarAPetrolera(id));
+        } catch (IOException e) {
+            log.error("Error al presentar la solicitud a la petrolera", e);
+            throw new RuntimeException("Error al presentar la solicitud a la petrolera: " + e.getMessage());
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR', 'USUARIO')")
+    @GetMapping("/{id}/pdf/{tipo}")
+    public ResponseEntity<byte[]> descargarPdf(@PathVariable Long id, @PathVariable String tipo) {
+        log.info("GET /api/solicitudes-dispositivo/{}/pdf/{} - Descargar el impreso de una etapa", id, tipo);
+        SolicitudDispositivoService.TipoPdf tipoPdf;
+        try {
+            tipoPdf = SolicitudDispositivoService.TipoPdf.valueOf(tipo.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.error("Tipo de PDF invalido: {}", tipo);
+            throw new RuntimeException("Tipo de PDF invalido: " + tipo);
+        }
+
+        try {
+            byte[] pdf = solicitudService.descargarPdf(id, tipoPdf);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + tipo + ".pdf\"")
+                    .body(pdf);
+        } catch (IOException e) {
+            log.error("Error al descargar el impreso", e);
+            throw new RuntimeException("Error al descargar el impreso: " + e.getMessage());
+        }
     }
 
     @PreAuthorize("hasAnyRole('ADMIN', 'GESTOR')")

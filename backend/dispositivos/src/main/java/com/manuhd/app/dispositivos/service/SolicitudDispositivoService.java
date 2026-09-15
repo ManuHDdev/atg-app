@@ -1,9 +1,11 @@
 package com.manuhd.app.dispositivos.service;
 
+import com.manuhd.app.dispositivos.client.PetrolerasClient;
 import com.manuhd.app.dispositivos.dto.CrearSolicitudDTO;
 import com.manuhd.app.dispositivos.dto.EnvioCorreoResult;
 import com.manuhd.app.dispositivos.dto.PetroleraDTO;
 import com.manuhd.app.dispositivos.dto.SolicitudDispositivoDTO;
+import com.manuhd.app.dispositivos.exception.BusinessValidationException;
 import com.manuhd.app.dispositivos.model.Dispositivo;
 import com.manuhd.app.dispositivos.model.EstadoSolicitud;
 import com.manuhd.app.dispositivos.model.SolicitudDispositivo;
@@ -16,9 +18,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +50,16 @@ public class SolicitudDispositivoService {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private PdfService pdfService;
+
+    @Autowired
+    private PetrolerasClient petrolerasClient;
+
+    /** Plantillas de correo del circuito del documento firmado, dadas de alta en petroleras. */
+    private static final String PLANTILLA_DOCUMENTO_SOCIO = "DOCUMENTO_SOCIO_DISPOSITIVO";
+    private static final String PLANTILLA_DOCUMENTO_PETROLERA = "DOCUMENTO_PETROLERA_DISPOSITIVO";
 
     @Value("${microservices.socios.url:http://localhost:8081}")
     private String sociosBaseUrl;
@@ -97,7 +115,7 @@ public class SolicitudDispositivoService {
         solicitud.setPetroleraId(dto.getPetroleraId());
         solicitud.setTipoSolicitud(dto.getTipoSolicitud());
         solicitud.setDispositivoId(dto.getDispositivoId());
-        solicitud.setEstado(EstadoSolicitud.PENDIENTE);
+        solicitud.setEstado(EstadoSolicitud.BORRADOR);
         solicitud.setObservaciones(dto.getObservaciones());
         solicitud.setProgramadoEnvio(dto.getProgramadoEnvio() != null ? dto.getProgramadoEnvio() : false);
         solicitud.setFechaProgramadaEnvio(dto.getFechaProgramadaEnvio());
@@ -126,8 +144,16 @@ public class SolicitudDispositivoService {
                 break;
         }
 
+        // La solicitud nace como borrador con el impreso de la petrolera ya descargado: es
+        // lo que la oficina cumplimenta y manda al socio para que lo firme.
+        String numeroSolicitud = generarNumeroSolicitud();
+        solicitud.setNumeroSolicitud(numeroSolicitud);
+        solicitud.setRutaPdfEditable(
+                descargarPlantillaDeSolicitud(dto.getPetroleraId(), dto.getTipoSolicitud(), numeroSolicitud));
+        solicitud.setNombrePdfEditable(PdfService.EDITABLE);
+
         SolicitudDispositivo guardada = solicitudRepository.save(solicitud);
-        log.info("Solicitud de dispositivo creada con ID: {}", guardada.getId());
+        log.info("Solicitud de dispositivo creada con ID: {} y numero {}", guardada.getId(), numeroSolicitud);
 
         // Notificar al socio de que su tramite ha sido registrado
         try {
@@ -136,10 +162,10 @@ public class SolicitudDispositivoService {
             log.error("Error notificando socio sobre creacion: {}", e.getMessage());
         }
 
-        // Si no esta programado, enviar inmediatamente
-        if (!Boolean.TRUE.equals(dto.getProgramadoEnvio())) {
-            enviarAPetrolera(guardada.getId());
-        }
+        // IMPORTANTE - NO REINTRODUCIR AQUI EL CORREO A LA PETROLERA: la solicitud nace en
+        // BORRADOR y todavia no se ha presentado nada. La petrolera se entera en
+        // enviarAPetrolera(), que es cuando sale el impreso firmado por el socio. Avisarla
+        // tambien al crear duplicaba el envio y anunciaba algo que aun no existia para ella.
 
         return convertirADTO(guardada);
     }
@@ -201,58 +227,283 @@ public class SolicitudDispositivoService {
         }
     }
 
+    // ---------- circuito del documento firmado ----------
+
+    /**
+     * Sustituye el impreso editable por el que ha rellenado la oficina. Solo tiene sentido
+     * mientras la solicitud sigue en BORRADOR: despues el documento ya esta en manos del socio.
+     */
     @Transactional
-    public SolicitudDispositivoDTO enviarAPetrolera(Long solicitudId) {
-        SolicitudDispositivo solicitud = solicitudRepository.findById(solicitudId)
-                .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con id: " + solicitudId));
+    public SolicitudDispositivoDTO guardarPdfEditado(Long solicitudId, MultipartFile pdfEditado) throws IOException {
+        log.info("Guardando PDF editado de la solicitud: {}", solicitudId);
 
-        if (solicitud.getEstado() != EstadoSolicitud.PENDIENTE) {
-            throw new RuntimeException("La solicitud no esta en estado PENDIENTE");
+        SolicitudDispositivo solicitud = obtenerSolicitud(solicitudId);
+
+        if (solicitud.getEstado() != EstadoSolicitud.BORRADOR) {
+            throw new BusinessValidationException("Solo se puede editar el impreso de una solicitud en borrador");
         }
 
-        // Obtener datos
-        Map<String, Object> socio = obtenerDatosSocio(solicitud.getSocioId());
-        Map<String, Object> petrolera = obtenerDatosPetrolera(solicitud.getPetroleraId());
-        Map<String, Object> empresa = solicitud.getEmpresaId() != null ?
-            obtenerDatosEmpresa(solicitud.getEmpresaId()) : null;
+        solicitud.setRutaPdfEditable(pdfService.guardarPdfEditado(pdfEditado, exigirNumeroSolicitud(solicitud)));
+        solicitud.setNombrePdfEditable(pdfEditado.getOriginalFilename());
 
-        String emailPetrolera = (String) petrolera.get("email");
-        if (emailPetrolera == null || emailPetrolera.isEmpty()) {
-            log.warn("La petrolera no tiene email configurado. ID: {}", solicitud.getPetroleraId());
-            emailPetrolera = "admin@atg.com";
+        return convertirADTO(solicitudRepository.save(solicitud));
+    }
+
+    /**
+     * Manda al socio el impreso aplanado para que lo firme. El socio firma fuera del sistema
+     * y devuelve el documento por el canal que prefiera; aqui solo se deja constancia del envio.
+     */
+    @Transactional
+    public SolicitudDispositivoDTO enviarASocio(Long solicitudId) throws IOException {
+        log.info("Enviando a socio el impreso de la solicitud: {}", solicitudId);
+
+        SolicitudDispositivo solicitud = obtenerSolicitud(solicitudId);
+
+        if (solicitud.getEstado() != EstadoSolicitud.BORRADOR) {
+            throw new BusinessValidationException("Solo se puede enviar al socio una solicitud en borrador");
         }
 
-        // Determinar tipo de plantilla
-        String tipoPlantilla = mapearTipoSolicitudAPlantilla(solicitud.getTipoSolicitud());
+        String numeroSolicitud = exigirNumeroSolicitud(solicitud);
+        String mensajeFaltaPdf = "No se puede enviar al socio: falta el impreso de la solicitud " + numeroSolicitud;
 
-        // Obtener plantilla de correo
-        Map<String, Object> plantilla = obtenerPlantillaCorreo(solicitud.getPetroleraId(), tipoPlantilla);
+        // Sin impreso no hay nada que firmar: se comprueba ANTES de dar el envio por hecho.
+        validarPdfDisponible(solicitud.getRutaPdfEditable(), mensajeFaltaPdf);
 
-        // Preparar variables
-        Map<String, String> variables = prepararVariablesCorreo(solicitud, socio, empresa, petrolera);
+        String rutaPdfEnviado = pdfService.aplanarPdfParaSolicitud(solicitud.getRutaPdfEditable(), numeroSolicitud);
+        Path adjunto = validarPdfDisponible(rutaPdfEnviado, mensajeFaltaPdf);
 
-        // Asunto y cuerpo
-        String asunto = plantilla != null ? (String) plantilla.get("asunto") :
-            "Solicitud de " + getTipoSolicitudLabel(solicitud.getTipoSolicitud()) + " - " + socio.get("nombre");
-        String cuerpo = plantilla != null ? (String) plantilla.get("cuerpo") :
-            generarCuerpoCorreoDefault(solicitud, socio, empresa);
+        solicitud.setRutaPdfEnviado(rutaPdfEnviado);
+        solicitud.setNombrePdfEnviado(PdfService.ENVIADO);
+        solicitud.setEstado(EstadoSolicitud.ENVIADO_SOCIO);
+        solicitud.setFechaEnvioSocio(LocalDateTime.now());
 
+        SolicitudDispositivo actualizada = solicitudRepository.save(solicitud);
+
+        // Un fallo de correo no deshace el envio: el documento ya esta aplanado y la etapa
+        // avanzada. El resultado queda registrado en el historial de correos.
+        String emailSocio = null;
         try {
-            emailService.enviarCorreoConPlantilla(emailPetrolera, asunto, cuerpo, variables);
-            registrarEnvioCorreo(solicitud, "ENVIO_PETROLERA", emailPetrolera, true, null);
+            Map<String, Object> socio = obtenerDatosSocio(actualizada.getSocioId());
+            Map<String, Object> petrolera = obtenerDatosPetrolera(actualizada.getPetroleraId());
+            Map<String, Object> empresa = actualizada.getEmpresaId() != null
+                    ? obtenerDatosEmpresa(actualizada.getEmpresaId()) : null;
+            emailSocio = emailDestino((String) socio.get("email"), "socio@example.com");
+
+            Map<String, Object> plantilla = obtenerPlantillaCorreo(
+                    actualizada.getPetroleraId(), PLANTILLA_DOCUMENTO_SOCIO);
+            if (plantilla == null) {
+                // Sin plantilla configurada no se manda nada, pero la etapa ya ha avanzado.
+                log.warn("No hay plantilla {} para la petrolera {}; no se envia el impreso al socio",
+                        PLANTILLA_DOCUMENTO_SOCIO, actualizada.getPetroleraId());
+            } else {
+                Map<String, String> variables = prepararVariablesCorreo(actualizada, socio, empresa, petrolera);
+                emailService.enviarCorreoConPlantillaYAdjunto(
+                        emailSocio,
+                        (String) plantilla.get("asunto"),
+                        (String) plantilla.get("cuerpo"),
+                        variables,
+                        adjunto,
+                        nombreAdjunto("Solicitud", actualizada));
+                registrarEnvioCorreo(actualizada, PLANTILLA_DOCUMENTO_SOCIO, emailSocio, true, null);
+            }
         } catch (Exception e) {
-            registrarEnvioCorreo(solicitud, "ENVIO_PETROLERA", emailPetrolera, false, e.getMessage());
-            log.error("Error enviando correo a petrolera: {}", e.getMessage());
+            log.error("Error al enviar el impreso al socio: {}", e.getMessage());
+            registrarEnvioCorreo(actualizada, PLANTILLA_DOCUMENTO_SOCIO,
+                    emailSocio != null ? emailSocio : "socio", false, e.getMessage());
         }
 
-        // Actualizar estado
+        return convertirADTO(actualizada);
+    }
+
+    /**
+     * Guarda el escaneado que ha devuelto el socio. No cambia el estado a proposito: el
+     * escaneado puede venir torcido o incompleto y se sustituye tantas veces como haga falta;
+     * el paso lo cierra explicitamente {@link #aceptarFirmaSocio(Long)}.
+     */
+    @Transactional
+    public SolicitudDispositivoDTO subirPdfFirmado(Long solicitudId, MultipartFile pdfFirmado) throws IOException {
+        log.info("Subiendo el impreso firmado de la solicitud: {}", solicitudId);
+
+        SolicitudDispositivo solicitud = obtenerSolicitud(solicitudId);
+
+        if (solicitud.getEstado() != EstadoSolicitud.ENVIADO_SOCIO) {
+            throw new BusinessValidationException(
+                    "Solo se puede subir el impreso firmado de una solicitud enviada al socio");
+        }
+
+        solicitud.setRutaPdfFirmado(pdfService.guardarPdfFirmado(pdfFirmado, exigirNumeroSolicitud(solicitud)));
+        solicitud.setNombrePdfFirmado(pdfFirmado.getOriginalFilename());
+        solicitud.setFechaRecepcionFirmado(LocalDateTime.now());
+
+        return convertirADTO(solicitudRepository.save(solicitud));
+    }
+
+    /** Da por buena la firma recibida y deja la solicitud lista para presentarla a la petrolera. */
+    @Transactional
+    public SolicitudDispositivoDTO aceptarFirmaSocio(Long solicitudId) {
+        log.info("Aceptando la firma del socio en la solicitud: {}", solicitudId);
+
+        SolicitudDispositivo solicitud = obtenerSolicitud(solicitudId);
+
+        if (solicitud.getEstado() != EstadoSolicitud.ENVIADO_SOCIO) {
+            throw new BusinessValidationException(
+                    "Solo se puede aceptar la firma de una solicitud enviada al socio");
+        }
+
+        validarPdfDisponible(solicitud.getRutaPdfFirmado(),
+                "Debe subir el impreso firmado antes de aceptar la firma");
+
+        solicitud.setEstado(EstadoSolicitud.FIRMADO_SOCIO);
+
+        return convertirADTO(solicitudRepository.save(solicitud));
+    }
+
+    /**
+     * Presenta la solicitud a la petrolera: un correo por solicitud, con el impreso firmado
+     * adjunto y los datos del socio en el cuerpo. Nunca se agrupan varias en un mismo envio.
+     */
+    @Transactional
+    public SolicitudDispositivoDTO enviarAPetrolera(Long solicitudId) throws IOException {
+        log.info("Enviando a petrolera la solicitud: {}", solicitudId);
+
+        SolicitudDispositivo solicitud = obtenerSolicitud(solicitudId);
+
+        // Las filas creadas antes del circuito del documento firmado quedaron en PENDIENTE y
+        // no tienen numero de solicitud, asi que no pueden entrar en el circuito ni llegar
+        // nunca a FIRMADO_SOCIO. Para no dejarlas bloqueadas en produccion se siguen enviando
+        // como antes: correo a la petrolera sin impreso adjunto.
+        if (esSolicitudHeredada(solicitud)) {
+            return enviarAPetroleraSinDocumento(solicitud);
+        }
+
+        if (solicitud.getEstado() != EstadoSolicitud.FIRMADO_SOCIO) {
+            throw new BusinessValidationException(
+                    "Solo se puede enviar a la petrolera una solicitud con la firma del socio aceptada");
+        }
+
+        String numeroSolicitud = exigirNumeroSolicitud(solicitud);
+        String mensajeFaltaPdf = "No se puede enviar a la petrolera: falta el impreso firmado de la solicitud "
+                + numeroSolicitud;
+
+        validarPdfDisponible(solicitud.getRutaPdfFirmado(), mensajeFaltaPdf);
+
+        String rutaPdfFinal = pdfService.copiarPdfFinal(solicitud.getRutaPdfFirmado(), numeroSolicitud);
+        Path adjunto = validarPdfDisponible(rutaPdfFinal, mensajeFaltaPdf);
+
+        solicitud.setRutaPdfFinal(rutaPdfFinal);
+        solicitud.setNombrePdfFinal(PdfService.FINAL);
+        solicitud.setEstado(EstadoSolicitud.ENVIADO_PETROLERA);
+        solicitud.setFechaEnvioPetrolera(LocalDateTime.now());
+
+        SolicitudDispositivo actualizada = solicitudRepository.save(solicitud);
+
+        String emailPetrolera = null;
+        try {
+            Map<String, Object> socio = obtenerDatosSocio(actualizada.getSocioId());
+            Map<String, Object> petrolera = obtenerDatosPetrolera(actualizada.getPetroleraId());
+            Map<String, Object> empresa = actualizada.getEmpresaId() != null
+                    ? obtenerDatosEmpresa(actualizada.getEmpresaId()) : null;
+            emailPetrolera = emailDestino((String) petrolera.get("email"), "admin@atg.com");
+
+            Map<String, String> variables = prepararVariablesCorreo(actualizada, socio, empresa, petrolera);
+
+            // Este correo no puede dejar de salir por una plantilla sin configurar: es el
+            // que presenta la solicitud a la petrolera.
+            Map<String, Object> plantilla = obtenerPlantillaCorreo(
+                    actualizada.getPetroleraId(), PLANTILLA_DOCUMENTO_PETROLERA);
+            String asunto = plantilla != null
+                    ? (String) plantilla.get("asunto") : asuntoPetroleraPorDefecto(actualizada);
+            String cuerpo = plantilla != null
+                    ? (String) plantilla.get("cuerpo") : cuerpoPetroleraPorDefecto(actualizada);
+
+            emailService.enviarCorreoConPlantillaYAdjunto(emailPetrolera, asunto, cuerpo, variables,
+                    adjunto, nombreAdjunto("Solicitud-firmada", actualizada));
+            registrarEnvioCorreo(actualizada, PLANTILLA_DOCUMENTO_PETROLERA, emailPetrolera, true, null);
+        } catch (Exception e) {
+            log.error("Error al presentar la solicitud a la petrolera: {}", e.getMessage());
+            registrarEnvioCorreo(actualizada, PLANTILLA_DOCUMENTO_PETROLERA,
+                    emailPetrolera != null ? emailPetrolera : "petrolera", false, e.getMessage());
+        }
+
+        // Notificar al socio de que su solicitud ya esta en manos de la petrolera
+        try {
+            enviarNotificacionSocioEtapa(actualizada, "NOTIF_SOCIO_DISP_ENVIADO");
+        } catch (Exception e) {
+            log.error("Error notificando socio sobre envio: {}", e.getMessage());
+        }
+
+        return convertirADTO(actualizada);
+    }
+
+    /** Devuelve el PDF de una etapa concreta del circuito. */
+    @Transactional(readOnly = true)
+    public byte[] descargarPdf(Long solicitudId, TipoPdf tipo) throws IOException {
+        SolicitudDispositivo solicitud = obtenerSolicitud(solicitudId);
+
+        String rutaPdf = switch (tipo) {
+            case EDITABLE -> solicitud.getRutaPdfEditable();
+            case ENVIADO -> solicitud.getRutaPdfEnviado();
+            case FIRMADO -> solicitud.getRutaPdfFirmado();
+            case FINAL -> solicitud.getRutaPdfFinal();
+        };
+
+        if (rutaPdf == null) {
+            throw new BusinessValidationException("El PDF " + tipo + " no esta disponible para esta solicitud");
+        }
+
+        return pdfService.leerPdf(rutaPdf);
+    }
+
+    /** Etapas del circuito que tienen un PDF descargable. */
+    public enum TipoPdf {
+        EDITABLE, ENVIADO, FIRMADO, FINAL
+    }
+
+    /**
+     * Una solicitud anterior al circuito del documento firmado: se quedo en el estado
+     * heredado PENDIENTE y nunca tuvo numero de solicitud ni impreso asociado.
+     */
+    private boolean esSolicitudHeredada(SolicitudDispositivo solicitud) {
+        return solicitud.getEstado() == EstadoSolicitud.PENDIENTE
+                && (solicitud.getNumeroSolicitud() == null || solicitud.getNumeroSolicitud().isBlank());
+    }
+
+    /**
+     * Presentacion a la petrolera de una solicitud heredada: el mismo correo sin adjunto que
+     * se enviaba antes del circuito del documento firmado. No se usa nunca con solicitudes
+     * nuevas, que siempre llevan su impreso firmado.
+     */
+    private SolicitudDispositivoDTO enviarAPetroleraSinDocumento(SolicitudDispositivo solicitud) {
+        log.info("Solicitud heredada {}: se presenta a la petrolera sin impreso adjunto", solicitud.getId());
+
         solicitud.setEstado(EstadoSolicitud.ENVIADO_PETROLERA);
         solicitud.setFechaEnvioPetrolera(LocalDateTime.now());
         SolicitudDispositivo actualizada = solicitudRepository.save(solicitud);
 
-        log.info("Solicitud {} enviada a petrolera", solicitudId);
+        String emailPetrolera = null;
+        try {
+            Map<String, Object> socio = obtenerDatosSocio(actualizada.getSocioId());
+            Map<String, Object> petrolera = obtenerDatosPetrolera(actualizada.getPetroleraId());
+            Map<String, Object> empresa = actualizada.getEmpresaId() != null
+                    ? obtenerDatosEmpresa(actualizada.getEmpresaId()) : null;
+            emailPetrolera = emailDestino((String) petrolera.get("email"), "admin@atg.com");
 
-        // Notificar al socio
+            Map<String, String> variables = prepararVariablesCorreo(actualizada, socio, empresa, petrolera);
+            Map<String, Object> plantilla = obtenerPlantillaCorreo(
+                    actualizada.getPetroleraId(), PLANTILLA_DOCUMENTO_PETROLERA);
+            String asunto = plantilla != null
+                    ? (String) plantilla.get("asunto") : asuntoPetroleraPorDefecto(actualizada);
+            String cuerpo = plantilla != null
+                    ? (String) plantilla.get("cuerpo") : cuerpoPetroleraPorDefecto(actualizada);
+
+            emailService.enviarCorreoConPlantilla(emailPetrolera, asunto, cuerpo, variables);
+            registrarEnvioCorreo(actualizada, "ENVIO_PETROLERA", emailPetrolera, true, null);
+        } catch (Exception e) {
+            log.error("Error enviando correo a petrolera: {}", e.getMessage());
+            registrarEnvioCorreo(actualizada, "ENVIO_PETROLERA",
+                    emailPetrolera != null ? emailPetrolera : "petrolera", false, e.getMessage());
+        }
+
         try {
             enviarNotificacionSocioEtapa(actualizada, "NOTIF_SOCIO_DISP_ENVIADO");
         } catch (Exception e) {
@@ -283,6 +534,10 @@ public class SolicitudDispositivoService {
         solicitud.setEstado(aprobado ? EstadoSolicitud.APROBADO : EstadoSolicitud.DENEGADO);
         solicitud.setRespuestaPetrolera(respuesta);
         solicitud.setFechaRespuestaPetrolera(LocalDateTime.now());
+
+        // El motivo del rechazo se guarda ademas en su propio campo: respuestaPetrolera es un
+        // cajon compartido que cualquier paso posterior puede sobrescribir.
+        solicitud.setMotivoRechazo(aprobado ? null : respuesta);
 
         // Si aprobado, ejecutar accion segun tipo
         if (aprobado) {
@@ -412,14 +667,109 @@ public class SolicitudDispositivoService {
 
     // --- Helpers ---
 
-    private String mapearTipoSolicitudAPlantilla(TipoSolicitud tipo) {
-        switch (tipo) {
-            case ALTA_DISPOSITIVO: return "ALTA_DISPOSITIVO";
-            case SOLICITUD_CREDITO: return "SOLICITUD_CREDITO_DISPOSITIVO";
-            case BAJA_DISPOSITIVO: return "BAJA_DISPOSITIVO";
-            case CAMBIO_MATRICULA: return "CAMBIO_MATRICULA";
-            default: return tipo.name();
+    private SolicitudDispositivo obtenerSolicitud(Long solicitudId) {
+        return solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new RuntimeException("Solicitud no encontrada con id: " + solicitudId));
+    }
+
+    /**
+     * El numero de solicitud da nombre al directorio de sus PDFs. Las solicitudes creadas
+     * antes del circuito de firma no lo tienen, asi que no pueden entrar en el.
+     */
+    private String exigirNumeroSolicitud(SolicitudDispositivo solicitud) {
+        String numeroSolicitud = solicitud.getNumeroSolicitud();
+        if (numeroSolicitud == null || numeroSolicitud.isBlank()) {
+            throw new BusinessValidationException("La solicitud no tiene numero asignado: se creo antes del "
+                    + "circuito de firma y su documentacion debe tramitarse fuera del sistema");
         }
+        return numeroSolicitud;
+    }
+
+    private String generarNumeroSolicitud() {
+        String prefijo = "DIS-" + Year.now().getValue() + "-";
+        Integer maxNumero = solicitudRepository.findMaxNumeroSolicitudByYear(prefijo);
+        return String.format("%s%05d", prefijo, (maxNumero != null ? maxNumero : 0) + 1);
+    }
+
+    /**
+     * Descarga de la petrolera el impreso del tipo de solicitud y lo deja en el directorio
+     * de la solicitud. Sin impreso no hay nada que firmar, asi que la creacion se detiene.
+     *
+     * @return la ruta del PDF editable recien creado
+     */
+    private String descargarPlantillaDeSolicitud(Long petroleraId, TipoSolicitud tipo, String numeroSolicitud) {
+        try {
+            byte[] plantillaPdf = petrolerasClient.obtenerPlantillaDocumento(petroleraId, tipo);
+            return pdfService.copiarPlantillaParaSolicitud(plantillaPdf, numeroSolicitud);
+        } catch (IOException e) {
+            log.error("Error al obtener la plantilla de {} para la petrolera {}", tipo, petroleraId, e);
+            if (e.getMessage() != null && e.getMessage().startsWith("PLANTILLA_NO_CONFIGURADA:")) {
+                throw new BusinessValidationException(
+                        e.getMessage().substring("PLANTILLA_NO_CONFIGURADA: ".length()));
+            }
+            throw new BusinessValidationException(
+                    "No se pudo obtener el impreso de la petrolera. Intentelo de nuevo en unos momentos.");
+        }
+    }
+
+    /**
+     * Comprueba que el PDF que se va a adjuntar existe y es legible antes de dar el envio
+     * por hecho, para que ninguna etapa avance con un documento que no se puede mandar.
+     *
+     * @return la ruta validada, lista para adjuntar
+     */
+    private Path validarPdfDisponible(String rutaPdf, String mensajeError) {
+        if (rutaPdf == null || rutaPdf.isBlank()) {
+            throw new BusinessValidationException(mensajeError);
+        }
+        Path ruta = Paths.get(rutaPdf);
+        if (!Files.isRegularFile(ruta) || !Files.isReadable(ruta)) {
+            throw new BusinessValidationException(mensajeError);
+        }
+        return ruta;
+    }
+
+    private String emailDestino(String email, String porDefecto) {
+        return (email == null || email.isEmpty()) ? porDefecto : email;
+    }
+
+    private String nombreAdjunto(String prefijo, SolicitudDispositivo solicitud) {
+        return prefijo + "-" + solicitud.getNumeroSolicitud() + ".pdf";
+    }
+
+    private String asuntoPetroleraPorDefecto(SolicitudDispositivo solicitud) {
+        return "Solicitud de dispositivo - " + getTipoSolicitudLabel(solicitud.getTipoSolicitud())
+                + " - " + solicitud.getNumeroSolicitud();
+    }
+
+    /**
+     * Cuerpo de respaldo del correo a la petrolera, con los datos del socio que la petrolera
+     * necesita para tramitar la solicitud. Las variables las resuelve despues el EmailService.
+     */
+    private String cuerpoPetroleraPorDefecto(SolicitudDispositivo solicitud) {
+        return "<html><body>"
+                + "<h2>Solicitud de dispositivo - " + getTipoSolicitudLabel(solicitud.getTipoSolicitud()) + "</h2>"
+                + "<p>Estimados,</p>"
+                + "<p>Adjuntamos la solicitud firmada por el socio con los siguientes datos:</p>"
+                + "<table style='border-collapse: collapse; margin: 20px 0;'>"
+                + filaPetrolera("N&ordm; Solicitud", solicitud.getNumeroSolicitud())
+                + filaPetrolera("Socio", "{{socio_nombre}}")
+                + filaPetrolera("NIF", "{{socio_nif}}")
+                + filaPetrolera("N&ordm; de socio", "{{socio_numero}}")
+                + filaPetrolera("Correo", "{{socio_email}}")
+                + filaPetrolera("Tipo de solicitud", "{{tipo_solicitud}}")
+                + filaPetrolera("Matr&iacute;cula", "{{matricula}}")
+                + filaPetrolera("Matr&iacute;cula destino", "{{matricula_destino}}")
+                + filaPetrolera("Importe solicitado", "{{monto}}")
+                + filaPetrolera("Observaciones", "{{observaciones}}")
+                + "</table>"
+                + "<p>Saludos cordiales,<br/>Sistema de Gesti&oacute;n ATG</p>"
+                + "</body></html>";
+    }
+
+    private String filaPetrolera(String etiqueta, String valor) {
+        return "<tr><td style='padding: 8px; font-weight: bold;'>" + etiqueta + ":</td>"
+                + "<td style='padding: 8px;'>" + (valor != null ? valor : "") + "</td></tr>";
     }
 
     private String getTipoSolicitudLabel(TipoSolicitud tipo) {
@@ -456,29 +806,6 @@ public class SolicitudDispositivoService {
         variables.put("observaciones", solicitud.getObservaciones() != null ? solicitud.getObservaciones() : "");
 
         return variables;
-    }
-
-    private String generarCuerpoCorreoDefault(SolicitudDispositivo solicitud,
-            Map<String, Object> socio, Map<String, Object> empresa) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("<html><body>");
-        sb.append("<h2>Solicitud de ").append(getTipoSolicitudLabel(solicitud.getTipoSolicitud())).append("</h2>");
-        sb.append("<p><strong>Socio:</strong> ").append(socio.get("nombre")).append("</p>");
-        if (empresa != null) {
-            sb.append("<p><strong>Empresa:</strong> ").append(empresa.get("nombre")).append("</p>");
-        }
-        sb.append("<p><strong>Matricula:</strong> ").append(solicitud.getMatricula() != null ? solicitud.getMatricula() : "N/A").append("</p>");
-        if (solicitud.getMatriculaDestino() != null) {
-            sb.append("<p><strong>Matricula Destino:</strong> ").append(solicitud.getMatriculaDestino()).append("</p>");
-        }
-        if (solicitud.getMonto() != null) {
-            sb.append("<p><strong>Monto:</strong> ").append(solicitud.getMonto()).append(" &euro;</p>");
-        }
-        if (solicitud.getObservaciones() != null && !solicitud.getObservaciones().isEmpty()) {
-            sb.append("<p><strong>Observaciones:</strong> ").append(solicitud.getObservaciones()).append("</p>");
-        }
-        sb.append("</body></html>");
-        return sb.toString();
     }
 
     private void registrarEnvioCorreo(SolicitudDispositivo solicitud, String tipoPlantilla, String destinatario, boolean exito, String errorMsg) {
@@ -664,6 +991,7 @@ public class SolicitudDispositivoService {
     private SolicitudDispositivoDTO convertirADTO(SolicitudDispositivo solicitud) {
         SolicitudDispositivoDTO dto = new SolicitudDispositivoDTO();
         dto.setId(solicitud.getId());
+        dto.setNumeroSolicitud(solicitud.getNumeroSolicitud());
         dto.setSocioId(solicitud.getSocioId());
         dto.setEmpresaId(solicitud.getEmpresaId());
         dto.setPetroleraId(solicitud.getPetroleraId());
@@ -675,6 +1003,17 @@ public class SolicitudDispositivoService {
         dto.setMonto(solicitud.getMonto());
         dto.setMontoConcedido(solicitud.getMontoConcedido());
         dto.setObservaciones(solicitud.getObservaciones());
+        dto.setRutaPdfEditable(solicitud.getRutaPdfEditable());
+        dto.setNombrePdfEditable(solicitud.getNombrePdfEditable());
+        dto.setRutaPdfEnviado(solicitud.getRutaPdfEnviado());
+        dto.setNombrePdfEnviado(solicitud.getNombrePdfEnviado());
+        dto.setRutaPdfFirmado(solicitud.getRutaPdfFirmado());
+        dto.setNombrePdfFirmado(solicitud.getNombrePdfFirmado());
+        dto.setRutaPdfFinal(solicitud.getRutaPdfFinal());
+        dto.setNombrePdfFinal(solicitud.getNombrePdfFinal());
+        dto.setFechaEnvioSocio(solicitud.getFechaEnvioSocio());
+        dto.setFechaRecepcionFirmado(solicitud.getFechaRecepcionFirmado());
+        dto.setMotivoRechazo(solicitud.getMotivoRechazo());
         dto.setFechaEnvioPetrolera(solicitud.getFechaEnvioPetrolera());
         dto.setFechaRespuestaPetrolera(solicitud.getFechaRespuestaPetrolera());
         dto.setFechaNotificacionSocio(solicitud.getFechaNotificacionSocio());

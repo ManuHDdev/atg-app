@@ -5,6 +5,7 @@ import com.manuhd.app.dispositivos.model.Dispositivo;
 import com.manuhd.app.dispositivos.repository.DispositivoRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -26,8 +27,14 @@ public class DispositivoService {
     @Autowired
     private RestTemplate restTemplate;
 
-    private static final String SOCIOS_SERVICE_URL = "http://localhost:8081/api";
-    private static final String PETROLERAS_SERVICE_URL = "http://localhost:8082/api";
+    // Las URLs de los microservicios se configuran por entorno: en produccion apuntan a los
+    // nombres de servicio de Docker, no a localhost. Fijarlas en codigo rompia silenciosamente
+    // el enriquecimiento de datos del dispositivo fuera del entorno local.
+    @Value("${microservices.socios.url:http://localhost:8081}")
+    private String sociosBaseUrl;
+
+    @Value("${microservices.petroleras.url:http://localhost:8082}")
+    private String petrolerasBaseUrl;
 
     @Transactional(readOnly = true)
     public List<DispositivoDTO> listarPorSocio(Long socioId) {
@@ -127,7 +134,7 @@ public class DispositivoService {
 
         // Enrichment
         try {
-            Map<String, Object> socio = restTemplate.getForObject(SOCIOS_SERVICE_URL + "/socios/" + dispositivo.getSocioId(), Map.class);
+            Map<String, Object> socio = restTemplate.getForObject(sociosBaseUrl + "/api/socios/" + dispositivo.getSocioId(), Map.class);
             if (socio != null) {
                 dto.setSocioNombre((String) socio.get("nombre"));
             }
@@ -136,7 +143,7 @@ public class DispositivoService {
         }
 
         try {
-            Map<String, Object> petrolera = restTemplate.getForObject(PETROLERAS_SERVICE_URL + "/petroleras/" + dispositivo.getPetroleraId(), Map.class);
+            Map<String, Object> petrolera = restTemplate.getForObject(petrolerasBaseUrl + "/api/petroleras/" + dispositivo.getPetroleraId(), Map.class);
             if (petrolera != null) {
                 dto.setPetroleraNombre((String) petrolera.get("nombre"));
             }
