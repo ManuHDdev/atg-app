@@ -1,0 +1,106 @@
+<div class="content-wrapper">
+  <div class="page-header">
+    <h1 class="page-title">{{ isEditMode ? 'Editar' : 'Nueva' }} Plantilla de Documento</h1>
+  </div>
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  @if (loading) {
+    <div class="loading">Cargando...</div>
+  }
+
+  @if (!loading) {
+    <div class="form-container">
+      <form (ngSubmit)="guardar()">
+        <div class="form-group">
+          <label for="petroleraId">Petrolera *</label>
+          <select
+            id="petroleraId"
+            class="form-control"
+            name="petroleraId"
+            [(ngModel)]="petroleraId"
+            [disabled]="isEditMode"
+            required>
+            <option [value]="0" disabled>Seleccione una petrolera</option>
+            @for (petrolera of petroleras; track petrolera.id) {
+              <option [value]="petrolera.id">{{ petrolera.nombre }}</option>
+            }
+          </select>
+          <small class="help-text">Cada petrolera tiene su propio modelo de documento</small>
+        </div>
+
+        <div class="form-group">
+          <label for="modulo">Módulo *</label>
+          <select
+            id="modulo"
+            class="form-control"
+            name="modulo"
+            [(ngModel)]="modulo"
+            (ngModelChange)="onModuloChange()"
+            [disabled]="isEditMode"
+            required>
+            @for (opcion of modulos; track opcion.value) {
+              <option [value]="opcion.value">{{ opcion.label }}</option>
+            }
+          </select>
+          <small class="help-text">Determina qué tipos de solicitud puede elegir</small>
+        </div>
+
+        <div class="form-group">
+          <label for="tipoSolicitud">Tipo de Solicitud *</label>
+          <select
+            id="tipoSolicitud"
+            class="form-control"
+            name="tipoSolicitud"
+            [(ngModel)]="tipoSolicitud"
+            [disabled]="isEditMode"
+            required>
+            <option value="" disabled>Seleccione un tipo de solicitud</option>
+            @for (tipo of tiposSolicitud; track tipo.value) {
+              <option [value]="tipo.value">{{ tipo.label }}</option>
+            }
+          </select>
+        </div>
+
+        @if (isEditMode) {
+          <div class="form-group">
+            <label>Archivo actual</label>
+            <p class="archivo-actual">
+              <i class="bi bi-file-earmark-pdf"></i>
+              {{ nombreArchivoActual || 'Sin archivo' }}
+            </p>
+            <small class="help-text">
+              La petrolera, el módulo y el tipo de solicitud no se pueden cambiar.
+              Para una combinación distinta, cree una plantilla nueva.
+            </small>
+          </div>
+        }
+
+        <div class="form-group">
+          <label for="archivo">{{ isEditMode ? 'Nuevo archivo PDF *' : 'Archivo PDF *' }}</label>
+          <input
+            type="file"
+            id="archivo"
+            class="form-control"
+            accept="application/pdf"
+            (change)="onArchivoSeleccionado($event)">
+          <small class="help-text">Solo se admiten archivos PDF</small>
+          @if (archivo) {
+            <p class="archivo-seleccionado">
+              <i class="bi bi-check-circle"></i> {{ archivo.name }}
+            </p>
+          }
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancelar()">Cancelar</button>
+          <button type="submit" class="btn-primary" [disabled]="!formularioValido || guardando">
+            {{ guardando ? 'Guardando...' : (isEditMode ? 'Guardar cambios' : 'Crear plantilla') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</div>

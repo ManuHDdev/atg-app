@@ -33,6 +33,7 @@ export const environment = {
     subseccionesPetrolera: 'https://atg.manuhd.duckdns.org/petroleras/api/subsecciones-petrolera',
     tiposSolicitud: 'https://atg.manuhd.duckdns.org/petroleras/api/tipos-solicitud',
     plantillasCorreo: 'https://atg.manuhd.duckdns.org/petroleras/api/plantillas-correo',
+    plantillasDocumento: 'https://atg.manuhd.duckdns.org/petroleras/api/plantillas-documento',
 
     // Microservicio Tarjetas (8083)
     tarjetas: 'https://atg.manuhd.duckdns.org/tarjetas/api/tarjetas',

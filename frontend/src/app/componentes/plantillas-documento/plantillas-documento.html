@@ -1,0 +1,124 @@
+<div class="content-wrapper">
+  <header class="page-header">
+    <h1 class="page-title">Plantillas de Documento</h1>
+    <button class="btn-primary" (click)="nuevaPlantilla()"><i class="bi bi-plus-lg"></i> Nueva Plantilla</button>
+  </header>
+
+  @if (loading) {
+    <div class="loading">Cargando...</div>
+  }
+
+  @if (error) {
+    <div class="error-message">{{ error }}</div>
+  }
+
+  @if (!loading && !error) {
+    <!-- Información -->
+    <div class="info-box">
+      <h3><i class="bi bi-info-circle"></i> Sobre las Plantillas de Documento</h3>
+      <p>
+        Cada plantilla es el PDF que la ATG genera y envía al socio para que lo firme,
+        y que después se remite a la petrolera ya firmado.
+      </p>
+      <ul>
+        <li><strong>Petrolera:</strong> cada petrolera usa su propio modelo de documento</li>
+        <li><strong>Módulo:</strong> tarjetas o dispositivos, con circuitos independientes</li>
+        <li><strong>Tipo de solicitud:</strong> alta, baja, duplicado, cambio de matrícula, etc.</li>
+      </ul>
+      <p>
+        Solo puede haber una plantilla por combinación de petrolera, módulo y tipo de solicitud.
+        Para cambiar el documento, edite la plantilla existente y suba el nuevo PDF.
+      </p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-container">
+      <div class="filter-group">
+        <label for="filtroPetrolera">Petrolera:</label>
+        <select id="filtroPetrolera" [(ngModel)]="filtroPetroleraId" (change)="aplicarFiltros()" class="filter-select">
+          <option value="">Todas</option>
+          @for (petrolera of petroleras; track petrolera.id) {
+            <option [value]="petrolera.id">{{ petrolera.nombre }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filtroModulo">Módulo:</label>
+        <select id="filtroModulo" [(ngModel)]="filtroModulo" (change)="aplicarFiltros()" class="filter-select">
+          <option value="">Todos</option>
+          @for (modulo of modulos; track modulo.value) {
+            <option [value]="modulo.value">{{ modulo.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filtroActiva">Estado:</label>
+        <select id="filtroActiva" [(ngModel)]="filtroActiva" (change)="aplicarFiltros()" class="filter-select">
+          <option value="">Todas</option>
+          <option value="true">Activas</option>
+          <option value="false">Inactivas</option>
+        </select>
+      </div>
+
+      <button class="btn-secondary" (click)="limpiarFiltros()">Limpiar Filtros</button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Petrolera</th>
+            <th>Módulo</th>
+            <th>Tipo de Solicitud</th>
+            <th>Archivo</th>
+            <th>Estado</th>
+            <th>Actualizada</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (plantilla of plantillasFiltradas; track plantilla.id) {
+            <tr>
+              <td><strong>{{ plantilla.petroleraNombre || '-' }}</strong></td>
+              <td><span class="badge-info">{{ getModuloLabel(plantilla.modulo) }}</span></td>
+              <td>{{ getTipoSolicitudLabel(plantilla) }}</td>
+              <td class="archivo-celda">
+                <i class="bi bi-file-earmark-pdf"></i>
+                {{ plantilla.nombreArchivo || 'Sin archivo' }}
+              </td>
+              <td>
+                <button
+                  class="toggle-btn"
+                  [class.active]="plantilla.activa"
+                  (click)="cambiarEstado(plantilla)">
+                  <span class="toggle-slider"></span>
+                  {{ plantilla.activa ? 'Activa' : 'Inactiva' }}
+                </button>
+              </td>
+              <td>{{ plantilla.updatedAt ? (plantilla.updatedAt | date:'dd/MM/yyyy') : '-' }}</td>
+              <td class="actions">
+                <button class="btn-icon" (click)="descargarPlantilla(plantilla)" title="Descargar PDF">
+                  <i class="bi bi-download"></i>
+                </button>
+                <button class="btn-icon" (click)="editarPlantilla(plantilla.id!)" title="Editar">
+                  <i class="bi bi-pencil-fill"></i>
+                </button>
+                <button class="btn-icon-danger" (click)="eliminarPlantilla(plantilla.id!)" title="Eliminar">
+                  <i class="bi bi-trash-fill"></i>
+                </button>
+              </td>
+            </tr>
+          }
+          @empty {
+            <tr>
+              <td colspan="7" class="empty-text">No hay plantillas que coincidan con los filtros</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

@@ -20,6 +20,7 @@ export const environment = {
     // Microservicio Petroleras (Puerto 8082)
     petroleras: 'http://localhost:8082/api/petroleras',
     tiposSolicitud: 'http://localhost:8082/api/tipos-solicitud',
+    plantillasDocumento: 'http://localhost:8082/api/plantillas-documento',
 
     // Microservicio Tarjetas (Puerto 8083)
     tarjetas: 'http://localhost:8083/api/tarjetas',

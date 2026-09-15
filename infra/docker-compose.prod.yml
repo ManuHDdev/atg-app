@@ -111,6 +111,7 @@ services:
       - SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_STARTTLS:-false}
       - APP_EMAIL_ENABLED=${MAIL_ENABLED:-true}
       - APP_STORAGE_PLANTILLAS_PATH=/app/storage/plantillas
+      - APP_STORAGE_PLANTILLAS_DOCUMENTO_PATH=/app/storage/plantillas-documento
     volumes:
       - petroleras_storage:/app/storage
     depends_on:

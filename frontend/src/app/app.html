@@ -35,6 +35,10 @@
         <i class="bi bi-fuel-pump sidebar-icon"></i>
         <span>Petroleras</span>
       </a>
+      <a class="sidebar-link" routerLink="/plantillas-documento" routerLinkActive="active">
+        <i class="bi bi-file-earmark-pdf sidebar-icon"></i>
+        <span>Plantillas de Documento</span>
+      </a>
 
       @if (auth.isAdmin() || auth.isDeveloper()) {
         <div class="sidebar-divider"></div>

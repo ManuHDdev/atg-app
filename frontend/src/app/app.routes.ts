@@ -182,6 +182,22 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./componentes/plantillas-email/plantilla-email-form/plantilla-email-form').then(m => m.PlantillaEmailForm)
   },
+  // Rutas de Plantillas de Documento (PDF por petrolera y módulo)
+  {
+    path: 'plantillas-documento',
+    canActivate: [authGuard],
+    loadComponent: () => import('./componentes/plantillas-documento/plantillas-documento').then(m => m.PlantillasDocumento)
+  },
+  {
+    path: 'plantillas-documento/nueva',
+    canActivate: [authGuard],
+    loadComponent: () => import('./componentes/plantillas-documento/plantilla-documento-form/plantilla-documento-form').then(m => m.PlantillaDocumentoForm)
+  },
+  {
+    path: 'plantillas-documento/:id/editar',
+    canActivate: [authGuard],
+    loadComponent: () => import('./componentes/plantillas-documento/plantilla-documento-form/plantilla-documento-form').then(m => m.PlantillaDocumentoForm)
+  },
   {
     path: '**',
     redirectTo: '/inicio'
