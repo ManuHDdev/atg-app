@@ -17,6 +17,9 @@ public class SolicitudDispositivoDTO {
 
     private Long id;
 
+    /** "DIS-2026-00001"; ausente en solicitudes anteriores al circuito del documento firmado. */
+    private String numeroSolicitud;
+
     private Long socioId;
     private String socioNombre;
     private String socioEmail;
@@ -43,6 +46,20 @@ public class SolicitudDispositivoDTO {
     /** Importe concedido por la petrolera (null si aun no hay respuesta, fue denegada o el tipo no lleva importe). */
     private BigDecimal montoConcedido;
     private String observaciones;
+
+    // ---- Circuito del documento firmado ----
+    private String rutaPdfEditable;
+    private String nombrePdfEditable;
+    private String rutaPdfEnviado;
+    private String nombrePdfEnviado;
+    private String rutaPdfFirmado;
+    private String nombrePdfFirmado;
+    private String rutaPdfFinal;
+    private String nombrePdfFinal;
+
+    private LocalDateTime fechaEnvioSocio;
+    private LocalDateTime fechaRecepcionFirmado;
+    private String motivoRechazo;
 
     private LocalDateTime fechaEnvioPetrolera;
     private LocalDateTime fechaRespuestaPetrolera;

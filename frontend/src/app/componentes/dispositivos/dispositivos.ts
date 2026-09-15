@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DispositivoService } from '../../services/dispositivo.service';
@@ -12,7 +12,8 @@ import {
   SolicitudDispositivo,
   CrearSolicitudDispositivoDTO,
   TipoSolicitudDispositivo,
-  EstadoSolicitudDispositivo
+  EstadoSolicitudDispositivo,
+  TipoPdfSolicitudDispositivo
 } from '../../models/dispositivo.model';
 import { Socio } from '../../models/socio.model';
 import { Empresa } from '../../models/empresa.model';
@@ -59,6 +60,15 @@ export class Dispositivos implements OnInit {
 
   // Autocomplete Socio (app-socio-autocomplete)
   socioSeleccionado: Socio | null = null;
+
+  // Circuito del documento firmado. Cada subida tiene su propio fichero seleccionado y su
+  // propio input: compartirlos haría que elegir el borrador dejara "listo para subir" el
+  // escaneado firmado, y al revés.
+  @ViewChild('inputPdfEditable') inputPdfEditable?: ElementRef<HTMLInputElement>;
+  @ViewChild('inputPdfFirmado') inputPdfFirmado?: ElementRef<HTMLInputElement>;
+  ficheroEditable: File | null = null;
+  ficheroFirmado: File | null = null;
+  procesandoDocumento = false;
 
   // Estado de carga del listado
   loading = false;
@@ -280,21 +290,224 @@ export class Dispositivos implements OnInit {
 
   verDetalle(solicitud: SolicitudDispositivo): void {
     this.solicitudSeleccionada = solicitud;
+    this.limpiarSeleccionEditable();
+    this.limpiarSeleccionFirmado();
+  }
+
+  cerrarDetalle(): void {
+    this.solicitudSeleccionada = undefined;
+    this.limpiarSeleccionEditable();
+    this.limpiarSeleccionFirmado();
   }
 
   enviarAPetrolera(solicitud: SolicitudDispositivo): void {
-    if (confirm('¿Está seguro de enviar esta solicitud a la petrolera?')) {
-      this.dispositivoService.enviarAPetrolera(solicitud.id!).subscribe({
-        next: () => {
-          this.notificationService.success('Solicitud enviada a la petrolera exitosamente');
-          this.cargarSolicitudes();
-        },
-        error: (error) => {
-          console.error('Error al enviar solicitud:', error);
-          this.notificationService.error(this.errorHandler.getMensaje(error, 'solicitud'));
-        }
-      });
+    if (!confirm('¿Presentar la solicitud a la petrolera? Se le enviará el impreso firmado junto con los datos del socio.')) return;
+
+    this.procesandoDocumento = true;
+    this.dispositivoService.enviarAPetrolera(solicitud.id!).subscribe({
+      next: () => {
+        this.notificationService.success('Solicitud presentada a la petrolera');
+        this.procesandoDocumento = false;
+        this.refrescarTrasTransicion(solicitud.id!);
+      },
+      error: (error) => this.falloDocumento('Error al presentar la solicitud a la petrolera', error)
+    });
+  }
+
+  // ---------- circuito del documento firmado ----------
+
+  onFicheroEditableSeleccionado(event: Event): void {
+    this.ficheroEditable = this.leerPdfSeleccionado(event);
+  }
+
+  onFicheroFirmadoSeleccionado(event: Event): void {
+    this.ficheroFirmado = this.leerPdfSeleccionado(event);
+  }
+
+  private leerPdfSeleccionado(event: Event): File | null {
+    const fichero = (event.target as HTMLInputElement).files?.[0] ?? null;
+    if (fichero && fichero.type === 'application/pdf') {
+      return fichero;
     }
+    if (fichero) {
+      this.notificationService.error('Seleccione un archivo PDF válido');
+    }
+    return null;
+  }
+
+  guardarPdfEditado(): void {
+    if (!this.solicitudSeleccionada?.id || !this.ficheroEditable) return;
+
+    const id = this.solicitudSeleccionada.id;
+    this.procesandoDocumento = true;
+    this.dispositivoService.guardarPdfEditado(id, this.ficheroEditable).subscribe({
+      next: () => {
+        this.notificationService.success('Impreso actualizado correctamente');
+        this.limpiarSeleccionEditable();
+        this.procesandoDocumento = false;
+        this.refrescarTrasTransicion(id);
+      },
+      error: (error) => this.falloDocumento('Error al guardar el impreso editado', error)
+    });
+  }
+
+  enviarASocio(): void {
+    if (!this.solicitudSeleccionada?.id) return;
+    if (!confirm('¿Enviar el impreso al socio para que lo firme? El PDF dejará de ser editable.')) return;
+
+    const id = this.solicitudSeleccionada.id;
+    this.procesandoDocumento = true;
+    this.dispositivoService.enviarASocio(id).subscribe({
+      next: () => {
+        this.notificationService.success('Impreso enviado al socio para su firma');
+        this.limpiarSeleccionEditable();
+        this.procesandoDocumento = false;
+        this.refrescarTrasTransicion(id);
+      },
+      error: (error) => this.falloDocumento('Error al enviar el impreso al socio', error)
+    });
+  }
+
+  subirPdfFirmado(): void {
+    if (!this.solicitudSeleccionada?.id || !this.ficheroFirmado) return;
+
+    const id = this.solicitudSeleccionada.id;
+    this.procesandoDocumento = true;
+    this.dispositivoService.subirPdfFirmado(id, this.ficheroFirmado).subscribe({
+      next: () => {
+        this.notificationService.success('Impreso firmado registrado correctamente');
+        this.limpiarSeleccionFirmado();
+        this.procesandoDocumento = false;
+        this.refrescarTrasTransicion(id);
+      },
+      error: (error) => this.falloDocumento('Error al registrar el impreso firmado', error)
+    });
+  }
+
+  aceptarFirmaSocio(): void {
+    if (!this.solicitudSeleccionada?.id) return;
+    if (!confirm('¿Dar por buena la firma del socio? La solicitud quedará lista para presentarla a la petrolera.')) return;
+
+    const id = this.solicitudSeleccionada.id;
+    this.procesandoDocumento = true;
+    this.dispositivoService.aceptarFirmaSocio(id).subscribe({
+      next: () => {
+        this.notificationService.success('Firma del socio aceptada');
+        this.procesandoDocumento = false;
+        this.refrescarTrasTransicion(id);
+      },
+      error: (error) => this.falloDocumento('Error al aceptar la firma del socio', error)
+    });
+  }
+
+  presentarAPetrolera(): void {
+    if (!this.solicitudSeleccionada) return;
+    this.enviarAPetrolera(this.solicitudSeleccionada);
+  }
+
+  verPdf(tipo: TipoPdfSolicitudDispositivo): void {
+    if (!this.solicitudSeleccionada?.id) return;
+
+    this.dispositivoService.descargarPdf(this.solicitudSeleccionada.id, tipo).subscribe({
+      next: (blob) => window.open(window.URL.createObjectURL(blob), '_blank'),
+      error: (error) => {
+        console.error('Error al abrir el impreso:', error);
+        this.notificationService.error(this.errorHandler.getMensaje(error, 'solicitud'));
+      }
+    });
+  }
+
+  descargarPdf(tipo: TipoPdfSolicitudDispositivo): void {
+    if (!this.solicitudSeleccionada?.id) return;
+
+    const solicitud = this.solicitudSeleccionada;
+    this.dispositivoService.descargarPdf(solicitud.id!, tipo).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const enlace = document.createElement('a');
+        enlace.href = url;
+        enlace.download = `${solicitud.numeroSolicitud ?? solicitud.id}_${tipo}.pdf`;
+        enlace.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error) => {
+        console.error('Error al descargar el impreso:', error);
+        this.notificationService.error(this.errorHandler.getMensaje(error, 'solicitud'));
+      }
+    });
+  }
+
+  /** Refresca el listado y el detalle abierto tras avanzar una etapa del circuito. */
+  private refrescarTrasTransicion(id: number): void {
+    this.cargarSolicitudes();
+    this.dispositivoService.obtenerSolicitudPorId(id).subscribe({
+      next: (solicitud) => this.solicitudSeleccionada = solicitud,
+      error: (error) => console.error('Error al recargar la solicitud:', error)
+    });
+  }
+
+  private limpiarSeleccionEditable(): void {
+    this.ficheroEditable = null;
+    if (this.inputPdfEditable?.nativeElement) {
+      this.inputPdfEditable.nativeElement.value = '';
+    }
+  }
+
+  private limpiarSeleccionFirmado(): void {
+    this.ficheroFirmado = null;
+    if (this.inputPdfFirmado?.nativeElement) {
+      this.inputPdfFirmado.nativeElement.value = '';
+    }
+  }
+
+  private falloDocumento(mensaje: string, error: unknown): void {
+    console.error(mensaje, error);
+    this.notificationService.error(this.errorHandler.getMensaje(error, 'solicitud'));
+    this.procesandoDocumento = false;
+  }
+
+  /**
+   * Las solicitudes anteriores al circuito de firma no tienen número y por tanto no tienen
+   * impresos asociados: su documentación se tramita fuera del sistema.
+   */
+  get tieneCircuitoDeFirma(): boolean {
+    return !!this.solicitudSeleccionada?.numeroSolicitud;
+  }
+
+  get puedeEditarImpreso(): boolean {
+    return this.tieneCircuitoDeFirma
+      && this.solicitudSeleccionada?.estado === EstadoSolicitudDispositivo.BORRADOR;
+  }
+
+  get puedeEnviarASocio(): boolean {
+    return this.puedeEditarImpreso && !!this.solicitudSeleccionada?.rutaPdfEditable;
+  }
+
+  get puedeSubirFirmado(): boolean {
+    return this.tieneCircuitoDeFirma
+      && this.solicitudSeleccionada?.estado === EstadoSolicitudDispositivo.ENVIADO_SOCIO;
+  }
+
+  get puedeAceptarFirma(): boolean {
+    return this.puedeSubirFirmado && !!this.solicitudSeleccionada?.rutaPdfFirmado;
+  }
+
+  get puedeEnviarAPetrolera(): boolean {
+    return this.tieneCircuitoDeFirma
+      && this.solicitudSeleccionada?.estado === EstadoSolicitudDispositivo.FIRMADO_SOCIO;
+  }
+
+  /** Solo cabe registrar la respuesta de la petrolera cuando ya se le ha presentado. */
+  get puedeRegistrarRespuestaPetrolera(): boolean {
+    return this.solicitudSeleccionada?.estado === EstadoSolicitudDispositivo.ENVIADO_PETROLERA;
+  }
+
+  /**
+   * Una solicitud heredada (estado PENDIENTE, sin número) nunca entró en el circuito de
+   * firma: se presenta a la petrolera como se hacía antes, sin impreso adjunto.
+   */
+  esSolicitudHeredada(solicitud: SolicitudDispositivo): boolean {
+    return solicitud.estado === EstadoSolicitudDispositivo.PENDIENTE && !solicitud.numeroSolicitud;
   }
 
   abrirModalRespuesta(solicitud: SolicitudDispositivo, aprobado: boolean): void {
@@ -369,6 +582,12 @@ export class Dispositivos implements OnInit {
 
   getEstadoClass(estado: EstadoSolicitudDispositivo): string {
     switch (estado) {
+      case EstadoSolicitudDispositivo.BORRADOR:
+        return 'badge-secondary';
+      case EstadoSolicitudDispositivo.ENVIADO_SOCIO:
+        return 'badge-info';
+      case EstadoSolicitudDispositivo.FIRMADO_SOCIO:
+        return 'badge-info';
       case EstadoSolicitudDispositivo.PENDIENTE:
         return 'badge-warning';
       case EstadoSolicitudDispositivo.ENVIADO_PETROLERA:
@@ -386,6 +605,9 @@ export class Dispositivos implements OnInit {
 
   getEstadoTexto(estado: EstadoSolicitudDispositivo): string {
     switch (estado) {
+      case EstadoSolicitudDispositivo.BORRADOR: return 'Borrador';
+      case EstadoSolicitudDispositivo.ENVIADO_SOCIO: return 'Enviado al Socio';
+      case EstadoSolicitudDispositivo.FIRMADO_SOCIO: return 'Firmado por el Socio';
       case EstadoSolicitudDispositivo.PENDIENTE: return 'Pendiente';
       case EstadoSolicitudDispositivo.ENVIADO_PETROLERA: return 'Enviado a Petrolera';
       case EstadoSolicitudDispositivo.APROBADO: return 'Aprobado';
@@ -398,6 +620,17 @@ export class Dispositivos implements OnInit {
   getTipoLabel(tipo: TipoSolicitudDispositivo): string {
     const found = this.tiposSolicitud.find(t => t.value === tipo);
     return found ? found.label : tipo;
+  }
+
+  formatearFecha(fecha: string | undefined): string {
+    if (!fecha) return '-';
+    return new Date(fecha).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   requiresDispositivo(): boolean {

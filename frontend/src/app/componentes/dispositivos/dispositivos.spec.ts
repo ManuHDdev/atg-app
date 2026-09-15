@@ -38,7 +38,9 @@ describe('Dispositivos', () => {
 
   beforeEach(async () => {
     dispositivoServiceSpy = jasmine.createSpyObj('DispositivoService', [
-      'listarSolicitudes', 'crearSolicitud', 'enviarAPetrolera', 'responderPetrolera', 'listarActivosPorSocio'
+      'listarSolicitudes', 'crearSolicitud', 'enviarAPetrolera', 'responderPetrolera', 'listarActivosPorSocio',
+      'obtenerSolicitudPorId', 'guardarPdfEditado', 'enviarASocio', 'subirPdfFirmado', 'aceptarFirmaSocio',
+      'descargarPdf'
     ]);
     dispositivoServiceSpy.listarSolicitudes.and.returnValue(of([]));
     dispositivoServiceSpy.listarActivosPorSocio.and.returnValue(of([]));
@@ -251,6 +253,173 @@ describe('Dispositivos', () => {
       expect(component.importeDifiere({ ...solicitudCredito, montoConcedido: 4000 } as any)).toBeTrue();
       expect(component.importeDifiere({ ...solicitudCredito, montoConcedido: 2000 } as any)).toBeFalse();
       expect(component.importeDifiere(solicitudCredito as any)).toBeFalse();
+    });
+  });
+
+  describe('circuito del documento firmado', () => {
+    const enCircuito = (estado: EstadoSolicitudDispositivo, extra: Record<string, unknown> = {}) => ({
+      ...solicitud,
+      estado,
+      numeroSolicitud: 'DIS-2026-00001',
+      ...extra
+    });
+
+    const pdf = () => new File(['%PDF-1.4'], 'impreso.pdf', { type: 'application/pdf' });
+
+    beforeEach(() => {
+      dispositivoServiceSpy.obtenerSolicitudPorId.and.returnValue(of(solicitud as any));
+      spyOn(window, 'confirm').and.returnValue(true);
+    });
+
+    it('una solicitud sin numero no entra en el circuito de firma', () => {
+      component.solicitudSeleccionada = { ...solicitud, estado: EstadoSolicitudDispositivo.PENDIENTE } as any;
+
+      expect(component.tieneCircuitoDeFirma).toBeFalse();
+      expect(component.puedeEditarImpreso).toBeFalse();
+      expect(component.puedeEnviarAPetrolera).toBeFalse();
+    });
+
+    it('reconoce una solicitud heredada por estar en PENDIENTE y no tener numero', () => {
+      expect(component.esSolicitudHeredada(
+        { ...solicitud, estado: EstadoSolicitudDispositivo.PENDIENTE } as any)).toBeTrue();
+      expect(component.esSolicitudHeredada(
+        enCircuito(EstadoSolicitudDispositivo.PENDIENTE) as any)).toBeFalse();
+      expect(component.esSolicitudHeredada(
+        enCircuito(EstadoSolicitudDispositivo.BORRADOR) as any)).toBeFalse();
+    });
+
+    it('solo permite editar el impreso mientras la solicitud es un borrador', () => {
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.BORRADOR) as any;
+      expect(component.puedeEditarImpreso).toBeTrue();
+
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.ENVIADO_SOCIO) as any;
+      expect(component.puedeEditarImpreso).toBeFalse();
+    });
+
+    it('no deja enviar al socio hasta que hay impreso', () => {
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.BORRADOR) as any;
+      expect(component.puedeEnviarASocio).toBeFalse();
+
+      component.solicitudSeleccionada = enCircuito(
+        EstadoSolicitudDispositivo.BORRADOR, { rutaPdfEditable: '/tmp/editable.pdf' }) as any;
+      expect(component.puedeEnviarASocio).toBeTrue();
+    });
+
+    it('solo deja subir el firmado tras haberlo enviado al socio', () => {
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.BORRADOR) as any;
+      expect(component.puedeSubirFirmado).toBeFalse();
+
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.ENVIADO_SOCIO) as any;
+      expect(component.puedeSubirFirmado).toBeTrue();
+    });
+
+    it('no deja aceptar la firma sin el impreso firmado', () => {
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.ENVIADO_SOCIO) as any;
+      expect(component.puedeAceptarFirma).toBeFalse();
+
+      component.solicitudSeleccionada = enCircuito(
+        EstadoSolicitudDispositivo.ENVIADO_SOCIO, { rutaPdfFirmado: '/tmp/firmado.pdf' }) as any;
+      expect(component.puedeAceptarFirma).toBeTrue();
+    });
+
+    it('solo deja presentar a la petrolera con la firma aceptada', () => {
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.ENVIADO_SOCIO) as any;
+      expect(component.puedeEnviarAPetrolera).toBeFalse();
+
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.FIRMADO_SOCIO) as any;
+      expect(component.puedeEnviarAPetrolera).toBeTrue();
+    });
+
+    it('solo deja registrar la respuesta cuando ya se ha presentado a la petrolera', () => {
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.FIRMADO_SOCIO) as any;
+      expect(component.puedeRegistrarRespuestaPetrolera).toBeFalse();
+
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.ENVIADO_PETROLERA) as any;
+      expect(component.puedeRegistrarRespuestaPetrolera).toBeTrue();
+    });
+
+    it('cada subida tiene su propio fichero seleccionado', () => {
+      const evento = { target: { files: [pdf()] } } as unknown as Event;
+
+      component.onFicheroEditableSeleccionado(evento);
+
+      expect(component.ficheroEditable).not.toBeNull();
+      expect(component.ficheroFirmado).toBeNull();
+
+      component.onFicheroFirmadoSeleccionado(evento);
+
+      expect(component.ficheroFirmado).not.toBeNull();
+    });
+
+    it('rechaza un fichero que no sea PDF', () => {
+      const evento = {
+        target: { files: [new File([''], 'foto.png', { type: 'image/png' })] }
+      } as unknown as Event;
+
+      component.onFicheroEditableSeleccionado(evento);
+
+      expect(component.ficheroEditable).toBeNull();
+      expect(notificationServiceSpy.error).toHaveBeenCalled();
+    });
+
+    it('envia el impreso al socio y recarga la solicitud', () => {
+      dispositivoServiceSpy.enviarASocio.and.returnValue(of(solicitud as any));
+      component.solicitudSeleccionada = enCircuito(
+        EstadoSolicitudDispositivo.BORRADOR, { rutaPdfEditable: '/tmp/editable.pdf' }) as any;
+
+      component.enviarASocio();
+
+      expect(dispositivoServiceSpy.enviarASocio).toHaveBeenCalledWith(solicitud.id);
+      expect(dispositivoServiceSpy.obtenerSolicitudPorId).toHaveBeenCalledWith(solicitud.id);
+      expect(component.procesandoDocumento).toBeFalse();
+    });
+
+    it('sube el impreso firmado con el fichero seleccionado', () => {
+      const fichero = pdf();
+      dispositivoServiceSpy.subirPdfFirmado.and.returnValue(of(solicitud as any));
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.ENVIADO_SOCIO) as any;
+      component.ficheroFirmado = fichero;
+
+      component.subirPdfFirmado();
+
+      expect(dispositivoServiceSpy.subirPdfFirmado).toHaveBeenCalledWith(solicitud.id, fichero);
+      expect(component.ficheroFirmado).toBeNull();
+    });
+
+    it('no sube nada si no hay fichero seleccionado', () => {
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.ENVIADO_SOCIO) as any;
+      component.ficheroFirmado = null;
+
+      component.subirPdfFirmado();
+
+      expect(dispositivoServiceSpy.subirPdfFirmado).not.toHaveBeenCalled();
+    });
+
+    it('acepta la firma del socio', () => {
+      dispositivoServiceSpy.aceptarFirmaSocio.and.returnValue(of(solicitud as any));
+      component.solicitudSeleccionada = enCircuito(
+        EstadoSolicitudDispositivo.ENVIADO_SOCIO, { rutaPdfFirmado: '/tmp/firmado.pdf' }) as any;
+
+      component.aceptarFirmaSocio();
+
+      expect(dispositivoServiceSpy.aceptarFirmaSocio).toHaveBeenCalledWith(solicitud.id);
+    });
+
+    it('presenta a la petrolera la solicitud abierta en el detalle', () => {
+      dispositivoServiceSpy.enviarAPetrolera.and.returnValue(of(solicitud as any));
+      component.solicitudSeleccionada = enCircuito(EstadoSolicitudDispositivo.FIRMADO_SOCIO) as any;
+
+      component.presentarAPetrolera();
+
+      expect(dispositivoServiceSpy.enviarAPetrolera).toHaveBeenCalledWith(solicitud.id);
+    });
+
+    it('etiqueta los nuevos estados del circuito', () => {
+      expect(component.getEstadoTexto(EstadoSolicitudDispositivo.BORRADOR)).toBe('Borrador');
+      expect(component.getEstadoTexto(EstadoSolicitudDispositivo.ENVIADO_SOCIO)).toBe('Enviado al Socio');
+      expect(component.getEstadoTexto(EstadoSolicitudDispositivo.FIRMADO_SOCIO)).toBe('Firmado por el Socio');
+      // El estado heredado sigue teniendo etiqueta propia
+      expect(component.getEstadoTexto(EstadoSolicitudDispositivo.PENDIENTE)).toBe('Pendiente');
     });
   });
 });

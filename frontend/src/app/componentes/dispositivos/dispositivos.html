@@ -10,6 +10,9 @@
       <label for="filtroEstado">Estado</label>
       <select id="filtroEstado" [(ngModel)]="filtroEstado">
         <option value="TODOS">Todos</option>
+        <option [value]="EstadoSolicitud.BORRADOR">Borrador</option>
+        <option [value]="EstadoSolicitud.ENVIADO_SOCIO">Enviado al Socio</option>
+        <option [value]="EstadoSolicitud.FIRMADO_SOCIO">Firmado por el Socio</option>
         <option [value]="EstadoSolicitud.PENDIENTE">Pendiente</option>
         <option [value]="EstadoSolicitud.ENVIADO_PETROLERA">Enviado a Petrolera</option>
         <option [value]="EstadoSolicitud.APROBADO">Aprobado</option>
@@ -109,8 +112,8 @@
                   <button class="btn-action" (click)="verDetalle(solicitud)" title="Ver detalle">
                     <i class="bi bi-eye"></i>
                   </button>
-                  @if (solicitud.estado === EstadoSolicitud.PENDIENTE) {
-                    <button class="btn-action" (click)="enviarAPetrolera(solicitud)" title="Enviar a petrolera">
+                  @if (solicitud.estado === EstadoSolicitud.FIRMADO_SOCIO || esSolicitudHeredada(solicitud)) {
+                    <button class="btn-action" (click)="enviarAPetrolera(solicitud)" title="Presentar a la petrolera">
                       <i class="bi bi-send"></i>
                     </button>
                   }
@@ -252,14 +255,20 @@
 
   <!-- Modal de detalle -->
   @if (solicitudSeleccionada) {
-    <div class="modal-overlay" (click)="solicitudSeleccionada = undefined">
+    <div class="modal-overlay" (click)="cerrarDetalle()">
       <div class="modal-container modal-lg" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <h2 class="modal-title">Detalle de Solicitud #{{ solicitudSeleccionada.id }}</h2>
-          <button class="btn-close" (click)="solicitudSeleccionada = undefined"></button>
+          <button class="btn-close" (click)="cerrarDetalle()"></button>
         </div>
         <div class="modal-body">
           <div class="detail-grid">
+            @if (solicitudSeleccionada.numeroSolicitud) {
+              <div class="detail-item">
+                <span class="detail-label">Nº de Solicitud</span>
+                <span class="detail-value">{{ solicitudSeleccionada.numeroSolicitud }}</span>
+              </div>
+            }
             <div class="detail-item">
               <span class="detail-label">Tipo</span>
               <span class="detail-value">{{ getTipoLabel(solicitudSeleccionada.tipoSolicitud) }}</span>
@@ -372,6 +381,249 @@
                 </div>
               </div>
             }
+            @if (solicitudSeleccionada.motivoRechazo) {
+              <div class="detail-item detail-item-full">
+                <span class="detail-label">Motivo del Rechazo</span>
+                <div class="detail-response">
+                  {{ solicitudSeleccionada.motivoRechazo }}
+                </div>
+              </div>
+            }
+
+            <!-- Circuito del documento firmado: el impreso se genera, se firma fuera del
+                 sistema y vuelve escaneado. Solo entonces se presenta a la petrolera. -->
+            @if (tieneCircuitoDeFirma) {
+              <div class="detail-item detail-item-full">
+                <div class="workflow-card">
+                  <h3>Documento de la solicitud</h3>
+                  <p class="workflow-intro">
+                    Nº de solicitud: <strong>{{ solicitudSeleccionada.numeroSolicitud }}</strong>
+                  </p>
+
+                  <!-- Paso 1: BORRADOR -->
+                  <div class="workflow-step" [class.active]="solicitudSeleccionada.estado === EstadoSolicitud.BORRADOR">
+                    <div class="step-header">
+                      <span class="step-number">1</span>
+                      <h4>Preparación del impreso</h4>
+                      @if (solicitudSeleccionada.estado === EstadoSolicitud.BORRADOR) {
+                        <span class="step-badge badge-activo">Paso actual</span>
+                      }
+                      @if (solicitudSeleccionada.fechaEnvioSocio) {
+                        <span class="step-badge badge-hecho"><i class="bi bi-check-circle"></i> Completado</span>
+                      }
+                    </div>
+
+                    <div class="step-content">
+                      <p>El impreso se ha generado a partir de la plantilla configurada por la petrolera.</p>
+
+                      @if (solicitudSeleccionada.rutaPdfEditable) {
+                        <div class="pdf-file-info">
+                          <span class="file-label"><i class="bi bi-file-earmark-pdf"></i> Impreso:</span>
+                          <span class="file-name">{{ solicitudSeleccionada.nombrePdfEditable }}</span>
+                          <div class="button-group">
+                            <button type="button" class="btn-secondary" (click)="verPdf('editable')">
+                              <i class="bi bi-eye"></i> Ver
+                            </button>
+                            <button type="button" class="btn-secondary" (click)="descargarPdf('editable')">
+                              <i class="bi bi-download"></i> Descargar
+                            </button>
+                          </div>
+                        </div>
+                      }
+
+                      @if (puedeEditarImpreso) {
+                        <div class="upload-section">
+                          <label class="upload-label" for="pdfEditable">Subir el impreso ya cumplimentado:</label>
+                          <input
+                            id="pdfEditable"
+                            type="file"
+                            accept="application/pdf"
+                            (change)="onFicheroEditableSeleccionado($event)"
+                            #inputPdfEditable />
+                          @if (ficheroEditable) {
+                            <button type="button" class="btn-primary" [disabled]="procesandoDocumento"
+                                    (click)="guardarPdfEditado()">
+                              <i class="bi bi-save"></i> Guardar impreso
+                            </button>
+                          }
+                          <small class="help-text">
+                            Descargue el impreso, cumpliméntelo con un editor de PDF y vuelva a subirlo aquí.
+                          </small>
+                        </div>
+
+                        @if (puedeEnviarASocio) {
+                          <div class="step-action">
+                            <button type="button" class="btn-primary" [disabled]="procesandoDocumento"
+                                    (click)="enviarASocio()">
+                              <i class="bi bi-envelope-paper"></i> Enviar al socio para firma
+                            </button>
+                            <small class="help-text">
+                              El impreso se enviará por correo al socio y dejará de ser editable.
+                            </small>
+                          </div>
+                        }
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Paso 2: ENVIADO_SOCIO -->
+                  <div class="workflow-step" [class.active]="solicitudSeleccionada.estado === EstadoSolicitud.ENVIADO_SOCIO">
+                    <div class="step-header">
+                      <span class="step-number">2</span>
+                      <h4>Firma del socio</h4>
+                      @if (solicitudSeleccionada.estado === EstadoSolicitud.ENVIADO_SOCIO) {
+                        <span class="step-badge badge-activo">Paso actual</span>
+                      }
+                      @if (solicitudSeleccionada.estado !== EstadoSolicitud.ENVIADO_SOCIO && solicitudSeleccionada.fechaEnvioPetrolera) {
+                        <span class="step-badge badge-hecho"><i class="bi bi-check-circle"></i> Completado</span>
+                      }
+                      @if (!solicitudSeleccionada.fechaEnvioSocio) {
+                        <span class="step-badge badge-pendiente">Pendiente</span>
+                      }
+                    </div>
+
+                    <div class="step-content">
+                      @if (solicitudSeleccionada.fechaEnvioSocio) {
+                        <p>
+                          <strong>Enviado al socio el:</strong>
+                          {{ formatearFecha(solicitudSeleccionada.fechaEnvioSocio) }}
+                        </p>
+                        <p>El socio firma el documento fuera del sistema y lo devuelve por el canal que prefiera.</p>
+
+                        @if (solicitudSeleccionada.rutaPdfEnviado) {
+                          <div class="pdf-file-info">
+                            <span class="file-label"><i class="bi bi-envelope-paper"></i> Impreso enviado:</span>
+                            <span class="file-name">{{ solicitudSeleccionada.nombrePdfEnviado }}</span>
+                            <div class="button-group">
+                              <button type="button" class="btn-secondary" (click)="verPdf('enviado')">
+                                <i class="bi bi-eye"></i> Ver
+                              </button>
+                              <button type="button" class="btn-secondary" (click)="descargarPdf('enviado')">
+                                <i class="bi bi-download"></i> Descargar
+                              </button>
+                            </div>
+                          </div>
+                        }
+
+                        @if (solicitudSeleccionada.rutaPdfFirmado) {
+                          <div class="pdf-file-info">
+                            <span class="file-label"><i class="bi bi-vector-pen"></i> Impreso firmado recibido:</span>
+                            <span class="file-name">{{ solicitudSeleccionada.nombrePdfFirmado }}</span>
+                            @if (solicitudSeleccionada.fechaRecepcionFirmado) {
+                              <span class="help-text">
+                                Recibido el {{ formatearFecha(solicitudSeleccionada.fechaRecepcionFirmado) }}
+                              </span>
+                            }
+                            <div class="button-group">
+                              <button type="button" class="btn-secondary" (click)="verPdf('firmado')">
+                                <i class="bi bi-eye"></i> Ver
+                              </button>
+                              <button type="button" class="btn-secondary" (click)="descargarPdf('firmado')">
+                                <i class="bi bi-download"></i> Descargar
+                              </button>
+                            </div>
+                          </div>
+                        }
+
+                        @if (puedeSubirFirmado) {
+                          <div class="upload-section">
+                            <label class="upload-label" for="pdfFirmado">
+                              {{ solicitudSeleccionada.rutaPdfFirmado ? 'Sustituir el impreso firmado:' : 'Subir el impreso firmado por el socio:' }}
+                            </label>
+                            <input
+                              id="pdfFirmado"
+                              type="file"
+                              accept="application/pdf"
+                              (change)="onFicheroFirmadoSeleccionado($event)"
+                              #inputPdfFirmado />
+                            @if (ficheroFirmado) {
+                              <button type="button" class="btn-primary" [disabled]="procesandoDocumento"
+                                      (click)="subirPdfFirmado()">
+                                <i class="bi bi-upload"></i>
+                                {{ solicitudSeleccionada.rutaPdfFirmado ? 'Sustituir' : 'Subir' }} impreso firmado
+                              </button>
+                            }
+                            <small class="help-text">
+                              Suba el escaneado que haya devuelto el socio. Puede sustituirlo tantas veces como haga falta.
+                            </small>
+                          </div>
+
+                          @if (puedeAceptarFirma) {
+                            <div class="step-action">
+                              <button type="button" class="btn-primary" [disabled]="procesandoDocumento"
+                                      (click)="aceptarFirmaSocio()">
+                                <i class="bi bi-check-circle"></i> Dar por buena la firma
+                              </button>
+                              <small class="help-text">
+                                La solicitud quedará lista para presentarla a la petrolera.
+                              </small>
+                            </div>
+                          }
+                        }
+                      } @else {
+                        <p class="pending-text">Pendiente de enviar el impreso al socio.</p>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Paso 3: FIRMADO_SOCIO -->
+                  <div class="workflow-step" [class.active]="solicitudSeleccionada.estado === EstadoSolicitud.FIRMADO_SOCIO">
+                    <div class="step-header">
+                      <span class="step-number">3</span>
+                      <h4>Presentación a la petrolera</h4>
+                      @if (solicitudSeleccionada.estado === EstadoSolicitud.FIRMADO_SOCIO) {
+                        <span class="step-badge badge-activo">Paso actual</span>
+                      }
+                      @if (solicitudSeleccionada.fechaEnvioPetrolera) {
+                        <span class="step-badge badge-hecho"><i class="bi bi-check-circle"></i> Completado</span>
+                      }
+                      @if (!solicitudSeleccionada.fechaEnvioPetrolera && solicitudSeleccionada.estado !== EstadoSolicitud.FIRMADO_SOCIO) {
+                        <span class="step-badge badge-pendiente">Pendiente</span>
+                      }
+                    </div>
+
+                    <div class="step-content">
+                      @if (solicitudSeleccionada.fechaEnvioPetrolera) {
+                        <p>
+                          <strong>Presentada a la petrolera el:</strong>
+                          {{ formatearFecha(solicitudSeleccionada.fechaEnvioPetrolera) }}
+                        </p>
+                        @if (solicitudSeleccionada.rutaPdfFinal) {
+                          <div class="pdf-file-info">
+                            <span class="file-label"><i class="bi bi-send"></i> Documento enviado a la petrolera:</span>
+                            <span class="file-name">{{ solicitudSeleccionada.nombrePdfFinal }}</span>
+                            <div class="button-group">
+                              <button type="button" class="btn-secondary" (click)="verPdf('final')">
+                                <i class="bi bi-eye"></i> Ver
+                              </button>
+                              <button type="button" class="btn-secondary" (click)="descargarPdf('final')">
+                                <i class="bi bi-download"></i> Descargar
+                              </button>
+                            </div>
+                          </div>
+                        }
+                      }
+
+                      @if (puedeEnviarAPetrolera) {
+                        <div class="step-action">
+                          <button type="button" class="btn-primary" [disabled]="procesandoDocumento"
+                                  (click)="presentarAPetrolera()">
+                            <i class="bi bi-send"></i> Presentar a la petrolera
+                          </button>
+                          <small class="help-text">
+                            Se enviará un correo a la petrolera con el impreso firmado y los datos del socio.
+                          </small>
+                        </div>
+                      }
+
+                      @if (!solicitudSeleccionada.fechaEnvioPetrolera && !puedeEnviarAPetrolera) {
+                        <p class="pending-text">Pendiente de recibir y aceptar la firma del socio.</p>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
 
             <!-- Historial de Correos -->
             <div class="detail-item detail-item-full">
@@ -380,7 +632,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" (click)="solicitudSeleccionada = undefined">Cerrar</button>
+          <button class="btn-secondary" (click)="cerrarDetalle()">Cerrar</button>
           @if (solicitudSeleccionada.estado === EstadoSolicitud.ENVIADO_PETROLERA) {
             <button class="btn-primary" (click)="abrirModalRespuesta(solicitudSeleccionada, true)">Aprobar</button>
             <button class="btn-danger" (click)="abrirModalRespuesta(solicitudSeleccionada, false)">Denegar</button>

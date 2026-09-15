@@ -5,7 +5,8 @@ import {
   Dispositivo,
   SolicitudDispositivo,
   CrearSolicitudDispositivoDTO,
-  EstadoSolicitudDispositivo
+  EstadoSolicitudDispositivo,
+  TipoPdfSolicitudDispositivo
 } from '../models/dispositivo.model';
 import { environment } from '../../environments/environment';
 
@@ -66,5 +67,33 @@ export class DispositivoService {
 
   notificarSocio(id: number): Observable<SolicitudDispositivo> {
     return this.http.post<SolicitudDispositivo>(`${this.solicitudUrl}/${id}/notificar-socio`, {});
+  }
+
+  // ---- Circuito del documento firmado ----
+
+  guardarPdfEditado(id: number, file: File): Observable<SolicitudDispositivo> {
+    return this.http.post<SolicitudDispositivo>(`${this.solicitudUrl}/${id}/pdf/editable`, this.comoFormData(file));
+  }
+
+  enviarASocio(id: number): Observable<SolicitudDispositivo> {
+    return this.http.post<SolicitudDispositivo>(`${this.solicitudUrl}/${id}/enviar-socio`, {});
+  }
+
+  subirPdfFirmado(id: number, file: File): Observable<SolicitudDispositivo> {
+    return this.http.post<SolicitudDispositivo>(`${this.solicitudUrl}/${id}/pdf/firmado`, this.comoFormData(file));
+  }
+
+  aceptarFirmaSocio(id: number): Observable<SolicitudDispositivo> {
+    return this.http.post<SolicitudDispositivo>(`${this.solicitudUrl}/${id}/aceptar-firma`, {});
+  }
+
+  descargarPdf(id: number, tipo: TipoPdfSolicitudDispositivo): Observable<Blob> {
+    return this.http.get(`${this.solicitudUrl}/${id}/pdf/${tipo}`, { responseType: 'blob' });
+  }
+
+  private comoFormData(file: File): FormData {
+    const formData = new FormData();
+    formData.append('file', file);
+    return formData;
   }
 }

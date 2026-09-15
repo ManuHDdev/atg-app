@@ -2,6 +2,7 @@ package com.manuhd.app.dispositivos.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,6 +23,15 @@ public class SolicitudDispositivo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /**
+     * Identificador funcional de la solicitud ("DIS-2026-00001"). Da nombre al directorio
+     * en disco donde viven sus PDFs. Las filas anteriores al circuito del documento firmado
+     * lo tienen a null: todo lo que lo lee debe tolerarlo.
+     */
+    @Size(max = 20, message = "El numero de solicitud no puede exceder 20 caracteres")
+    @Column(name = "numero_solicitud", length = 20, unique = true)
+    private String numeroSolicitud;
 
     @NotNull(message = "El ID del socio es obligatorio")
     @Column(name = "socio_id", nullable = false)
@@ -45,7 +55,7 @@ public class SolicitudDispositivo {
     @NotNull(message = "El estado es obligatorio")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private EstadoSolicitud estado = EstadoSolicitud.PENDIENTE;
+    private EstadoSolicitud estado = EstadoSolicitud.BORRADOR;
 
     @Column(length = 20)
     private String matricula;
@@ -68,6 +78,52 @@ public class SolicitudDispositivo {
 
     @Column(columnDefinition = "TEXT")
     private String observaciones;
+
+    // ---- Circuito del documento firmado ----
+    // Un fichero por etapa dentro del directorio de la solicitud: el impreso editable en
+    // oficina, el aplanado que se manda al socio, el que devuelve firmado y el que se
+    // remite a la petrolera.
+
+    @Size(max = 500)
+    @Column(name = "ruta_pdf_editable", length = 500)
+    private String rutaPdfEditable;
+
+    @Size(max = 255)
+    @Column(name = "nombre_pdf_editable", length = 255)
+    private String nombrePdfEditable;
+
+    @Size(max = 500)
+    @Column(name = "ruta_pdf_enviado", length = 500)
+    private String rutaPdfEnviado;
+
+    @Size(max = 255)
+    @Column(name = "nombre_pdf_enviado", length = 255)
+    private String nombrePdfEnviado;
+
+    @Size(max = 500)
+    @Column(name = "ruta_pdf_firmado", length = 500)
+    private String rutaPdfFirmado;
+
+    @Size(max = 255)
+    @Column(name = "nombre_pdf_firmado", length = 255)
+    private String nombrePdfFirmado;
+
+    @Size(max = 500)
+    @Column(name = "ruta_pdf_final", length = 500)
+    private String rutaPdfFinal;
+
+    @Size(max = 255)
+    @Column(name = "nombre_pdf_final", length = 255)
+    private String nombrePdfFinal;
+
+    @Column(name = "fecha_envio_socio")
+    private LocalDateTime fechaEnvioSocio;
+
+    @Column(name = "fecha_recepcion_firmado")
+    private LocalDateTime fechaRecepcionFirmado;
+
+    @Column(name = "motivo_rechazo", columnDefinition = "TEXT")
+    private String motivoRechazo;
 
     @Column(name = "fecha_envio_petrolera")
     private LocalDateTime fechaEnvioPetrolera;
