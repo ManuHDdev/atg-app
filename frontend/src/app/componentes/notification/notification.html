@@ -1,9 +1,9 @@
-<div class="notification-container">
+<div class="notification-container" role="status" aria-live="polite" aria-atomic="false">
   @for (notification of notifications; track notification.id) {
     <div class="notification notification-{{notification.type}}" (click)="removeNotification(notification.id)">
-      <span class="notification-icon"><i class="bi" [class]="getIconClass(notification.type)"></i></span>
-      <span class="notification-message">{{ notification.message }}</span>
-      <button class="notification-close" (click)="removeNotification(notification.id)">×</button>
+      <span class="notification-icon"><i class="bi" [class]="getIconClass(notification.type)" aria-hidden="true"></i></span>
+      <span class="notification-message"><span class="sr-only">{{ getTypeLabel(notification.type) }}: </span>{{ notification.message }}</span>
+      <button type="button" class="notification-close" aria-label="Cerrar notificación" (click)="removeNotification(notification.id)">×</button>
     </div>
   }
 </div>

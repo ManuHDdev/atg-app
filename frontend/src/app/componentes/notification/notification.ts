@@ -42,6 +42,17 @@ export class NotificationComponent implements OnInit, OnDestroy {
     this.notifications = this.notifications.filter(n => n.id !== id);
   }
 
+  /** Prefijo textual para que un lector de pantalla distinga el tipo de aviso. */
+  getTypeLabel(type: string): string {
+    switch (type) {
+      case 'success': return 'Correcto';
+      case 'error': return 'Error';
+      case 'warning': return 'Aviso';
+      case 'info': return 'Información';
+      default: return 'Información';
+    }
+  }
+
   getIconClass(type: string): string {
     switch (type) {
       case 'success': return 'bi-check-circle-fill';
