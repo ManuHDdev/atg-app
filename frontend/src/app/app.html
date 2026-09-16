@@ -1,75 +1,177 @@
+<a class="skip-link" href="#contenido-principal" (click)="skipToContent($event)">Saltar al contenido</a>
+
 <div class="app-container">
+  <!-- Barra superior (solo pantallas pequeñas) -->
+  <header class="topbar">
+    <button
+      #drawerToggle
+      type="button"
+      class="topbar-toggle"
+      id="menu-principal-toggle"
+      aria-controls="menu-principal"
+      [attr.aria-expanded]="drawerOpen()"
+      [attr.aria-label]="drawerOpen() ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'"
+      (click)="toggleDrawer()">
+      <i class="bi" [class.bi-list]="!drawerOpen()" [class.bi-x-lg]="drawerOpen()" aria-hidden="true"></i>
+    </button>
+    <img class="topbar-logo" src="assets/imagenes/ATG.png" alt="ATG">
+  </header>
+
+  @if (drawerOpen()) {
+    <div class="drawer-overlay" aria-hidden="true" (click)="closeDrawer()"></div>
+  }
+
   <!-- Panel lateral -->
-  <aside class="sidebar">
+  <aside class="sidebar" [class.sidebar-open]="drawerOpen()" aria-label="Panel lateral">
     <div class="sidebar-header">
-      <a routerLink="inicio">
+      <a routerLink="/inicio" aria-label="ATG, ir al inicio">
         <img src="assets/imagenes/ATG.png" alt="">
       </a>
     </div>
-    <nav class="sidebar-nav">
-      <a class="sidebar-link" routerLink="/dispositivos" routerLinkActive="active">
-        <i class="bi bi-cpu sidebar-icon"></i>
-        <span>Dispositivos</span>
-      </a>
-      <a class="sidebar-link" routerLink="/solicitudes-tarjetas/dashboard" routerLinkActive="active">
-        <i class="bi bi-credit-card-2-front sidebar-icon"></i>
-        <span>Solicitudes de Tarjetas</span>
-      </a>
-      <a class="sidebar-link" routerLink="/contratos" routerLinkActive="active">
-        <i class="bi bi-file-earmark-text sidebar-icon"></i>
-        <span>Contratos</span>
-      </a>
-      <a class="sidebar-link" routerLink="/creditos" routerLinkActive="active">
-        <i class="bi bi-coin sidebar-icon"></i>
-        <span>Créditos</span>
-      </a>
-      <a class="sidebar-link" routerLink="/socios" routerLinkActive="active">
-        <i class="bi bi-people sidebar-icon"></i>
-        <span>Socios</span>
-      </a>
-      <a class="sidebar-link" routerLink="/empresas" routerLinkActive="active">
-        <i class="bi bi-buildings sidebar-icon"></i>
-        <span>Empresas</span>
-      </a>
-      <a class="sidebar-link" routerLink="/petroleras" routerLinkActive="active">
-        <i class="bi bi-fuel-pump sidebar-icon"></i>
-        <span>Petroleras</span>
-      </a>
-      <a class="sidebar-link" routerLink="/plantillas-documento" routerLinkActive="active">
-        <i class="bi bi-file-earmark-pdf sidebar-icon"></i>
-        <span>Plantillas de Documento</span>
+
+    <nav #drawerNav class="sidebar-nav" id="menu-principal" tabindex="-1" aria-label="Navegación principal">
+      <a class="sidebar-link" routerLink="/inicio" routerLinkActive="active" #rlaInicio="routerLinkActive"
+         [attr.aria-current]="rlaInicio.isActive ? 'page' : null">
+        <i class="bi bi-house-door sidebar-icon" aria-hidden="true"></i>
+        <span>Inicio</span>
       </a>
 
+      <section class="sidebar-group" aria-labelledby="grupo-tramites">
+        <h2 class="sidebar-group-title" id="grupo-tramites">Trámites</h2>
+        <ul class="sidebar-group-list">
+          <li>
+            <a class="sidebar-link" routerLink="/solicitudes-tarjetas/dashboard" routerLinkActive="active"
+               #rlaSolicitudes="routerLinkActive" [attr.aria-current]="rlaSolicitudes.isActive ? 'page' : null">
+              <i class="bi bi-credit-card-2-front sidebar-icon" aria-hidden="true"></i>
+              <span>Solicitudes de Tarjetas</span>
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" routerLink="/contratos" routerLinkActive="active"
+               #rlaContratos="routerLinkActive" [attr.aria-current]="rlaContratos.isActive ? 'page' : null">
+              <i class="bi bi-file-earmark-text sidebar-icon" aria-hidden="true"></i>
+              <span>Contratos</span>
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" routerLink="/creditos" routerLinkActive="active"
+               #rlaCreditos="routerLinkActive" [attr.aria-current]="rlaCreditos.isActive ? 'page' : null">
+              <i class="bi bi-coin sidebar-icon" aria-hidden="true"></i>
+              <span>Créditos</span>
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" routerLink="/dispositivos" routerLinkActive="active"
+               #rlaDispositivos="routerLinkActive" [attr.aria-current]="rlaDispositivos.isActive ? 'page' : null">
+              <i class="bi bi-cpu sidebar-icon" aria-hidden="true"></i>
+              <span>Dispositivos</span>
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <section class="sidebar-group" aria-labelledby="grupo-datos">
+        <h2 class="sidebar-group-title" id="grupo-datos">Datos</h2>
+        <ul class="sidebar-group-list">
+          <li>
+            <a class="sidebar-link" routerLink="/socios" routerLinkActive="active"
+               #rlaSocios="routerLinkActive" [attr.aria-current]="rlaSocios.isActive ? 'page' : null">
+              <i class="bi bi-people sidebar-icon" aria-hidden="true"></i>
+              <span>Socios</span>
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" routerLink="/empresas" routerLinkActive="active"
+               #rlaEmpresas="routerLinkActive" [attr.aria-current]="rlaEmpresas.isActive ? 'page' : null">
+              <i class="bi bi-buildings sidebar-icon" aria-hidden="true"></i>
+              <span>Empresas</span>
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" routerLink="/petroleras" routerLinkActive="active"
+               [routerLinkActiveOptions]="{ exact: true }"
+               #rlaPetroleras="routerLinkActive" [attr.aria-current]="rlaPetroleras.isActive ? 'page' : null">
+              <i class="bi bi-fuel-pump sidebar-icon" aria-hidden="true"></i>
+              <span>Petroleras</span>
+            </a>
+          </li>
+        </ul>
+      </section>
+
+      <section class="sidebar-group" aria-labelledby="grupo-configuracion">
+        <h2 class="sidebar-group-title" id="grupo-configuracion">Configuración</h2>
+        <ul class="sidebar-group-list">
+          <li>
+            <a class="sidebar-link" routerLink="/plantillas-documento" routerLinkActive="active"
+               #rlaPlantillasDoc="routerLinkActive" [attr.aria-current]="rlaPlantillasDoc.isActive ? 'page' : null">
+              <i class="bi bi-file-earmark-pdf sidebar-icon" aria-hidden="true"></i>
+              <span>Plantillas de Documento</span>
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" routerLink="/plantillas-email" routerLinkActive="active"
+               #rlaPlantillasEmail="routerLinkActive" [attr.aria-current]="rlaPlantillasEmail.isActive ? 'page' : null">
+              <i class="bi bi-envelope-paper sidebar-icon" aria-hidden="true"></i>
+              <span>Plantillas de Correo</span>
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" routerLink="/plantillas-tarjetas" routerLinkActive="active"
+               #rlaPlantillasTarjetas="routerLinkActive" [attr.aria-current]="rlaPlantillasTarjetas.isActive ? 'page' : null">
+              <i class="bi bi-credit-card sidebar-icon" aria-hidden="true"></i>
+              <span>Plantillas de Tarjetas</span>
+            </a>
+          </li>
+          <li>
+            <a class="sidebar-link" routerLink="/petroleras/tipos-solicitud" routerLinkActive="active"
+               #rlaTiposSolicitud="routerLinkActive" [attr.aria-current]="rlaTiposSolicitud.isActive ? 'page' : null">
+              <i class="bi bi-list-check sidebar-icon" aria-hidden="true"></i>
+              <span>Tipos de Solicitud</span>
+            </a>
+          </li>
+        </ul>
+      </section>
+
       @if (auth.isAdmin() || auth.isDeveloper()) {
-        <div class="sidebar-divider"></div>
-        @if (auth.isAdmin()) {
-          <a class="sidebar-link sidebar-link-admin" routerLink="/usuarios" routerLinkActive="active">
-            <i class="bi bi-shield-lock sidebar-icon"></i>
-            <span>Gestión de Usuarios</span>
-          </a>
-        }
-        <a class="sidebar-link sidebar-link-admin" routerLink="/incidencias" routerLinkActive="active">
-          <i class="bi bi-bug sidebar-icon"></i>
-          <span>Incidencias</span>
-        </a>
+        <section class="sidebar-group" aria-labelledby="grupo-administracion">
+          <h2 class="sidebar-group-title" id="grupo-administracion">Administración</h2>
+          <ul class="sidebar-group-list">
+            @if (auth.isAdmin()) {
+              <li>
+                <a class="sidebar-link sidebar-link-admin" routerLink="/usuarios" routerLinkActive="active"
+                   #rlaUsuarios="routerLinkActive" [attr.aria-current]="rlaUsuarios.isActive ? 'page' : null">
+                  <i class="bi bi-shield-lock sidebar-icon" aria-hidden="true"></i>
+                  <span>Gestión de Usuarios</span>
+                </a>
+              </li>
+            }
+            <li>
+              <a class="sidebar-link sidebar-link-admin" routerLink="/incidencias" routerLinkActive="active"
+                 #rlaIncidencias="routerLinkActive" [attr.aria-current]="rlaIncidencias.isActive ? 'page' : null">
+                <i class="bi bi-bug sidebar-icon" aria-hidden="true"></i>
+                <span>Incidencias</span>
+              </a>
+            </li>
+          </ul>
+        </section>
       }
     </nav>
 
     @if (auth.isAuthenticated()) {
       <div class="sidebar-user">
         <div class="sidebar-user-info">
-          <i class="bi bi-person-circle"></i>
+          <i class="bi bi-person-circle" aria-hidden="true"></i>
           <span class="sidebar-user-name">{{ auth.getUserFullName() }}</span>
         </div>
-        <button class="sidebar-logout" (click)="auth.logout()" title="Cerrar sesión">
-          <i class="bi bi-box-arrow-right"></i>
+        <button type="button" class="sidebar-logout" (click)="auth.logout()" aria-label="Cerrar sesión" title="Cerrar sesión">
+          <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
         </button>
       </div>
     }
   </aside>
 
   <!-- Contenido principal -->
-  <main class="main-content">
+  <main class="main-content" id="contenido-principal" tabindex="-1">
     <router-outlet></router-outlet>
   </main>
 </div>

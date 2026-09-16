@@ -65,6 +65,28 @@
   /* Transiciones */
   --transition-fast: 150ms ease-in-out;
   --transition-normal: 250ms ease-in-out;
+
+  /* Layout del armazón (sidebar / barra superior) */
+  --sidebar-width: 260px;
+  --sidebar-width-md: 200px;
+  --topbar-height: 3.5rem;
+
+  /* Capas */
+  --z-sidebar: 100;
+  --z-overlay: 90;
+  --z-topbar: 110;
+  --z-skip-link: 200;
+
+  /* Superposición del cajon de navegacion */
+  --overlay-bg: rgba(15, 23, 42, 0.45);
+
+  /* Grosor de borde de enfasis (ej. enlace activo del menu) */
+  --border-width-accent: 3px;
+
+  /* Foco visible */
+  --focus-ring-color: #1d4ed8;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
 }
 
 * {
@@ -451,6 +473,19 @@ input[type="file"]::file-selector-button:hover {
 }
 
 /* ========== UTILITIES ========== */
+/* Contenido solo para lectores de pantalla */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .inline-row {
   display: flex;
   align-items: center;
