@@ -231,14 +231,14 @@
   border-color: var(--primary-color);
 }
 
-.notes-card { background: #fffbeb; border-color: #fde68a; }
+.notes-card { background: var(--warning-light); border-color: var(--warning-border); }
 
 .notas-texto {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.5;
   white-space: pre-wrap;
-  color: #92400e;
+  color: var(--warning-dark);
 }
 
 /* ========== BUTTONS ========== */
@@ -267,9 +267,9 @@
   align-items: center;
   gap: var(--spacing-xs);
   padding: var(--spacing-sm) var(--spacing-md);
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fca5a5;
+  background: var(--danger-light);
+  color: var(--danger-color);
+  border: 1px solid var(--danger-border);
   border-radius: var(--radius-md);
   font-size: 0.85rem;
   font-weight: 500;
@@ -278,7 +278,7 @@
   white-space: nowrap;
 }
 
-.btn-danger:hover { background: #fee2e2; }
+.btn-danger:hover { background: var(--danger-color); color: white; }
 
 .btn-icon {
   width: 28px;
@@ -293,14 +293,14 @@
   transition: all var(--transition-fast);
 }
 
-.btn-delete { background: #fef2f2; color: #dc2626; }
-.btn-delete:hover { background: #fee2e2; }
+.btn-delete { background: var(--danger-light); color: var(--danger-color); }
+.btn-delete:hover { background: var(--danger-color); color: white; }
 
 .spinner-sm {
   display: inline-block;
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255,255,255,0.4);
+  border: 2px solid var(--overlay-light);
   border-top-color: white;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -341,7 +341,7 @@
 .estado-desarrollo { background: var(--purple-light); color: var(--purple-dark); }
 .estado-pendiente  { background: var(--orange-light); color: var(--orange-dark); }
 .estado-produccion { background: var(--success-light); color: var(--success-dark); }
-.estado-descartada { background: #f9fafb; color: #6b7280; }
+.estado-descartada { background: var(--bg-secondary); color: var(--text-secondary); }
 
 /* ========== MISC ========== */
 .loading-state {
@@ -367,10 +367,10 @@
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-md);
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
+  background: var(--danger-light);
+  border: 1px solid var(--danger-border);
   border-radius: var(--radius-md);
-  color: #dc2626;
+  color: var(--danger-color);
   margin-bottom: var(--spacing-md);
   font-size: 0.9rem;
 }

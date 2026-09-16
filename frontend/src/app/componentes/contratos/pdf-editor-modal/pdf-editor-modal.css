@@ -2,7 +2,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--overlay-bg);
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
@@ -102,6 +102,7 @@
   overflow: hidden;
   flex: 1;
   display: flex;
+  /* PDF viewer backdrop chrome - no design-system equivalent, intentionally not tokenized */
   background-color: #525659;
   min-height: 0;
 }
@@ -241,7 +242,7 @@
 }
 
 .spinner {
-  border: 3px solid rgba(255, 255, 255, 0.15);
+  border: 3px solid var(--overlay-light);
   border-top: 3px solid var(--primary-color);
   border-radius: 50%;
   width: 40px;

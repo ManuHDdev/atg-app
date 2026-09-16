@@ -115,11 +115,11 @@
 }
 
 .btn-alta     { background: var(--success-light); color: var(--success-dark); border: 1px solid var(--success-color); }
-.btn-alta:hover { background: #c3e6cb; }
+.btn-alta:hover { background: var(--success-color); color: white; }
 .btn-baja     { background: var(--danger-light); color: var(--danger-dark); border: 1px solid var(--danger-color); }
-.btn-baja:hover { background: #f5c6cb; }
+.btn-baja:hover { background: var(--danger-color); color: white; }
 .btn-duplicado { background: var(--warning-light); color: var(--warning-dark); border: 1px solid var(--warning-color); }
-.btn-duplicado:hover { background: #ffeaa7; }
+.btn-duplicado:hover { background: var(--warning-color); color: white; }
 
 .recent-section {
   margin-top: var(--spacing-xl);
@@ -219,8 +219,8 @@
 }
 
 .error {
-  color: #dc3545;
-  background: #f8d7da;
+  color: var(--danger-color);
+  background: var(--danger-light);
   border-radius: var(--radius-md);
 }
 
@@ -228,7 +228,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -239,7 +239,7 @@
 .modal-container {
   background: var(--bg-primary);
   border-radius: var(--radius-lg);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
   max-height: 90vh;
@@ -408,7 +408,7 @@
 .form-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: var(--shadow-focus);
 }
 
 textarea.form-input {

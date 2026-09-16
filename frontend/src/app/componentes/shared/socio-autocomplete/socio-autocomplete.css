@@ -24,7 +24,7 @@
 .search-box input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: var(--shadow-focus);
 }
 
 .search-box input::placeholder {
@@ -43,7 +43,7 @@
 }
 
 .selected-icon {
-  color: #28a745;
+  color: var(--success-color);
 }
 
 .dropdown {
@@ -58,7 +58,7 @@
   max-height: 300px;
   overflow-y: auto;
   z-index: 1000;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .dropdown-item {

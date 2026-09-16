@@ -118,7 +118,7 @@
 }
 
 .error-message {
-  color: #dc3545;
+  color: var(--danger-color);
   font-size: 0.875rem;
   margin-top: var(--spacing-xs);
 }
