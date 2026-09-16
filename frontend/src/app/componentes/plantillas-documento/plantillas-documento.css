@@ -127,7 +127,7 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-xs);
   padding: 6px 12px;
   padding-left: 50px;
   border: 1px solid var(--border-color);

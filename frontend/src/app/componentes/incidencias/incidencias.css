@@ -158,7 +158,7 @@
 .estado-desarrollo { background: var(--purple-light); color: var(--purple-dark); }
 .estado-pendiente  { background: var(--orange-light); color: var(--orange-dark); }
 .estado-produccion { background: var(--success-light); color: var(--success-dark); }
-.estado-descartada { background: #f9fafb; color: #6b7280; }
+.estado-descartada { background: var(--bg-secondary); color: var(--text-secondary); }
 
 /* ========== STATES ========== */
 .loading-state {
@@ -200,10 +200,10 @@
   align-items: center;
   gap: var(--spacing-sm);
   padding: var(--spacing-md);
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
+  background: var(--danger-light);
+  border: 1px solid var(--danger-border);
   border-radius: var(--radius-md);
-  color: #dc2626;
+  color: var(--danger-color);
   margin-bottom: var(--spacing-md);
   font-size: 0.9rem;
 }

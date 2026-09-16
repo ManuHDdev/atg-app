@@ -216,8 +216,8 @@
 }
 
 .error {
-  color: #dc3545;
-  background: #f8d7da;
+  color: var(--danger-color);
+  background: var(--danger-light);
   border-radius: var(--radius-md);
 }
 

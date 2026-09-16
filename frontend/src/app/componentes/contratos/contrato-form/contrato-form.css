@@ -116,14 +116,14 @@
 .form-group textarea:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: var(--shadow-focus);
 }
 
 .form-group input.error,
 .form-group select.error,
 .form-group textarea.error {
   border-color: var(--danger-color);
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+  box-shadow: var(--shadow-focus-danger);
 }
 
 .form-group textarea {
@@ -147,7 +147,7 @@
 /* ========== Info Box ========== */
 .info-box {
   background: var(--info-light);
-  border: 1px solid rgba(37, 99, 235, 0.15);
+  border: 1px solid var(--primary-border);
   border-radius: var(--radius-lg);
   padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
@@ -175,7 +175,7 @@
 /* ========== Info Message (warning) ========== */
 .info-message {
   background: var(--warning-light);
-  border: 1px solid rgba(217, 119, 6, 0.2);
+  border: 1px solid var(--warning-border);
   border-radius: var(--radius-lg);
   padding: 1rem 1.25rem;
 }

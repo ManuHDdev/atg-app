@@ -81,7 +81,7 @@
 
 .workflow-step.active {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+  box-shadow: var(--shadow-focus);
 }
 
 .step-header {
@@ -112,7 +112,7 @@
   font-weight: 700;
   font-size: 1rem;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  box-shadow: var(--shadow-primary-hover);
 }
 
 .step-content {
@@ -129,7 +129,7 @@
 /* ========== Action Box ========== */
 .action-box {
   background: var(--info-light);
-  border: 1px solid rgba(37, 99, 235, 0.15);
+  border: 1px solid var(--primary-border);
   border-radius: var(--radius-lg);
   padding: 1.25rem;
   margin-top: 0.75rem;
@@ -223,7 +223,7 @@
 /* ========== Completed Info ========== */
 .completed-info {
   background: var(--success-light);
-  border: 1px solid rgba(5, 150, 105, 0.2);
+  border: 1px solid var(--success-light);
   border-radius: var(--radius-lg);
   padding: 1rem;
   margin-top: 0.75rem;
@@ -257,7 +257,7 @@
 .form-control:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: var(--shadow-focus);
 }
 
 /* ========== Rejection Box ========== */
@@ -265,7 +265,7 @@
   margin-top: 0.75rem;
   padding: 1rem;
   background-color: var(--danger-light);
-  border: 1px solid rgba(220, 38, 38, 0.2);
+  border: 1px solid var(--danger-border);
   border-radius: var(--radius-lg);
 }
 

@@ -66,12 +66,12 @@
 .form-group input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: var(--shadow-focus);
 }
 
 .form-group input.error {
   border-color: var(--danger-color);
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+  box-shadow: var(--shadow-focus-danger);
 }
 
 .error-message {
@@ -95,7 +95,7 @@
   padding: 0.3rem 0.75rem;
   background-color: var(--info-light);
   color: var(--info-dark);
-  border: 1px solid rgba(37, 99, 235, 0.25);
+  border: 1px solid var(--primary-border);
   border-radius: var(--radius-full);
   font-size: 0.8125rem;
   font-weight: 500;
@@ -142,7 +142,7 @@ code {
 /* ========== Info Message ========== */
 .info-message {
   background: var(--info-light);
-  border: 1px solid rgba(37, 99, 235, 0.2);
+  border: 1px solid var(--primary-border);
   border-radius: var(--radius-xl);
   padding: 2rem;
   text-align: center;
@@ -198,7 +198,7 @@ code {
   color: white;
   border-color: var(--primary-color);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  box-shadow: var(--shadow-primary-hover);
 }
 
 .btn-icon-danger {
@@ -210,7 +210,7 @@ code {
   color: white;
   border-color: var(--danger-color);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+  box-shadow: var(--shadow-danger-hover);
 }
 
 .btn-small {
@@ -222,7 +222,7 @@ code {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -232,7 +232,7 @@ code {
 .modal-pdf {
   background: var(--bg-primary);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl, 0 20px 60px rgba(0,0,0,0.3));
+  box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
   width: 90vw;

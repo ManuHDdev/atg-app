@@ -98,7 +98,7 @@
 .filter-select:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: var(--shadow-focus);
 }
 
 .empty-text {
@@ -114,8 +114,8 @@
 }
 
 .badge-info {
-  background-color: #d1ecf1;
-  color: #0c5460;
+  background-color: var(--info-light);
+  color: var(--info-dark);
   padding: 4px 12px;
   border-radius: var(--radius-sm);
   font-size: 0.75rem;
@@ -127,7 +127,7 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-xs);
   padding: 6px 12px;
   padding-left: 50px;
   border: 1px solid var(--border-color);
@@ -166,7 +166,7 @@
   top: 2px;
   left: 2px;
   transition: all 0.3s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .toggle-btn.active .toggle-slider {
