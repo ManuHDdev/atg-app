@@ -2,6 +2,7 @@ package com.manuhd.app.dispositivos.dto;
 
 import com.manuhd.app.dispositivos.model.TipoSolicitud;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,8 +28,13 @@ public class CrearSolicitudDTO {
 
     private Long dispositivoId;
 
+    // La columna de la solicitud y la del dispositivo son de 20: sin este limite una
+    // matricula mas larga no falla hasta el flush, y sale como error interno en vez de
+    // como un aviso al operador.
+    @Size(max = 20, message = "La matricula no puede exceder 20 caracteres")
     private String matricula;
 
+    @Size(max = 20, message = "La matricula destino no puede exceder 20 caracteres")
     private String matriculaDestino;
 
     private BigDecimal monto;
