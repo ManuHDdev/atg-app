@@ -51,7 +51,10 @@ public class PetrolerasClient {
         try {
             ResponseEntity<byte[]> response = restTemplate.getForEntity(url, byte[].class);
 
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            // Un cuerpo vacio es tan inservible como un 404: la solicitud nacería con un
+            // impreso de 0 bytes que ya no se podría ni aplanar ni mandar al socio.
+            if (response.getStatusCode().is2xxSuccessful()
+                    && response.getBody() != null && response.getBody().length > 0) {
                 log.info("Plantilla de documento obtenida, tamaño: {} bytes", response.getBody().length);
                 return response.getBody();
             }
