@@ -244,7 +244,7 @@ public class SolicitudDispositivoService {
         }
 
         solicitud.setRutaPdfEditable(pdfService.guardarPdfEditado(pdfEditado, exigirNumeroSolicitud(solicitud)));
-        solicitud.setNombrePdfEditable(pdfEditado.getOriginalFilename());
+        solicitud.setNombrePdfEditable(PdfService.nombreOriginalSeguro(pdfEditado));
 
         return convertirADTO(solicitudRepository.save(solicitud));
     }
@@ -332,7 +332,7 @@ public class SolicitudDispositivoService {
         }
 
         solicitud.setRutaPdfFirmado(pdfService.guardarPdfFirmado(pdfFirmado, exigirNumeroSolicitud(solicitud)));
-        solicitud.setNombrePdfFirmado(pdfFirmado.getOriginalFilename());
+        solicitud.setNombrePdfFirmado(PdfService.nombreOriginalSeguro(pdfFirmado));
         solicitud.setFechaRecepcionFirmado(LocalDateTime.now());
 
         return convertirADTO(solicitudRepository.save(solicitud));

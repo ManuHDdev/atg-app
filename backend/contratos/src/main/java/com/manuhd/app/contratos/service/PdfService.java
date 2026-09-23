@@ -1,5 +1,6 @@
 package com.manuhd.app.contratos.service;
 
+import com.manuhd.app.contratos.exception.BusinessValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -34,11 +35,72 @@ public class PdfService {
     @Value("${storage.borradores:./storage/contratos/borradores}")
     private String borradoresPath;
 
+    /** Nombre de respaldo cuando el que declara el navegador no sirve para nombrar nada. */
+    public static final String NOMBRE_DESCONOCIDO = "documento.pdf";
+
+    /** Longitud máxima del nombre declarado que se persiste. */
+    private static final int MAX_NOMBRE = 255;
+
+    /** Cabecera con la que empieza todo PDF ("%PDF-"). */
+    private static final byte[] CABECERA_PDF = {0x25, 0x50, 0x44, 0x46, 0x2D};
+
+    /**
+     * Nombre declarado por el navegador, reducido al nombre del fichero y sin nada que pueda
+     * moverlo de sitio.
+     *
+     * <p>El nombre lo elige quien sube el fichero, y aquí sí acaba formando parte de la ruta
+     * de destino: sin esto unos cuantos {@code ../} sacan la escritura del almacén.
+     */
+    public static String nombreOriginalSeguro(MultipartFile file) {
+        String declarado = file != null ? file.getOriginalFilename() : null;
+        if (declarado == null) {
+            return NOMBRE_DESCONOCIDO;
+        }
+
+        // Tanto '/' como '\': el nombre puede venir de un cliente de otro sistema operativo
+        int ultimoSeparador = Math.max(declarado.lastIndexOf('/'), declarado.lastIndexOf('\\'));
+        String nombre = declarado.substring(ultimoSeparador + 1);
+
+        // Fuera caracteres de control, ':' (streams alternativos y unidades) y cualquier '..'
+        nombre = nombre.replaceAll("\\p{Cntrl}", "").replace(":", "").replace("..", "").trim();
+
+        if (nombre.isBlank()) {
+            return NOMBRE_DESCONOCIDO;
+        }
+        return nombre.length() > MAX_NOMBRE ? nombre.substring(0, MAX_NOMBRE) : nombre;
+    }
+
+    /**
+     * Devuelve el contenido del fichero subido comprobando antes que es un PDF de verdad.
+     *
+     * <p>Un fichero vacío o que solo se llama {@code .pdf} sustituiría a un impreso bueno y
+     * el fallo no saldría hasta que hubiera que aplanarlo o mandarlo.
+     */
+    private byte[] contenidoDePdf(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new BusinessValidationException("El documento está vacío: vuelva a subir el archivo");
+        }
+
+        byte[] contenido = file.getBytes();
+        if (contenido.length < CABECERA_PDF.length) {
+            throw new BusinessValidationException("El documento está vacío: vuelva a subir el archivo");
+        }
+        for (int i = 0; i < CABECERA_PDF.length; i++) {
+            if (contenido[i] != CABECERA_PDF[i]) {
+                throw new BusinessValidationException(
+                        "El documento no es un PDF válido: vuelva a subirlo en formato PDF");
+            }
+        }
+        return contenido;
+    }
+
     public String guardarPlantilla(MultipartFile file) throws IOException {
-        String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+        byte[] contenido = contenidoDePdf(file);
+
+        String filename = UUID.randomUUID() + "_" + nombreOriginalSeguro(file);
         Path targetPath = Paths.get(plantillasPath, filename);
         Files.createDirectories(targetPath.getParent());
-        Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+        Files.write(targetPath, contenido);
         return targetPath.toString();
     }
 
@@ -122,10 +184,12 @@ public class PdfService {
             pathBuilder.append(File.separator).append("subtipo_").append(tipoSolicitudPetroleraId);
         }
 
-        String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        byte[] contenido = contenidoDePdf(file);
+
+        String filename = System.currentTimeMillis() + "_" + nombreOriginalSeguro(file);
         Path targetPath = Paths.get(pathBuilder.toString(), filename);
         Files.createDirectories(targetPath.getParent());
-        Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+        Files.write(targetPath, contenido);
 
         log.info("Plantilla guardada en: {}", targetPath);
         return targetPath.toString();
@@ -173,8 +237,12 @@ public class PdfService {
         Path directorioSolicitud = Paths.get(contratosPath, numeroSolicitud);
         Files.createDirectories(directorioSolicitud);
 
+        // Se valida ANTES de tocar el disco: el editable que ya hay es la plantilla de la
+        // petrolera, y machacarla con basura deja la solicitud sin nada que enviar al socio.
+        byte[] contenido = contenidoDePdf(file);
+
         Path rutaEditable = directorioSolicitud.resolve("editable.pdf");
-        Files.copy(file.getInputStream(), rutaEditable, StandardCopyOption.REPLACE_EXISTING);
+        Files.write(rutaEditable, contenido);
 
         log.info("PDF editado guardado en: {}", rutaEditable);
         return rutaEditable.toString();
@@ -184,8 +252,10 @@ public class PdfService {
         Path directorioSolicitud = Paths.get(contratosPath, numeroSolicitud);
         Files.createDirectories(directorioSolicitud);
 
+        byte[] contenido = contenidoDePdf(file);
+
         Path rutaFirmado = directorioSolicitud.resolve("firmado.pdf");
-        Files.copy(file.getInputStream(), rutaFirmado, StandardCopyOption.REPLACE_EXISTING);
+        Files.write(rutaFirmado, contenido);
 
         log.info("PDF firmado guardado en: {}", rutaFirmado);
         return rutaFirmado.toString();

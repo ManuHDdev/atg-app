@@ -84,6 +84,8 @@ public class SolicitudTarjetaService {
     public SolicitudTarjetaDTO create(CrearSolicitudDTO dto) {
         log.info("Creando nueva solicitud de tipo: {} para socio: {}", dto.getTipo(), dto.getSocioId());
 
+        validarRestriccionesPetrolera(dto.getPetroleraId());
+
         SolicitudTarjeta solicitud = new SolicitudTarjeta();
         solicitud.setSocioId(dto.getSocioId());
         solicitud.setPetroleraId(dto.getPetroleraId());
@@ -168,7 +170,7 @@ public class SolicitudTarjetaService {
 
         String ruta = pdfService.guardarPdfEditado(pdfEditado, exigirNumeroSolicitud(solicitud));
         solicitud.setRutaPdfEditable(ruta);
-        solicitud.setNombrePdfEditable(pdfEditado.getOriginalFilename());
+        solicitud.setNombrePdfEditable(PdfService.nombreOriginalSeguro(pdfEditado));
 
         return convertToDTO(repository.save(solicitud));
     }
@@ -239,7 +241,7 @@ public class SolicitudTarjetaService {
         }
 
         solicitud.setRutaPdfFirmado(pdfService.guardarPdfFirmado(pdfFirmado, exigirNumeroSolicitud(solicitud)));
-        solicitud.setNombrePdfFirmado(pdfFirmado.getOriginalFilename());
+        solicitud.setNombrePdfFirmado(PdfService.nombreOriginalSeguro(pdfFirmado));
         solicitud.setFechaRecepcionFirmado(LocalDateTime.now());
 
         return convertToDTO(repository.save(solicitud));
@@ -740,6 +742,35 @@ public class SolicitudTarjetaService {
                     + "circuito de firma y su documentación debe tramitarse fuera del sistema");
         }
         return numeroSolicitud;
+    }
+
+    /**
+     * Comprueba que la petrolera seleccionada trabaja con tarjetas.
+     *
+     * <p>El formulario ya filtra las petroleras por este flag, pero el filtro vive en el
+     * navegador: sin esta comprobación una petición construida a mano crea la solicitud
+     * igualmente.
+     *
+     * <p>Solo se bloquea cuando el administrador ha desmarcado explícitamente el flag. Un
+     * flag a null significa "sin restricción configurada" (petroleras dadas de alta antes
+     * del flag) y se permite; si la configuración no se puede leer tampoco se bloquea aquí,
+     * porque el resto de la creación ya falla por su cuenta al no poder traer el impreso.
+     */
+    private void validarRestriccionesPetrolera(Long petroleraId) {
+        PetroleraDTO petrolera;
+        try {
+            petrolera = restTemplate.getForObject(
+                    petrolerasServiceUrl + "/api/petroleras/" + petroleraId, PetroleraDTO.class);
+        } catch (Exception e) {
+            log.warn("No se ha podido comprobar si la petrolera {} opera con tarjetas: {}",
+                    petroleraId, e.getMessage());
+            return;
+        }
+
+        if (petrolera != null && Boolean.FALSE.equals(petrolera.getOperaTarjetas())) {
+            String nombre = petrolera.getNombre() != null ? petrolera.getNombre() : "seleccionada";
+            throw new BusinessValidationException("La petrolera " + nombre + " no opera con tarjetas");
+        }
     }
 
     private String generarNumeroSolicitud() {
