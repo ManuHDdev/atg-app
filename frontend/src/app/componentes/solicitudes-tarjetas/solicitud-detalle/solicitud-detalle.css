@@ -250,6 +250,42 @@
   box-shadow: var(--shadow-focus);
 }
 
+/*
+ * Aviso de validación en línea, misma convención que el resto de formularios
+ * (`solicitud-form`, `dispositivos`): el motivo va pegado al campo que falla.
+ */
+.error-text {
+  display: block;
+  color: var(--danger-color);
+  font-size: 0.75rem;
+  margin-top: 0.125rem;
+}
+
+.form-control.input-error {
+  border-color: var(--danger-color);
+}
+
+.form-control.input-error:focus {
+  border-color: var(--danger-color);
+  box-shadow: var(--shadow-focus-danger);
+}
+
+/*
+ * El error de una acción del modal se pinta DENTRO del modal: la superposición es
+ * `position: fixed` y tapa por completo el aviso de la cabecera de la página.
+ */
+.modal-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  background-color: var(--danger-light);
+  color: var(--danger-dark);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-md);
+  margin-top: var(--spacing-md);
+}
+
 .modal-actions {
   display: flex;
   justify-content: flex-end;

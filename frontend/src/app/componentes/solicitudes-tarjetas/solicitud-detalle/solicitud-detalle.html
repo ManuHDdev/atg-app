@@ -5,8 +5,8 @@
   </div>
 
   <div *ngIf="loading && !solicitud" class="loading">Cargando...</div>
-  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-  <div *ngIf="success" class="alert alert-success">{{ success }}</div>
+  <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
+  <div *ngIf="success" class="alert alert-success" role="status">{{ success }}</div>
 
   <div *ngIf="solicitud" class="detalle-content">
     <!-- Estado y Tipo -->
@@ -390,11 +390,28 @@
         class="form-control"
         rows="4"
         placeholder="Motivo por el que la petrolera ha denegado la solicitud..."
+        [class.input-error]="motivoRechazoInvalido"
+        [attr.aria-invalid]="motivoRechazoInvalido ? 'true' : null"
+        [attr.aria-describedby]="motivoRechazoInvalido ? 'motivoRechazo-error' : null"
       ></textarea>
+      <span class="error-text" id="motivoRechazo-error" role="alert" *ngIf="motivoRechazoInvalido">
+        Escriba el motivo que ha indicado la petrolera para denegar la solicitud.
+      </span>
+    </div>
+    <div class="modal-error" role="alert" *ngIf="errorModal">
+      <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+      {{ errorModal }}
     </div>
     <div class="modal-actions">
       <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-      <button type="button" class="btn btn-danger" [disabled]="!motivoRechazo.trim()" (click)="confirmarDenegacionPetrolera()">
+      <button
+        type="button"
+        class="btn btn-danger"
+        [disabled]="loading"
+        [attr.aria-disabled]="loading ? 'true' : null"
+        [attr.title]="loading ? 'Registrando la denegación, espere a que termine.' : null"
+        (click)="confirmarDenegacionPetrolera()"
+      >
         Registrar denegación
       </button>
     </div>
@@ -416,7 +433,18 @@
           id="fechaLlegadaEstimada"
           formControlName="fechaLlegadaEstimada"
           class="form-control"
+          [class.input-error]="campoInvalido(llegadaForm, 'fechaLlegadaEstimada')"
+          [attr.aria-invalid]="campoInvalido(llegadaForm, 'fechaLlegadaEstimada') ? 'true' : null"
+          [attr.aria-describedby]="campoInvalido(llegadaForm, 'fechaLlegadaEstimada') ? 'fechaLlegadaEstimada-error' : null"
         >
+        <span
+          class="error-text"
+          id="fechaLlegadaEstimada-error"
+          role="alert"
+          *ngIf="campoInvalido(llegadaForm, 'fechaLlegadaEstimada')"
+        >
+          Indique la fecha estimada de entrega o recogida de la tarjeta.
+        </span>
       </div>
       <div class="form-group">
         <label for="numeroContrato">Número de Contrato</label>
@@ -439,9 +467,19 @@
           rows="3"
         ></textarea>
       </div>
+      <div class="modal-error" role="alert" *ngIf="errorModal">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        {{ errorModal }}
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-        <button type="submit" class="btn btn-primary" [disabled]="llegadaForm.invalid || loading">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="loading"
+          [attr.aria-disabled]="loading ? 'true' : null"
+          [attr.title]="loading ? 'Registrando la llegada, espere a que termine.' : null"
+        >
           Registrar Llegada
         </button>
       </div>
@@ -467,9 +505,19 @@
           placeholder="Información adicional sobre la entrega (opcional)"
         ></textarea>
       </div>
+      <div class="modal-error" role="alert" *ngIf="errorModal">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        {{ errorModal }}
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-        <button type="submit" class="btn btn-success" [disabled]="entregadaForm.invalid || loading">
+        <button
+          type="submit"
+          class="btn btn-success"
+          [disabled]="loading"
+          [attr.aria-disabled]="loading ? 'true' : null"
+          [attr.title]="loading ? 'Registrando la entrega, espere a que termine.' : null"
+        >
           Marcar como Entregada
         </button>
       </div>
@@ -495,7 +543,13 @@
           id="fechaBaja"
           formControlName="fechaBaja"
           class="form-control"
+          [class.input-error]="campoInvalido(bajaForm, 'fechaBaja')"
+          [attr.aria-invalid]="campoInvalido(bajaForm, 'fechaBaja') ? 'true' : null"
+          [attr.aria-describedby]="campoInvalido(bajaForm, 'fechaBaja') ? 'fechaBaja-error' : null"
         >
+        <span class="error-text" id="fechaBaja-error" role="alert" *ngIf="campoInvalido(bajaForm, 'fechaBaja')">
+          Indique la fecha en la que se da de baja la tarjeta.
+        </span>
         <small class="form-text">Fecha en la que se da de baja la tarjeta (por defecto: hoy)</small>
       </div>
       <div class="form-group">
@@ -508,9 +562,19 @@
           placeholder="Información adicional sobre la baja (opcional)"
         ></textarea>
       </div>
+      <div class="modal-error" role="alert" *ngIf="errorModal">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        {{ errorModal }}
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-        <button type="submit" class="btn btn-danger" [disabled]="bajaForm.invalid || loading">
+        <button
+          type="submit"
+          class="btn btn-danger"
+          [disabled]="loading"
+          [attr.aria-disabled]="loading ? 'true' : null"
+          [attr.title]="loading ? 'Registrando la aprobación, espere a que termine.' : null"
+        >
           Registrar aprobación
         </button>
       </div>
@@ -536,7 +600,13 @@
           id="fechaRespuesta"
           formControlName="fechaRespuesta"
           class="form-control"
+          [class.input-error]="campoInvalido(duplicadoForm, 'fechaRespuesta')"
+          [attr.aria-invalid]="campoInvalido(duplicadoForm, 'fechaRespuesta') ? 'true' : null"
+          [attr.aria-describedby]="campoInvalido(duplicadoForm, 'fechaRespuesta') ? 'fechaRespuesta-error' : null"
         >
+        <span class="error-text" id="fechaRespuesta-error" role="alert" *ngIf="campoInvalido(duplicadoForm, 'fechaRespuesta')">
+          Indique la fecha en la que la petrolera ha respondido a la solicitud.
+        </span>
         <small class="form-text">Fecha de respuesta a la solicitud de duplicado (por defecto: hoy)</small>
       </div>
       <div class="form-group">
@@ -549,9 +619,19 @@
           placeholder="Información adicional sobre el duplicado (opcional)"
         ></textarea>
       </div>
+      <div class="modal-error" role="alert" *ngIf="errorModal">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        {{ errorModal }}
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
-        <button type="submit" class="btn btn-primary" [disabled]="duplicadoForm.invalid || loading">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="loading"
+          [attr.aria-disabled]="loading ? 'true' : null"
+          [attr.title]="loading ? 'Registrando la aprobación, espere a que termine.' : null"
+        >
           Registrar aprobación
         </button>
       </div>

@@ -27,9 +27,21 @@
 
       <div class="modal-footer">
         @if (mostrarBotonDescargar) {
-          <button class="btn-secondary" (click)="descargarPdf()" [disabled]="!pdfPreviewUrl">
-            <i class="bi bi-download"></i> Descargar PDF
+          <button
+            class="btn-secondary"
+            (click)="descargarPdf()"
+            [disabled]="!pdfPreviewUrl"
+            [attr.aria-disabled]="!pdfPreviewUrl ? 'true' : null"
+            [attr.aria-describedby]="!pdfPreviewUrl ? 'descargar-pdf-motivo' : null"
+            [attr.title]="!pdfPreviewUrl ? 'El documento todavía se está cargando.' : null"
+          >
+            <i class="bi bi-download" aria-hidden="true"></i> Descargar PDF
           </button>
+          @if (!pdfPreviewUrl) {
+            <span id="descargar-pdf-motivo" class="sr-only">
+              No se puede descargar todavía: el documento aún se está cargando.
+            </span>
+          }
         }
         <button class="btn-primary" (click)="cerrar()">
           Cerrar

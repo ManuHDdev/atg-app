@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { SolicitudDetalle } from './solicitud-detalle';
 import { SolicitudTarjetaService } from '../../../services/solicitud-tarjeta.service';
@@ -58,7 +58,8 @@ describe('SolicitudDetalle', () => {
     TestBed.resetTestingModule();
     solicitudServiceSpy = jasmine.createSpyObj('SolicitudTarjetaService', [
       'getById', 'guardarPdfEditado', 'enviarASocio', 'subirPdfFirmado',
-      'aceptarFirmaSocio', 'enviarAPetrolera', 'descargarPdf'
+      'aceptarFirmaSocio', 'enviarAPetrolera', 'descargarPdf',
+      'registrarLlegada', 'marcarEntregada', 'denegarPorPetrolera'
     ]);
   });
 
@@ -156,5 +157,120 @@ describe('SolicitudDetalle', () => {
 
     expect(component.ficheroEditable).toBe(pdf);
     expect(component.ficheroFirmado).toBeNull();
+  });
+
+  /**
+   * Los modales son `position: fixed` y tapan la cabecera de la página, así que un error
+   * pintado arriba es un error invisible: el operador pulsaba "Registrar Llegada", la
+   * llamada fallaba y en pantalla no cambiaba nada.
+   */
+  describe('errores y validación de los modales', () => {
+    /** Estado en el que la pantalla ofrece el modal de registrar llegada. */
+    const SOLICITUD_APROBADA: SolicitudTarjeta = {
+      ...SOLICITUD_BASE, tipo: 'ALTA', estado: 'APROBADA'
+    };
+
+    async function abrirModalLlegada(): Promise<ComponentFixture<SolicitudDetalle>> {
+      const fixture = await crearComponente({ ...SOLICITUD_APROBADA });
+      fixture.componentInstance.abrirModalLlegada();
+      fixture.detectChanges();
+      return fixture;
+    }
+
+    it('muestra dentro del modal abierto el error devuelto por la acción', async () => {
+      const fixture = await abrirModalLlegada();
+      const component = fixture.componentInstance;
+      solicitudServiceSpy.registrarLlegada.and.returnValue(throwError(() => new Error('500')));
+
+      component.llegadaForm.patchValue({ fechaLlegadaEstimada: '2026-10-01' });
+      component.registrarLlegada();
+      fixture.detectChanges();
+
+      // El modal sigue abierto y el aviso está dentro de él, no en la cabecera tapada.
+      expect(component.showLlegadaModal).toBeTrue();
+      const avisoEnModal: HTMLElement | null =
+        fixture.nativeElement.querySelector('.modal-overlay .modal-error');
+      expect(avisoEnModal).not.toBeNull();
+      expect(avisoEnModal!.textContent).toContain('error de prueba');
+      expect(avisoEnModal!.getAttribute('role')).toBe('alert');
+    });
+
+    it('al enviar sin la fecha obligatoria explica qué falta y lleva el foco al campo', async () => {
+      const fixture = await abrirModalLlegada();
+      const component = fixture.componentInstance;
+
+      // El botón ya no está muerto: se puede pulsar aunque falte la fecha.
+      const boton: HTMLButtonElement =
+        fixture.nativeElement.querySelector('.modal-overlay button[type="submit"]');
+      expect(boton.disabled).toBeFalse();
+
+      boton.click();
+      fixture.detectChanges();
+
+      // No se llama al servicio, pero tampoco se queda callado.
+      expect(solicitudServiceSpy.registrarLlegada).not.toHaveBeenCalled();
+      const aviso: HTMLElement | null =
+        fixture.nativeElement.querySelector('#fechaLlegadaEstimada-error');
+      expect(aviso).not.toBeNull();
+      expect(aviso!.textContent).toContain('fecha estimada de entrega o recogida');
+
+      // Y el foco acaba en el campo que falta.
+      expect(document.activeElement)
+        .toBe(fixture.nativeElement.querySelector('#fechaLlegadaEstimada'));
+    });
+
+    it('marca el campo inválido y lo enlaza con su mensaje para los lectores de pantalla', async () => {
+      const fixture = await abrirModalLlegada();
+      const campo: HTMLInputElement =
+        fixture.nativeElement.querySelector('#fechaLlegadaEstimada');
+
+      // Antes de intentar enviar no se acusa a nadie.
+      expect(campo.getAttribute('aria-invalid')).toBeNull();
+      expect(fixture.nativeElement.querySelector('#fechaLlegadaEstimada-error')).toBeNull();
+
+      fixture.componentInstance.registrarLlegada();
+      fixture.detectChanges();
+
+      expect(campo.getAttribute('aria-invalid')).toBe('true');
+      expect(campo.getAttribute('aria-describedby')).toBe('fechaLlegadaEstimada-error');
+      const aviso: HTMLElement =
+        fixture.nativeElement.querySelector('#fechaLlegadaEstimada-error');
+      expect(aviso.getAttribute('role')).toBe('alert');
+    });
+
+    /** Si falla el registro de la denegación, el motivo escrito no se puede perder. */
+    it('conserva el modal de denegación abierto cuando la llamada falla', async () => {
+      const fixture = await crearComponente({ ...SOLICITUD_BASE, estado: 'PENDIENTE' });
+      const component = fixture.componentInstance;
+      solicitudServiceSpy.denegarPorPetrolera.and.returnValue(throwError(() => new Error('500')));
+
+      component.registrarDenegacionPetrolera();
+      component.motivoRechazo = 'Documentación incompleta';
+      component.confirmarDenegacionPetrolera();
+      fixture.detectChanges();
+
+      expect(component.showRechazoModal).toBeTrue();
+      expect(component.motivoRechazo).toBe('Documentación incompleta');
+      expect(fixture.nativeElement.querySelector('.modal-overlay .modal-error')).not.toBeNull();
+    });
+
+    /** Abrir un modal nuevo no debe arrastrar el error ni las marcas del anterior. */
+    it('limpia el aviso anterior al cerrar y volver a abrir el modal', async () => {
+      const fixture = await abrirModalLlegada();
+      const component = fixture.componentInstance;
+      solicitudServiceSpy.registrarLlegada.and.returnValue(throwError(() => new Error('500')));
+
+      component.llegadaForm.patchValue({ fechaLlegadaEstimada: '2026-10-01' });
+      component.registrarLlegada();
+      expect(component.errorModal).not.toBeNull();
+
+      component.cerrarModal();
+      component.abrirModalLlegada();
+      fixture.detectChanges();
+
+      expect(component.errorModal).toBeNull();
+      expect(component.intentoGuardar).toBeFalse();
+      expect(fixture.nativeElement.querySelector('.modal-overlay .modal-error')).toBeNull();
+    });
   });
 });

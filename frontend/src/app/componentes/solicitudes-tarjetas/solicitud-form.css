@@ -117,6 +117,15 @@
   }
 }
 
+.form-control.input-error {
+  border-color: var(--danger-color);
+}
+
+.form-control.input-error:focus {
+  border-color: var(--danger-color);
+  box-shadow: var(--shadow-focus-danger);
+}
+
 /* Aviso de validación en línea (misma convención que el resto de formularios) */
 .error-text {
   display: block;

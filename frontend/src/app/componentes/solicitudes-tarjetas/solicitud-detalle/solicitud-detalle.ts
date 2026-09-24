@@ -31,8 +31,22 @@ export class SolicitudDetalle implements OnInit {
   duplicadoForm!: FormGroup;
 
   loading: boolean = false;
+  /** Error de una acción de la propia página: se pinta en la cabecera. */
   error: string | null = null;
   success: string | null = null;
+
+  /**
+   * Error de una acción lanzada desde un modal. Va aparte de `error` porque la
+   * superposición del modal tapa la cabecera: pintarlo ahí dejaba al operador sin
+   * ninguna pista de por qué no pasaba nada.
+   */
+  errorModal: string | null = null;
+
+  /**
+   * El operador ya ha intentado enviar el formulario del modal abierto. Hasta entonces
+   * no se marca nada en rojo; después se señalan los campos que faltan.
+   */
+  intentoGuardar: boolean = false;
 
   showLlegadaModal: boolean = false;
   showEntregadaModal: boolean = false;
@@ -157,34 +171,42 @@ export class SolicitudDetalle implements OnInit {
 
   registrarDenegacionPetrolera(): void {
     this.motivoRechazo = '';
+    this.prepararModal();
     this.showRechazoModal = true;
   }
 
   confirmarDenegacionPetrolera(): void {
-    if (!this.solicitud?.id || !this.motivoRechazo.trim()) return;
+    if (!this.solicitud?.id) return;
 
-    this.showRechazoModal = false;
+    this.intentoGuardar = true;
+    if (!this.motivoRechazo.trim()) {
+      this.enfocarCampo('motivoRechazo');
+      return;
+    }
+
+    this.errorModal = null;
     this.loading = true;
     this.solicitudService.denegarPorPetrolera(this.solicitud.id, this.motivoRechazo).subscribe({
       next: () => {
+        this.showRechazoModal = false;
         this.success = 'Denegación de la petrolera registrada correctamente';
         this.cargarSolicitud(this.solicitud!.id!);
       },
-      error: (err) => {
-        console.error('Error al registrar la denegación de la petrolera:', err);
-        this.error = this.errorHandler.getMensaje(err);
-        this.loading = false;
-      }
+      // El modal sigue abierto: el motivo escrito se conserva para poder reintentar.
+      error: (err) => this.falloEnModal('Error al registrar la denegación de la petrolera:', err)
     });
   }
 
   abrirModalLlegada(): void {
+    this.prepararModal();
     this.showLlegadaModal = true;
   }
 
   registrarLlegada(): void {
-    if (this.llegadaForm.invalid || !this.solicitud?.id) return;
+    if (!this.solicitud?.id) return;
+    if (this.faltanDatos(this.llegadaForm, 'fechaLlegadaEstimada')) return;
 
+    this.errorModal = null;
     this.loading = true;
     this.solicitudService.registrarLlegada(this.solicitud.id, this.llegadaForm.value).subscribe({
       next: () => {
@@ -192,21 +214,20 @@ export class SolicitudDetalle implements OnInit {
         this.showLlegadaModal = false;
         this.cargarSolicitud(this.solicitud!.id!);
       },
-      error: (err) => {
-        console.error('Error al registrar llegada:', err);
-        this.error = this.errorHandler.getMensaje(err);
-        this.loading = false;
-      }
+      error: (err) => this.falloEnModal('Error al registrar llegada:', err)
     });
   }
 
   abrirModalEntregada(): void {
+    this.prepararModal();
     this.showEntregadaModal = true;
   }
 
   marcarEntregada(): void {
-    if (this.entregadaForm.invalid || !this.solicitud?.id) return;
+    if (!this.solicitud?.id) return;
+    if (this.faltanDatos(this.entregadaForm, 'observacionesEntrega')) return;
 
+    this.errorModal = null;
     this.loading = true;
     this.solicitudService.marcarEntregada(this.solicitud.id, this.entregadaForm.value).subscribe({
       next: () => {
@@ -214,11 +235,7 @@ export class SolicitudDetalle implements OnInit {
         this.showEntregadaModal = false;
         this.cargarSolicitud(this.solicitud!.id!);
       },
-      error: (err) => {
-        console.error('Error al marcar como entregada:', err);
-        this.error = this.errorHandler.getMensaje(err);
-        this.loading = false;
-      }
+      error: (err) => this.falloEnModal('Error al marcar como entregada:', err)
     });
   }
 
@@ -360,6 +377,54 @@ export class SolicitudDetalle implements OnInit {
     this.procesandoDocumento = false;
   }
 
+  // ---------- validación y errores de los modales ----------
+
+  /**
+   * Misma convención que el resto de formularios de la aplicación (`solicitud-form`,
+   * `plantilla-form`): el campo se marca en cuanto el operador lo ha tocado o en cuanto
+   * ha intentado enviar, lo que ocurra antes.
+   */
+  campoInvalido(formulario: FormGroup, nombre: string): boolean {
+    const control = formulario.get(nombre);
+    if (!control) return false;
+    return control.invalid && (this.intentoGuardar || control.touched);
+  }
+
+  /** El motivo de la denegación se edita con ngModel, así que no tiene control que consultar. */
+  get motivoRechazoInvalido(): boolean {
+    return this.intentoGuardar && !this.motivoRechazo.trim();
+  }
+
+  /**
+   * El botón de envío ya no está muerto: si falta algo se marca el campo y se le lleva el
+   * foco, para que el operador sepa qué le falta en lugar de adivinarlo.
+   */
+  private faltanDatos(formulario: FormGroup, idPrimerCampo: string): boolean {
+    this.intentoGuardar = true;
+    if (formulario.valid) return false;
+
+    formulario.markAllAsTouched();
+    this.enfocarCampo(idPrimerCampo);
+    return true;
+  }
+
+  private enfocarCampo(id: string): void {
+    document.getElementById(id)?.focus();
+  }
+
+  /** Error de una acción lanzada desde un modal: se muestra dentro del propio modal. */
+  private falloEnModal(mensaje: string, err: unknown): void {
+    console.error(mensaje, err);
+    this.errorModal = this.errorHandler.getMensaje(err);
+    this.loading = false;
+  }
+
+  /** Cada vez que se abre un modal se parte de cero: ni errores ni campos marcados. */
+  private prepararModal(): void {
+    this.errorModal = null;
+    this.intentoGuardar = false;
+  }
+
   /** Una LLEGADA no lleva papeleo: nunca entra en el circuito del documento firmado. */
   get tieneCircuitoDeFirma(): boolean {
     return !!this.solicitud && this.solicitud.tipo !== 'LLEGADA' && !!this.solicitud.numeroSolicitud;
@@ -428,12 +493,15 @@ export class SolicitudDetalle implements OnInit {
     // Resetear fecha a hoy cada vez que se abre el modal
     const hoy = new Date().toISOString().split('T')[0];
     this.bajaForm.patchValue({ fechaBaja: hoy });
+    this.prepararModal();
     this.showBajaModal = true;
   }
 
   registrarAprobacionBajaPetrolera(): void {
-    if (this.bajaForm.invalid || !this.solicitud?.id) return;
+    if (!this.solicitud?.id) return;
+    if (this.faltanDatos(this.bajaForm, 'fechaBaja')) return;
 
+    this.errorModal = null;
     this.loading = true;
     this.solicitudService.aprobarBajaPorPetrolera(this.solicitud.id, this.bajaForm.value).subscribe({
       next: () => {
@@ -441,11 +509,7 @@ export class SolicitudDetalle implements OnInit {
         this.showBajaModal = false;
         this.cargarSolicitud(this.solicitud!.id!);
       },
-      error: (err) => {
-        console.error('Error al aprobar BAJA:', err);
-        this.error = this.errorHandler.getMensaje(err);
-        this.loading = false;
-      }
+      error: (err) => this.falloEnModal('Error al aprobar BAJA:', err)
     });
   }
 
@@ -453,12 +517,15 @@ export class SolicitudDetalle implements OnInit {
     // Resetear fecha a hoy cada vez que se abre el modal
     const hoy = new Date().toISOString().split('T')[0];
     this.duplicadoForm.patchValue({ fechaRespuesta: hoy });
+    this.prepararModal();
     this.showDuplicadoModal = true;
   }
 
   registrarAprobacionDuplicadoPetrolera(): void {
-    if (this.duplicadoForm.invalid || !this.solicitud?.id) return;
+    if (!this.solicitud?.id) return;
+    if (this.faltanDatos(this.duplicadoForm, 'fechaRespuesta')) return;
 
+    this.errorModal = null;
     this.loading = true;
     this.solicitudService.aprobarDuplicadoPorPetrolera(this.solicitud.id, this.duplicadoForm.value).subscribe({
       next: () => {
@@ -466,11 +533,7 @@ export class SolicitudDetalle implements OnInit {
         this.showDuplicadoModal = false;
         this.cargarSolicitud(this.solicitud!.id!);
       },
-      error: (err) => {
-        console.error('Error al aprobar DUPLICADO:', err);
-        this.error = this.errorHandler.getMensaje(err);
-        this.loading = false;
-      }
+      error: (err) => this.falloEnModal('Error al aprobar DUPLICADO:', err)
     });
   }
 
@@ -480,5 +543,7 @@ export class SolicitudDetalle implements OnInit {
     this.showBajaModal = false;
     this.showDuplicadoModal = false;
     this.showRechazoModal = false;
+    this.errorModal = null;
+    this.intentoGuardar = false;
   }
 }

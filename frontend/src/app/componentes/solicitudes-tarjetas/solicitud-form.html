@@ -23,9 +23,9 @@
           [required]="true"
           (socioSelected)="onSocioSelected($event)"
         ></app-socio-autocomplete>
-        <div *ngIf="formulario.get('socioId')?.invalid && formulario.get('socioId')?.touched" class="error-message">
+        <span class="error-text" id="socioId-error" role="alert" *ngIf="campoInvalido('socioId')">
           El socio es obligatorio
-        </div>
+        </span>
       </div>
 
       <!-- Selector de Petrolera -->
@@ -35,6 +35,9 @@
           id="petroleraId"
           formControlName="petroleraId"
           class="form-control"
+          [class.input-error]="campoInvalido('petroleraId')"
+          [attr.aria-invalid]="campoInvalido('petroleraId') ? 'true' : null"
+          [attr.aria-describedby]="campoInvalido('petroleraId') ? 'petroleraId-error' : null"
           (change)="onPetroleraSelected()"
         >
           <option value="">Seleccione una petrolera</option>
@@ -42,9 +45,9 @@
             {{ petrolera.nombre }}
           </option>
         </select>
-        <div *ngIf="formulario.get('petroleraId')?.invalid && formulario.get('petroleraId')?.touched" class="error-message">
+        <span class="error-text" id="petroleraId-error" role="alert" *ngIf="campoInvalido('petroleraId')">
           La petrolera es obligatoria
-        </div>
+        </span>
       </div>
 
       <!-- Campo Solicitado Por (solo para ALTA) -->
@@ -55,13 +58,16 @@
           id="solicitadoPor"
           formControlName="solicitadoPor"
           class="form-control"
+          [class.input-error]="campoInvalido('solicitadoPor')"
+          [attr.aria-invalid]="campoInvalido('solicitadoPor') ? 'true' : null"
+          [attr.aria-describedby]="campoInvalido('solicitadoPor') ? 'solicitadoPor-error' : null"
           placeholder="Nombre de quien realiza la solicitud"
           maxlength="100"
         >
         <small class="form-text">Indica el nombre de la persona de oficina que solicita la tarjeta</small>
-        <div *ngIf="formulario.get('solicitadoPor')?.invalid && formulario.get('solicitadoPor')?.touched" class="error-message">
+        <span class="error-text" id="solicitadoPor-error" role="alert" *ngIf="campoInvalido('solicitadoPor')">
           Este campo es obligatorio
-        </div>
+        </span>
       </div>
 
       <!-- Selector de Tarjeta (para BAJA y DUPLICADO) -->
@@ -69,7 +75,10 @@
         <label for="tarjetaId">
           {{ tipo === 'BAJA' ? 'Tarjeta a Dar de Baja *' : 'Tarjeta a Duplicar *' }}
         </label>
-        <select id="tarjetaId" formControlName="tarjetaId" class="form-control" [disabled]="!selectedSocio || !formulario.get('petroleraId')?.value || tarjetasDelSocio.length === 0">
+        <select id="tarjetaId" formControlName="tarjetaId" class="form-control"
+          [class.input-error]="campoInvalido('tarjetaId')"
+          [attr.aria-invalid]="campoInvalido('tarjetaId') ? 'true' : null"
+          [attr.aria-describedby]="campoInvalido('tarjetaId') ? 'tarjetaId-error' : null" [disabled]="!selectedSocio || !formulario.get('petroleraId')?.value || tarjetasDelSocio.length === 0">
           <option value="">
             {{
               !selectedSocio ? 'Primero seleccione un socio' :
@@ -85,22 +94,25 @@
         <small class="form-text" *ngIf="selectedSocio && formulario.get('petroleraId')?.value">
           {{ tipo === 'BAJA' ? 'Selecciona la tarjeta del socio con esta petrolera que deseas dar de baja' : 'Selecciona la tarjeta del socio con esta petrolera que deseas duplicar' }}
         </small>
-        <div *ngIf="formulario.get('tarjetaId')?.invalid && formulario.get('tarjetaId')?.touched" class="error-message">
+        <span class="error-text" id="tarjetaId-error" role="alert" *ngIf="campoInvalido('tarjetaId')">
           Debes seleccionar una tarjeta
-        </div>
+        </span>
       </div>
 
       <!-- Motivo del duplicado (solo para DUPLICADO) -->
       <div class="form-group full-width" *ngIf="tipo === 'DUPLICADO'">
         <label for="motivoDuplicado">Motivo del Duplicado *</label>
-        <select id="motivoDuplicado" formControlName="motivoDuplicado" class="form-control">
+        <select id="motivoDuplicado" formControlName="motivoDuplicado" class="form-control"
+          [class.input-error]="campoInvalido('motivoDuplicado')"
+          [attr.aria-invalid]="campoInvalido('motivoDuplicado') ? 'true' : null"
+          [attr.aria-describedby]="campoInvalido('motivoDuplicado') ? 'motivoDuplicado-error' : null">
           <option value="">Seleccione el motivo</option>
           <option *ngFor="let motivo of motivosDuplicado" [value]="motivo.valor">
             {{ motivo.etiqueta }}
           </option>
         </select>
         <small class="form-text">Indica por qué se pide el duplicado: la petrolera necesita conocerlo</small>
-        <span class="error-text" *ngIf="campoInvalido('motivoDuplicado')">
+        <span class="error-text" id="motivoDuplicado-error" role="alert" *ngIf="campoInvalido('motivoDuplicado')">
           Selecciona el motivo del duplicado
         </span>
       </div>
@@ -113,6 +125,9 @@
           id="matricula"
           formControlName="matricula"
           class="form-control"
+          [class.input-error]="campoInvalido('matricula')"
+          [attr.aria-invalid]="campoInvalido('matricula') ? 'true' : null"
+          [attr.aria-describedby]="campoInvalido('matricula') ? 'matricula-error' : null"
           [placeholder]="(tipo === 'BAJA' || tipo === 'DUPLICADO') ? 'Se rellena automáticamente al seleccionar la tarjeta' : 'Ej: 1234ABC'"
           [readonly]="tipo === 'BAJA' || tipo === 'DUPLICADO'"
           maxlength="20"
@@ -123,9 +138,9 @@
         <small class="form-text" *ngIf="tipo !== 'BAJA' && tipo !== 'DUPLICADO'">
           Matrícula del vehículo (obligatorio)
         </small>
-        <div *ngIf="formulario.get('matricula')?.invalid && formulario.get('matricula')?.touched" class="error-message">
+        <span class="error-text" id="matricula-error" role="alert" *ngIf="campoInvalido('matricula')">
           La matrícula es obligatoria
-        </div>
+        </span>
       </div>
 
       <!-- Campo Número de Contrato (solo para LLEGADA) -->
@@ -150,11 +165,14 @@
           id="fechaLlegadaEstimada"
           formControlName="fechaLlegadaEstimada"
           class="form-control"
+          [class.input-error]="campoInvalido('fechaLlegadaEstimada')"
+          [attr.aria-invalid]="campoInvalido('fechaLlegadaEstimada') ? 'true' : null"
+          [attr.aria-describedby]="campoInvalido('fechaLlegadaEstimada') ? 'fechaLlegadaEstimada-error' : null"
         >
         <small class="form-text">Fecha en la que el socio podrá recoger o recibirá la tarjeta</small>
-        <div *ngIf="formulario.get('fechaLlegadaEstimada')?.invalid && formulario.get('fechaLlegadaEstimada')?.touched" class="error-message">
+        <span class="error-text" id="fechaLlegadaEstimada-error" role="alert" *ngIf="campoInvalido('fechaLlegadaEstimada')">
           La fecha estimada es obligatoria para solicitudes de llegada
-        </div>
+        </span>
       </div>
 
       <!-- Observaciones -->
@@ -176,7 +194,9 @@
       <button type="button" class="btn btn-secondary" (click)="cancelar()" [disabled]="loading">
         Cancelar
       </button>
-      <button type="submit" class="btn btn-primary" [disabled]="loading || formulario.invalid">
+      <button type="submit" class="btn btn-primary" [disabled]="loading"
+              [attr.aria-disabled]="loading ? 'true' : null"
+              [attr.title]="loading ? 'Creando la solicitud, espere a que termine.' : null">
         {{ loading ? 'Creando...' : 'Crear Solicitud' }}
       </button>
     </div>
