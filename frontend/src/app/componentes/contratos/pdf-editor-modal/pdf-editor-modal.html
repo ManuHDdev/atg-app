@@ -116,23 +116,16 @@
 
             <!-- Botón subir PDF externo -->
             <div class="upload-wrapper">
-              <input
-                type="file"
-                #fileInput
-                accept="application/pdf"
-                (change)="onArchivoSeleccionado($event)"
-                style="display: none"
-              />
-              <button
-                class="btn-secondary"
-                (click)="fileInput.click()"
-                [disabled]="loading || saving || guardandoCampos"
-              >
-<i class="bi bi-upload"></i> Subir PDF editado
-              </button>
-              @if (archivoEditado) {
-                <span class="file-selected"><i class="bi bi-check-circle"></i> {{ archivoEditado.name }}</span>
-              }
+              <app-zona-soltar-archivo
+                [compacto]="true"
+                etiqueta="Arrastre aquí el PDF editado o pulse para elegirlo"
+                nombreAccesible="Subir PDF editado"
+                [archivo]="archivoEditado"
+                [deshabilitado]="loading || saving || guardandoCampos"
+                (archivoSeleccionado)="onArchivoSeleccionado($event)"
+                (archivoRechazado)="onArchivoRechazado($event)"
+                (seleccionLimpiada)="archivoEditado = null">
+              </app-zona-soltar-archivo>
             </div>
           </div>
           <div class="footer-actions-right">

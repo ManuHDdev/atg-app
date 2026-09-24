@@ -5,11 +5,12 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { PdfEditorService, CampoPdf } from '../../../services/pdf-editor.service';
 import { NotificationService } from '../../../services/notification.service';
 import { ErrorHandlerService } from '../../../services/error-handler.service';
+import { ZonaSoltarArchivo } from '../../shared/zona-soltar-archivo/zona-soltar-archivo';
 
 @Component({
   selector: 'app-pdf-editor-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ZonaSoltarArchivo],
   templateUrl: './pdf-editor-modal.html',
   styleUrl: './pdf-editor-modal.css'
 })
@@ -113,29 +114,14 @@ export class PdfEditorModal implements OnInit {
     }
   }
 
-  onArchivoSeleccionado(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      const file = input.files[0];
+  onArchivoSeleccionado(archivo: File): void {
+    this.archivoEditado = archivo;
+    this.notificationService.success(`Archivo "${archivo.name}" seleccionado`);
+  }
 
-      // Validar que sea un PDF
-      if (file.type !== 'application/pdf') {
-        this.notificationService.error('Solo se permiten archivos PDF');
-        input.value = '';
-        return;
-      }
-
-      // Validar tamaño (máximo 50MB)
-      const maxSize = 50 * 1024 * 1024; // 50MB
-      if (file.size > maxSize) {
-        this.notificationService.error('El archivo es demasiado grande. Máximo 50MB');
-        input.value = '';
-        return;
-      }
-
-      this.archivoEditado = file;
-      this.notificationService.success(`Archivo "${file.name}" seleccionado`);
-    }
+  /** La zona de subida ya ha validado tipo y tamaño (PDF, máximo 50 MB). */
+  onArchivoRechazado(mensaje: string): void {
+    this.notificationService.error(mensaje);
   }
 
   guardarCambios(): void {

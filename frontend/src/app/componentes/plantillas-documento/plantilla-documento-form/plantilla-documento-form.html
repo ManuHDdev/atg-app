@@ -79,19 +79,14 @@
         }
 
         <div class="form-group">
-          <label for="archivo">{{ isEditMode ? 'Nuevo archivo PDF *' : 'Archivo PDF *' }}</label>
-          <input
-            type="file"
-            id="archivo"
-            class="form-control"
-            accept="application/pdf"
-            (change)="onArchivoSeleccionado($event)">
-          <small class="help-text">Solo se admiten archivos PDF</small>
-          @if (archivo) {
-            <p class="archivo-seleccionado">
-              <i class="bi bi-check-circle"></i> {{ archivo.name }}
-            </p>
-          }
+          <label id="etiquetaArchivo">{{ isEditMode ? 'Nuevo archivo PDF *' : 'Archivo PDF *' }}</label>
+          <app-zona-soltar-archivo
+            [archivo]="archivo"
+            [nombreAccesible]="isEditMode ? 'Nuevo archivo PDF de la plantilla' : 'Archivo PDF de la plantilla'"
+            (archivoSeleccionado)="onArchivoSeleccionado($event)"
+            (archivoRechazado)="onArchivoRechazado($event)"
+            (seleccionLimpiada)="onSeleccionLimpiada()">
+          </app-zona-soltar-archivo>
         </div>
 
         <div class="form-actions">

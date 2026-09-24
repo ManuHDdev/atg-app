@@ -1,0 +1,57 @@
+<div class="zona-campo" [class.compacto]="compacto">
+  <div
+    class="zona"
+    [class.arrastrando]="arrastrando"
+    [class.seleccionada]="!!archivo"
+    [class.deshabilitada]="deshabilitado"
+    role="button"
+    [attr.tabindex]="deshabilitado ? -1 : 0"
+    [attr.aria-label]="nombreAccesible"
+    [attr.aria-describedby]="idAyuda"
+    [attr.aria-disabled]="deshabilitado"
+    (click)="abrirSelector()"
+    (keydown)="alPulsarTecla($event)"
+    (dragenter)="alEntrarArrastre($event)"
+    (dragover)="alArrastrarEncima($event)"
+    (dragleave)="alSalirArrastre($event)"
+    (drop)="alSoltar($event)">
+
+    @if (archivo) {
+      <i class="bi bi-file-earmark-check zona-icono" aria-hidden="true"></i>
+      <span class="zona-texto">
+        <span class="zona-archivo">{{ archivo.name }}</span>
+        <span class="zona-tamano">{{ tamanoLegible }}</span>
+      </span>
+    } @else {
+      <i class="bi bi-cloud-arrow-up zona-icono" aria-hidden="true"></i>
+      <span class="zona-texto">{{ etiqueta }}</span>
+    }
+  </div>
+
+  @if (archivo) {
+    <div class="zona-acciones">
+      <button
+        type="button"
+        class="btn-quitar"
+        [disabled]="deshabilitado"
+        (click)="quitarSeleccion()">
+        <i class="bi bi-x-circle" aria-hidden="true"></i>
+        Quitar archivo
+      </button>
+    </div>
+  }
+
+  <small class="zona-ayuda" [id]="idAyuda">{{ textoAyuda }}</small>
+
+  <p class="zona-rechazo" role="status" aria-live="polite">{{ mensajeRechazo }}</p>
+
+  <input
+    #entradaArchivo
+    class="entrada-oculta"
+    type="file"
+    tabindex="-1"
+    aria-hidden="true"
+    [accept]="tipoAceptado"
+    [disabled]="deshabilitado"
+    (change)="alCambiarEntrada($event)" />
+</div>

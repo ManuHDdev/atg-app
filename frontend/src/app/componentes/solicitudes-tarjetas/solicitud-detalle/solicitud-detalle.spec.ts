@@ -135,26 +135,24 @@ describe('SolicitudDetalle', () => {
     expect(solicitudServiceSpy.enviarAPetrolera).not.toHaveBeenCalled();
   });
 
-  it('rechaza un fichero que no sea PDF y no lo deja listo para subir', async () => {
+  /** El tipo y el tamaño los valida la zona de subida; aquí solo se muestra el motivo. */
+  it('muestra el motivo cuando la zona de subida rechaza un fichero', async () => {
     const fixture = await crearComponente({ ...SOLICITUD_BASE, estado: 'ENVIADO_SOCIO' });
     const component = fixture.componentInstance;
 
-    const evento = {
-      target: { files: [new File([''], 'escaneo.jpg', { type: 'image/jpeg' })] }
-    } as unknown as Event;
-    component.onFicheroFirmadoSeleccionado(evento);
+    component.onFicheroRechazado('Solo se admiten archivos PDF.');
 
     expect(component.ficheroFirmado).toBeNull();
-    expect(component.error).toBeTruthy();
+    expect(component.error).toBe('Solo se admiten archivos PDF.');
   });
 
-  /** En contrato-detail los dos inputs comparten fichero seleccionado; aquí no. */
+  /** Cada zona de subida tiene su propio fichero: elegir uno no deja el otro listo. */
   it('mantiene separados el impreso en borrador y el escaneado firmado', async () => {
     const fixture = await crearComponente({ ...SOLICITUD_BASE });
     const component = fixture.componentInstance;
 
     const pdf = new File([''], 'impreso.pdf', { type: 'application/pdf' });
-    component.onFicheroEditableSeleccionado({ target: { files: [pdf] } } as unknown as Event);
+    component.onFicheroEditableSeleccionado(pdf);
 
     expect(component.ficheroEditable).toBe(pdf);
     expect(component.ficheroFirmado).toBeNull();

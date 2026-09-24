@@ -13,11 +13,12 @@ import {
   PlantillaDocumento,
   TIPOS_SOLICITUD_POR_MODULO
 } from '../../../models/plantilla-documento.model';
+import { ZonaSoltarArchivo } from '../../shared/zona-soltar-archivo/zona-soltar-archivo';
 
 @Component({
   selector: 'app-plantilla-documento-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ZonaSoltarArchivo],
   templateUrl: './plantilla-documento-form.html',
   styleUrls: ['./plantilla-documento-form.css']
 })
@@ -97,19 +98,20 @@ export class PlantillaDocumentoForm implements OnInit {
     this.tipoSolicitud = '';
   }
 
-  onArchivoSeleccionado(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const seleccionado = input.files?.[0] ?? null;
-
-    if (seleccionado && seleccionado.type !== 'application/pdf') {
-      this.error = 'El archivo debe ser un PDF';
-      this.archivo = null;
-      input.value = '';
-      return;
-    }
-
+  onArchivoSeleccionado(archivo: File): void {
     this.error = '';
-    this.archivo = seleccionado;
+    this.archivo = archivo;
+  }
+
+  /** La zona de subida ya ha validado tipo y tamaño: aquí solo se muestra el motivo. */
+  onArchivoRechazado(mensaje: string): void {
+    this.error = mensaje;
+    this.archivo = null;
+  }
+
+  onSeleccionLimpiada(): void {
+    this.error = '';
+    this.archivo = null;
   }
 
   get formularioValido(): boolean {

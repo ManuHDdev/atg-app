@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -13,11 +13,12 @@ import { SolicitudContrato, EstadoSolicitud, TipoSolicitudContrato } from '../..
 import { PdfPreviewModal } from '../../shared/pdf-preview-modal/pdf-preview-modal';
 import { PdfEditorModal } from '../pdf-editor-modal/pdf-editor-modal';
 import { EmailLogs } from '../../solicitudes-tarjetas/email-logs/email-logs';
+import { ZonaSoltarArchivo } from '../../shared/zona-soltar-archivo/zona-soltar-archivo';
 
 @Component({
   selector: 'app-contrato-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, PdfPreviewModal, PdfEditorModal, EmailLogs],
+  imports: [CommonModule, FormsModule, PdfPreviewModal, PdfEditorModal, EmailLogs, ZonaSoltarArchivo],
   templateUrl: './contrato-detail.html',
   styleUrl: './contrato-detail.css'
 })
@@ -25,11 +26,11 @@ export class ContratoDetail implements OnInit {
   solicitud: SolicitudContrato | null = null;
   loading = false;
   procesando = false;
-  selectedFile: File | null = null;
-
-  // Referencias a los inputs de archivo
-  @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
-  @ViewChild('fileInputFirmado') fileInputFirmado?: ElementRef<HTMLInputElement>;
+  // Circuito del documento firmado. Cada subida tiene su propio fichero seleccionado:
+  // compartirlos hacía que elegir el borrador dejara "listo para subir" el escaneado
+  // firmado, y al revés.
+  archivoEditado: File | null = null;
+  archivoFirmado: File | null = null;
 
   // Preview modal
   modalPreviewAbierto = false;
@@ -178,31 +179,30 @@ export class ContratoDetail implements OnInit {
     });
   }
 
-  onFileSelected(event: any): void {
-    const file = event.target.files[0];
-    if (file && file.type === 'application/pdf') {
-      this.selectedFile = file;
-    } else {
-      this.notificationService.error('Por favor seleccione un archivo PDF válido');
-      this.selectedFile = null;
-    }
+  onArchivoEditadoSeleccionado(archivo: File): void {
+    this.archivoEditado = archivo;
+  }
+
+  onArchivoFirmadoSeleccionado(archivo: File): void {
+    this.archivoFirmado = archivo;
+  }
+
+  /** La zona de subida ya ha validado tipo y tamaño: aquí solo se avisa del motivo. */
+  onArchivoRechazado(mensaje: string): void {
+    this.notificationService.error(mensaje);
   }
 
   guardarPdfEditado(): void {
-    if (!this.solicitud?.id || !this.selectedFile) {
+    if (!this.solicitud?.id || !this.archivoEditado) {
       this.notificationService.error('Debe seleccionar un archivo PDF');
       return;
     }
 
     this.procesando = true;
-    this.solicitudService.guardarPdfEditado(this.solicitud.id, this.selectedFile).subscribe({
+    this.solicitudService.guardarPdfEditado(this.solicitud.id, this.archivoEditado).subscribe({
       next: () => {
         this.notificationService.success('PDF guardado correctamente');
-        this.selectedFile = null;
-        // Resetear el input de archivo
-        if (this.fileInput?.nativeElement) {
-          this.fileInput.nativeElement.value = '';
-        }
+        this.archivoEditado = null;
         this.cargarSolicitud(this.solicitud!.id!);
         this.procesando = false;
       },
@@ -237,20 +237,16 @@ export class ContratoDetail implements OnInit {
   }
 
   subirPdfFirmado(): void {
-    if (!this.solicitud?.id || !this.selectedFile) {
+    if (!this.solicitud?.id || !this.archivoFirmado) {
       this.notificationService.error('Debe seleccionar un archivo PDF firmado');
       return;
     }
 
     this.procesando = true;
-    this.solicitudService.subirPdfFirmado(this.solicitud.id, this.selectedFile).subscribe({
+    this.solicitudService.subirPdfFirmado(this.solicitud.id, this.archivoFirmado).subscribe({
       next: (solicitudActualizada) => {
         this.solicitud = solicitudActualizada;
-        this.selectedFile = null;
-        // Resetear el input de archivo
-        if (this.fileInputFirmado?.nativeElement) {
-          this.fileInputFirmado.nativeElement.value = '';
-        }
+        this.archivoFirmado = null;
         this.procesando = false;
         this.notificationService.success('PDF firmado recibido correctamente');
       },

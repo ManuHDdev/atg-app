@@ -339,27 +339,22 @@ describe('Dispositivos', () => {
     });
 
     it('cada subida tiene su propio fichero seleccionado', () => {
-      const evento = { target: { files: [pdf()] } } as unknown as Event;
-
-      component.onFicheroEditableSeleccionado(evento);
+      component.onFicheroEditableSeleccionado(pdf());
 
       expect(component.ficheroEditable).not.toBeNull();
       expect(component.ficheroFirmado).toBeNull();
 
-      component.onFicheroFirmadoSeleccionado(evento);
+      component.onFicheroFirmadoSeleccionado(pdf());
 
       expect(component.ficheroFirmado).not.toBeNull();
     });
 
-    it('rechaza un fichero que no sea PDF', () => {
-      const evento = {
-        target: { files: [new File([''], 'foto.png', { type: 'image/png' })] }
-      } as unknown as Event;
-
-      component.onFicheroEditableSeleccionado(evento);
+    /** El tipo y el tamaño los valida la zona de subida; aquí solo se avisa del motivo. */
+    it('avisa del motivo cuando la zona de subida rechaza un fichero', () => {
+      component.onFicheroRechazado('Solo se admiten archivos PDF.');
 
       expect(component.ficheroEditable).toBeNull();
-      expect(notificationServiceSpy.error).toHaveBeenCalled();
+      expect(notificationServiceSpy.error).toHaveBeenCalledWith('Solo se admiten archivos PDF.');
     });
 
     it('envia el impreso al socio y recarga la solicitud', () => {

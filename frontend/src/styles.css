@@ -99,6 +99,9 @@
   /* Grosor de borde de enfasis (ej. enlace activo del menu) */
   --border-width-accent: 3px;
 
+  /* Grosor del borde discontinuo de las zonas de soltar archivos */
+  --border-width-dashed: 2px;
+
   /* Foco visible */
   --focus-ring-color: #1d4ed8;
   --focus-ring-width: 2px;
