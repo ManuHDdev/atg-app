@@ -72,13 +72,14 @@
         <!-- Campo para subir plantilla PDF -->
         <div class="form-row">
           <div class="form-group full-width">
-            <label for="plantillaPdf">Plantilla PDF</label>
-            <input
-              type="file"
-              id="plantillaPdf"
-              accept="application/pdf"
-              (change)="onArchivoSeleccionado($event)"
-            />
+            <label>Plantilla PDF</label>
+            <app-zona-soltar-archivo
+              [archivo]="archivoSeleccionado"
+              nombreAccesible="Plantilla PDF del tipo de solicitud"
+              (archivoSeleccionado)="onArchivoSeleccionado($event)"
+              (archivoRechazado)="onArchivoRechazado($event)"
+              (seleccionLimpiada)="onSeleccionLimpiada()"
+            ></app-zona-soltar-archivo>
             @if (nombreArchivoMostrar) {
               <div class="inline-row mt-xs">
                 <small class="archivo-actual-badge"><i class="bi bi-file-earmark-pdf"></i> Archivo actual: {{ nombreArchivoMostrar }}</small>

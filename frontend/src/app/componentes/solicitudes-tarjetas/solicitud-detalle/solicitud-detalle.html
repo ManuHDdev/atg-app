@@ -141,13 +141,14 @@
 
           <ng-container *ngIf="puedeEditarImpreso">
             <div class="upload-section">
-              <label class="upload-label" for="pdfEditable">Subir el impreso ya cumplimentado:</label>
-              <input
-                id="pdfEditable"
-                type="file"
-                accept="application/pdf"
-                (change)="onFicheroEditableSeleccionado($event)"
-                #inputPdfEditable />
+              <span class="upload-label">Subir el impreso ya cumplimentado:</span>
+              <app-zona-soltar-archivo
+                [archivo]="ficheroEditable"
+                nombreAccesible="Subir el impreso ya cumplimentado"
+                (archivoSeleccionado)="onFicheroEditableSeleccionado($event)"
+                (archivoRechazado)="onFicheroRechazado($event)"
+                (seleccionLimpiada)="ficheroEditable = null">
+              </app-zona-soltar-archivo>
               <button
                 type="button"
                 class="btn btn-primary"
@@ -230,15 +231,16 @@
 
             <ng-container *ngIf="puedeSubirFirmado">
               <div class="upload-section">
-                <label class="upload-label" for="pdfFirmado">
+                <span class="upload-label">
                   {{ solicitud.rutaPdfFirmado ? 'Sustituir el impreso firmado:' : 'Subir el impreso firmado por el socio:' }}
-                </label>
-                <input
-                  id="pdfFirmado"
-                  type="file"
-                  accept="application/pdf"
-                  (change)="onFicheroFirmadoSeleccionado($event)"
-                  #inputPdfFirmado />
+                </span>
+                <app-zona-soltar-archivo
+                  [archivo]="ficheroFirmado"
+                  [nombreAccesible]="solicitud.rutaPdfFirmado ? 'Sustituir el impreso firmado' : 'Subir el impreso firmado por el socio'"
+                  (archivoSeleccionado)="onFicheroFirmadoSeleccionado($event)"
+                  (archivoRechazado)="onFicheroRechazado($event)"
+                  (seleccionLimpiada)="ficheroFirmado = null">
+                </app-zona-soltar-archivo>
                 <button
                   type="button"
                   class="btn btn-primary"

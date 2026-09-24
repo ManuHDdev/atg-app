@@ -135,13 +135,14 @@
               <div class="upload-section">
                 <p class="upload-label">Subir PDF editado:</p>
                 <div class="file-input-group">
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    (change)="onFileSelected($event)"
-                    #fileInput />
-                  @if (selectedFile) {
-                    <span class="file-name">{{ selectedFile.name }}</span>
+                  <app-zona-soltar-archivo
+                    [archivo]="archivoEditado"
+                    nombreAccesible="Subir el PDF editado"
+                    (archivoSeleccionado)="onArchivoEditadoSeleccionado($event)"
+                    (archivoRechazado)="onArchivoRechazado($event)"
+                    (seleccionLimpiada)="archivoEditado = null">
+                  </app-zona-soltar-archivo>
+                  @if (archivoEditado) {
                     <button
                       class="btn-primary"
                       (click)="guardarPdfEditado()"
@@ -239,13 +240,14 @@
               <div class="upload-section">
                 <p class="upload-label"><strong>{{ solicitud.rutaPdfFirmado ? 'Reemplazar PDF firmado:' : 'Recibir PDF firmado:' }}</strong></p>
                 <div class="file-input-group">
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    (change)="onFileSelected($event)"
-                    #fileInputFirmado />
-                  @if (selectedFile) {
-                    <span class="file-name">{{ selectedFile.name }}</span>
+                  <app-zona-soltar-archivo
+                    [archivo]="archivoFirmado"
+                    nombreAccesible="Subir el PDF firmado por el socio"
+                    (archivoSeleccionado)="onArchivoFirmadoSeleccionado($event)"
+                    (archivoRechazado)="onArchivoRechazado($event)"
+                    (seleccionLimpiada)="archivoFirmado = null">
+                  </app-zona-soltar-archivo>
+                  @if (archivoFirmado) {
                     <button
                       class="btn-primary"
                       (click)="subirPdfFirmado()"

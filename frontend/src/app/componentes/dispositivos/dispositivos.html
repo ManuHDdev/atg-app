@@ -433,13 +433,14 @@
 
                       @if (puedeEditarImpreso) {
                         <div class="upload-section">
-                          <label class="upload-label" for="pdfEditable">Subir el impreso ya cumplimentado:</label>
-                          <input
-                            id="pdfEditable"
-                            type="file"
-                            accept="application/pdf"
-                            (change)="onFicheroEditableSeleccionado($event)"
-                            #inputPdfEditable />
+                          <span class="upload-label">Subir el impreso ya cumplimentado:</span>
+                          <app-zona-soltar-archivo
+                            [archivo]="ficheroEditable"
+                            nombreAccesible="Subir el impreso ya cumplimentado"
+                            (archivoSeleccionado)="onFicheroEditableSeleccionado($event)"
+                            (archivoRechazado)="onFicheroRechazado($event)"
+                            (seleccionLimpiada)="ficheroEditable = null">
+                          </app-zona-soltar-archivo>
                           @if (ficheroEditable) {
                             <button type="button" class="btn-primary" [disabled]="procesandoDocumento"
                                     (click)="guardarPdfEditado()">
@@ -527,15 +528,16 @@
 
                         @if (puedeSubirFirmado) {
                           <div class="upload-section">
-                            <label class="upload-label" for="pdfFirmado">
+                            <span class="upload-label">
                               {{ solicitudSeleccionada.rutaPdfFirmado ? 'Sustituir el impreso firmado:' : 'Subir el impreso firmado por el socio:' }}
-                            </label>
-                            <input
-                              id="pdfFirmado"
-                              type="file"
-                              accept="application/pdf"
-                              (change)="onFicheroFirmadoSeleccionado($event)"
-                              #inputPdfFirmado />
+                            </span>
+                            <app-zona-soltar-archivo
+                              [archivo]="ficheroFirmado"
+                              [nombreAccesible]="solicitudSeleccionada.rutaPdfFirmado ? 'Sustituir el impreso firmado' : 'Subir el impreso firmado por el socio'"
+                              (archivoSeleccionado)="onFicheroFirmadoSeleccionado($event)"
+                              (archivoRechazado)="onFicheroRechazado($event)"
+                              (seleccionLimpiada)="ficheroFirmado = null">
+                            </app-zona-soltar-archivo>
                             @if (ficheroFirmado) {
                               <button type="button" class="btn-primary" [disabled]="procesandoDocumento"
                                       (click)="subirPdfFirmado()">

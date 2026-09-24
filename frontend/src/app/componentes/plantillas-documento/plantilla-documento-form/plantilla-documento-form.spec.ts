@@ -94,15 +94,37 @@ describe('PlantillaDocumentoForm', () => {
       expect(component.formularioValido).toBeTrue();
     });
 
-    it('rechaza un archivo que no sea PDF', () => {
-      const input = document.createElement('input');
-      const noPdf = new File(['x'], 'foto.png', { type: 'image/png' });
-      Object.defineProperty(input, 'files', { value: [noPdf] });
+    it('acepta el archivo que emite la zona de subida', () => {
+      const archivo = pdf();
+      component.error = 'error anterior';
 
-      component.onArchivoSeleccionado({ target: input } as unknown as Event);
+      component.onArchivoSeleccionado(archivo);
+
+      expect(component.archivo).toBe(archivo);
+      expect(component.error).toBe('');
+    });
+
+    /** El tipo y el tamaño los valida la zona de subida; aquí solo se muestra el motivo. */
+    it('muestra el motivo del rechazo y no deja el archivo listo para subir', () => {
+      component.archivo = pdf();
+
+      component.onArchivoRechazado('Solo se admiten archivos PDF.');
 
       expect(component.archivo).toBeNull();
-      expect(component.error).toBe('El archivo debe ser un PDF');
+      expect(component.error).toBe('Solo se admiten archivos PDF.');
+      expect(component.formularioValido).toBeFalse();
+    });
+
+    it('al quitar el archivo deja el formulario inválido de nuevo', () => {
+      component.petroleraId = 1;
+      component.tipoSolicitud = 'ALTA';
+      component.onArchivoSeleccionado(pdf());
+      expect(component.formularioValido).toBeTrue();
+
+      component.onSeleccionLimpiada();
+
+      expect(component.archivo).toBeNull();
+      expect(component.formularioValido).toBeFalse();
     });
 
     it('crea la plantilla y vuelve al listado', () => {

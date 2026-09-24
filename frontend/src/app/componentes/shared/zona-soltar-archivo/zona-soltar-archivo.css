@@ -1,0 +1,155 @@
+.zona-campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+.zona {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-lg) var(--spacing-md);
+  text-align: center;
+  cursor: pointer;
+  border: var(--border-width-dashed) dashed var(--border-hover);
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.zona:hover:not(.deshabilitada) {
+  border-color: var(--primary-color);
+  background-color: var(--bg-tertiary);
+}
+
+/* Resalte mientras hay un archivo suspendido encima de la zona. */
+.zona.arrastrando {
+  border-color: var(--primary-color);
+  border-style: solid;
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.zona.seleccionada {
+  border-style: solid;
+  border-color: var(--success-color);
+  background-color: var(--success-light);
+  color: var(--success-dark);
+}
+
+.zona.deshabilitada {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.zona:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.zona-icono {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.zona-texto {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing-xs) / 2);
+  font-size: 0.875rem;
+  word-break: break-word;
+}
+
+.zona-archivo {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.zona-tamano {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.zona-acciones {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-quitar {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing-xs) / 2);
+  padding: calc(var(--spacing-xs) / 2) var(--spacing-xs);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-primary);
+  color: var(--danger-color);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.btn-quitar:hover:not(:disabled) {
+  background-color: var(--danger-light);
+}
+
+.btn-quitar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-quitar:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.zona-ayuda {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+}
+
+.zona-rechazo {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--danger-color);
+}
+
+/* La region aria-live existe siempre para poder anunciar; solo ocupa sitio con mensaje. */
+.zona-rechazo:empty {
+  display: none;
+}
+
+/* Variante de una linea para barras de acciones estrechas. */
+.compacto .zona {
+  flex-direction: row;
+  justify-content: flex-start;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  text-align: left;
+}
+
+.compacto .zona-icono {
+  font-size: 1.125rem;
+}
+
+.compacto .zona-texto {
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--spacing-xs);
+}
+
+.entrada-oculta {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: calc(var(--spacing-xs) * -1);
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

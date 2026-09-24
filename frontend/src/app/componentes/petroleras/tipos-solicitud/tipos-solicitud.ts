@@ -9,11 +9,12 @@ import { NotificationService } from '../../../services/notification.service';
 import { ErrorHandlerService } from '../../../services/error-handler.service';
 import { TipoSolicitud } from '../../../models/tipo-solicitud.model';
 import { Petrolera } from '../../../models/petrolera.model';
+import { ZonaSoltarArchivo } from '../../shared/zona-soltar-archivo/zona-soltar-archivo';
 
 @Component({
   selector: 'app-tipos-solicitud',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, ZonaSoltarArchivo],
   templateUrl: './tipos-solicitud.html',
   styleUrl: './tipos-solicitud.css'
 })
@@ -133,15 +134,19 @@ export class TiposSolicitud implements OnInit {
     this.mostrarFormulario = true;
   }
 
-  onArchivoSeleccionado(event: any): void {
-    const file = event.target.files[0];
-    if (file && file.type === 'application/pdf') {
-      this.archivoSeleccionado = file;
-      this.nombreArchivoMostrar = file.name;
-    } else {
-      this.notificationService.error('Solo se permiten archivos PDF');
-      event.target.value = '';
-    }
+  onArchivoSeleccionado(archivo: File): void {
+    this.archivoSeleccionado = archivo;
+    this.nombreArchivoMostrar = archivo.name;
+  }
+
+  /** La zona de subida ya ha validado tipo y tamaño: aquí solo se avisa del motivo. */
+  onArchivoRechazado(mensaje: string): void {
+    this.notificationService.error(mensaje);
+  }
+
+  onSeleccionLimpiada(): void {
+    this.archivoSeleccionado = null;
+    this.nombreArchivoMostrar = '';
   }
 
   guardarTipoSolicitud(): void {

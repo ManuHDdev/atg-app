@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DispositivoService } from '../../services/dispositivo.service';
@@ -20,11 +20,12 @@ import { Empresa } from '../../models/empresa.model';
 import { Petrolera, petroleraPermite } from '../../models/petrolera.model';
 import { EmailLogs } from '../solicitudes-tarjetas/email-logs/email-logs';
 import { SocioAutocomplete } from '../shared/socio-autocomplete/socio-autocomplete';
+import { ZonaSoltarArchivo } from '../shared/zona-soltar-archivo/zona-soltar-archivo';
 
 @Component({
   selector: 'app-dispositivos',
   standalone: true,
-  imports: [CommonModule, FormsModule, EmailLogs, SocioAutocomplete],
+  imports: [CommonModule, FormsModule, EmailLogs, SocioAutocomplete, ZonaSoltarArchivo],
   templateUrl: './dispositivos.html',
   styleUrl: './dispositivos.css',
 })
@@ -62,10 +63,8 @@ export class Dispositivos implements OnInit {
   socioSeleccionado: Socio | null = null;
 
   // Circuito del documento firmado. Cada subida tiene su propio fichero seleccionado y su
-  // propio input: compartirlos haría que elegir el borrador dejara "listo para subir" el
+  // propia zona de subida: compartirlos haría que elegir el borrador dejara "listo para subir" el
   // escaneado firmado, y al revés.
-  @ViewChild('inputPdfEditable') inputPdfEditable?: ElementRef<HTMLInputElement>;
-  @ViewChild('inputPdfFirmado') inputPdfFirmado?: ElementRef<HTMLInputElement>;
   ficheroEditable: File | null = null;
   ficheroFirmado: File | null = null;
   procesandoDocumento = false;
@@ -316,23 +315,17 @@ export class Dispositivos implements OnInit {
 
   // ---------- circuito del documento firmado ----------
 
-  onFicheroEditableSeleccionado(event: Event): void {
-    this.ficheroEditable = this.leerPdfSeleccionado(event);
+  onFicheroEditableSeleccionado(fichero: File): void {
+    this.ficheroEditable = fichero;
   }
 
-  onFicheroFirmadoSeleccionado(event: Event): void {
-    this.ficheroFirmado = this.leerPdfSeleccionado(event);
+  onFicheroFirmadoSeleccionado(fichero: File): void {
+    this.ficheroFirmado = fichero;
   }
 
-  private leerPdfSeleccionado(event: Event): File | null {
-    const fichero = (event.target as HTMLInputElement).files?.[0] ?? null;
-    if (fichero && fichero.type === 'application/pdf') {
-      return fichero;
-    }
-    if (fichero) {
-      this.notificationService.error('Seleccione un archivo PDF válido');
-    }
-    return null;
+  /** La zona de subida ya ha validado tipo y tamaño: aquí solo se avisa del motivo. */
+  onFicheroRechazado(mensaje: string): void {
+    this.notificationService.error(mensaje);
   }
 
   guardarPdfEditado(): void {
@@ -448,16 +441,10 @@ export class Dispositivos implements OnInit {
 
   private limpiarSeleccionEditable(): void {
     this.ficheroEditable = null;
-    if (this.inputPdfEditable?.nativeElement) {
-      this.inputPdfEditable.nativeElement.value = '';
-    }
   }
 
   private limpiarSeleccionFirmado(): void {
     this.ficheroFirmado = null;
-    if (this.inputPdfFirmado?.nativeElement) {
-      this.inputPdfFirmado.nativeElement.value = '';
-    }
   }
 
   private falloDocumento(mensaje: string, error: unknown): void {
