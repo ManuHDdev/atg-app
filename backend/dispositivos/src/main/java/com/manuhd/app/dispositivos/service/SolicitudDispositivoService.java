@@ -289,23 +289,13 @@ public class SolicitudDispositivoService {
                     ? obtenerDatosEmpresa(actualizada.getEmpresaId()) : null;
             emailSocio = emailDestino((String) socio.get("email"), "socio@example.com");
 
-            Map<String, Object> plantilla = obtenerPlantillaCorreo(
-                    actualizada.getPetroleraId(), PLANTILLA_DOCUMENTO_SOCIO);
-            if (plantilla == null) {
-                // Sin plantilla configurada no se manda nada, pero la etapa ya ha avanzado.
-                log.warn("No hay plantilla {} para la petrolera {}; no se envia el impreso al socio",
-                        PLANTILLA_DOCUMENTO_SOCIO, actualizada.getPetroleraId());
-            } else {
-                Map<String, String> variables = prepararVariablesCorreo(actualizada, socio, empresa, petrolera);
-                emailService.enviarCorreoConPlantillaYAdjunto(
-                        emailSocio,
-                        (String) plantilla.get("asunto"),
-                        (String) plantilla.get("cuerpo"),
-                        variables,
-                        adjunto,
-                        nombreAdjunto("Solicitud", actualizada));
-                registrarEnvioCorreo(actualizada, PLANTILLA_DOCUMENTO_SOCIO, emailSocio, true, null);
-            }
+            Map<String, String> variables = prepararVariablesCorreo(actualizada, socio, empresa, petrolera);
+
+            // Este correo lleva el impreso que el socio tiene que firmar: si no sale, el
+            // circuito se queda parado, asi que nunca depende de que haya plantilla.
+            enviarCorreoConAdjuntoObligatorio(actualizada, PLANTILLA_DOCUMENTO_SOCIO, emailSocio,
+                    variables, adjunto, nombreAdjunto("Solicitud", actualizada),
+                    asuntoSocioPorDefecto(actualizada), cuerpoSocioPorDefecto(actualizada));
         } catch (Exception e) {
             log.error("Error al enviar el impreso al socio: {}", e.getMessage());
             registrarEnvioCorreo(actualizada, PLANTILLA_DOCUMENTO_SOCIO,
@@ -409,16 +399,9 @@ public class SolicitudDispositivoService {
 
             // Este correo no puede dejar de salir por una plantilla sin configurar: es el
             // que presenta la solicitud a la petrolera.
-            Map<String, Object> plantilla = obtenerPlantillaCorreo(
-                    actualizada.getPetroleraId(), PLANTILLA_DOCUMENTO_PETROLERA);
-            String asunto = plantilla != null
-                    ? (String) plantilla.get("asunto") : asuntoPetroleraPorDefecto(actualizada);
-            String cuerpo = plantilla != null
-                    ? (String) plantilla.get("cuerpo") : cuerpoPetroleraPorDefecto(actualizada);
-
-            emailService.enviarCorreoConPlantillaYAdjunto(emailPetrolera, asunto, cuerpo, variables,
-                    adjunto, nombreAdjunto("Solicitud-firmada", actualizada));
-            registrarEnvioCorreo(actualizada, PLANTILLA_DOCUMENTO_PETROLERA, emailPetrolera, true, null);
+            enviarCorreoConAdjuntoObligatorio(actualizada, PLANTILLA_DOCUMENTO_PETROLERA, emailPetrolera,
+                    variables, adjunto, nombreAdjunto("Solicitud-firmada", actualizada),
+                    asuntoPetroleraPorDefecto(actualizada), cuerpoPetroleraPorDefecto(actualizada));
         } catch (Exception e) {
             log.error("Error al presentar la solicitud a la petrolera: {}", e.getMessage());
             registrarEnvioCorreo(actualizada, PLANTILLA_DOCUMENTO_PETROLERA,
@@ -735,6 +718,64 @@ public class SolicitudDispositivoService {
 
     private String nombreAdjunto(String prefijo, SolicitudDispositivo solicitud) {
         return prefijo + "-" + solicitud.getNumeroSolicitud() + ".pdf";
+    }
+
+    /**
+     * Correo con adjunto de los dos pasos del circuito del documento firmado. Sin plantilla
+     * activa el correo sale igual con el texto de respaldo, porque el circuito se queda
+     * parado si no llega: el envio nunca depende de que la oficina haya creado la plantilla.
+     * Las variables las resuelve despues el EmailService, tanto en la plantilla como en el
+     * texto de respaldo.
+     */
+    private void enviarCorreoConAdjuntoObligatorio(SolicitudDispositivo solicitud, String tipoPlantilla,
+                                                   String destinatario, Map<String, String> variables,
+                                                   Path adjunto, String nombreAdjunto,
+                                                   String asuntoPorDefecto, String cuerpoPorDefecto) {
+        Map<String, Object> plantilla = obtenerPlantillaCorreo(solicitud.getPetroleraId(), tipoPlantilla);
+
+        String asunto;
+        String cuerpo;
+        if (plantilla != null) {
+            asunto = (String) plantilla.get("asunto");
+            cuerpo = (String) plantilla.get("cuerpo");
+        } else {
+            log.warn("No hay plantilla {} para la petrolera {}; se usa el texto por defecto",
+                    tipoPlantilla, solicitud.getPetroleraId());
+            asunto = asuntoPorDefecto;
+            cuerpo = cuerpoPorDefecto;
+        }
+
+        emailService.enviarCorreoConPlantillaYAdjunto(destinatario, asunto, cuerpo, variables,
+                adjunto, nombreAdjunto);
+        registrarEnvioCorreo(solicitud, tipoPlantilla, destinatario, true, null);
+    }
+
+    private String asuntoSocioPorDefecto(SolicitudDispositivo solicitud) {
+        return "Firma del impreso de solicitud de dispositivo - "
+                + getTipoSolicitudLabel(solicitud.getTipoSolicitud())
+                + " - " + solicitud.getNumeroSolicitud();
+    }
+
+    /**
+     * Cuerpo de respaldo del correo al socio: es el que lleva el impreso que tiene que firmar
+     * y devolver, asi que pide explicitamente esa devolucion. Las variables las resuelve
+     * despues el EmailService.
+     */
+    private String cuerpoSocioPorDefecto(SolicitudDispositivo solicitud) {
+        return "<html><body>"
+                + "<h2>Solicitud de dispositivo - " + getTipoSolicitudLabel(solicitud.getTipoSolicitud()) + "</h2>"
+                + "<p>Estimado/a {{socio_nombre}},</p>"
+                + "<p>Le adjuntamos el impreso de su solicitud de dispositivo para la petrolera "
+                + "<strong>{{petrolera_nombre}}</strong>, correspondiente a la matr&iacute;cula "
+                + "<strong>{{matricula}}</strong> (n&ordm; de solicitud " + solicitud.getNumeroSolicitud() + ").</p>"
+                + "<p><strong>Para que podamos continuar con la tramitaci&oacute;n, revise el documento, "
+                + "f&iacute;rmelo y devu&eacute;lvanoslo</strong> respondiendo a este correo con el impreso "
+                + "firmado escaneado o entreg&aacute;ndolo en nuestras oficinas.</p>"
+                + "<p>Hasta que no recibamos el documento firmado, la solicitud no puede presentarse "
+                + "a la petrolera.</p>"
+                + "<p>Gracias por su colaboraci&oacute;n.</p>"
+                + "<p>Saludos cordiales,<br/>Sistema de Gesti&oacute;n ATG</p>"
+                + "</body></html>";
     }
 
     private String asuntoPetroleraPorDefecto(SolicitudDispositivo solicitud) {
