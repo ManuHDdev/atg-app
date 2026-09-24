@@ -125,6 +125,15 @@ export class SolicitudForm implements OnInit {
     return control.invalid && (this.intentoGuardar || control.touched);
   }
 
+  /** Lleva el foco al primer control inválido, en el orden en que se ven en pantalla. */
+  private enfocarPrimerCampoInvalido(): void {
+    const primero = Object.keys(this.formulario.controls)
+      .find(nombre => this.formulario.get(nombre)?.invalid);
+    if (primero) {
+      document.getElementById(primero)?.focus();
+    }
+  }
+
   onSubmit(): void {
     this.intentoGuardar = true;
 
@@ -132,6 +141,9 @@ export class SolicitudForm implements OnInit {
       Object.keys(this.formulario.controls).forEach(key => {
         this.formulario.get(key)?.markAsTouched();
       });
+      // Marcar en rojo no basta si el campo que falla ha quedado fuera de la vista:
+      // se lleva el foco al primero para que el operador lo vea y lo oiga.
+      this.enfocarPrimerCampoInvalido();
       return;
     }
 
