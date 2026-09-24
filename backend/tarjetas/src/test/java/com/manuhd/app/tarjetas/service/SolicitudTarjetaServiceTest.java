@@ -879,20 +879,56 @@ class SolicitudTarjetaServiceTest {
         assertThat(resultado.getCorreosEnviados()).contains(TipoPlantilla.DOCUMENTO_SOCIO.name());
     }
 
+    /**
+     * Este correo lleva el impreso que el socio tiene que firmar: sin él el circuito se queda
+     * parado, así que sale igual con texto propio aunque no haya plantilla configurada.
+     */
     @Test
-    void enviarASocioSinPlantillaDeCorreoNoRompeLaTransicion() throws IOException {
+    void enviarASocioSinPlantillaUsaElTextoPorDefectoYEnviaElImpresoIgual() throws IOException {
         SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.BORRADOR);
         solicitud.setRutaPdfEditable(pdfEnDisco("editable.pdf"));
         mockSolicitudGuardada(solicitud);
         mockServiciosExternos();
         when(plantillaService.buscarPlantillaActiva(TipoPlantilla.DOCUMENTO_SOCIO)).thenReturn(Optional.empty());
+        when(emailService.enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
+                eq(TipoPlantilla.DOCUMENTO_SOCIO.name()), any(Path.class), anyString()))
+                .thenReturn(new EnvioCorreoResult(true, TipoPlantilla.DOCUMENTO_SOCIO.name(), EMAIL_SOCIO));
 
         SolicitudTarjetaDTO resultado = service.enviarASocio(SOLICITUD_ID);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.ENVIADO_SOCIO);
-        assertThat(resultado.getCorreosEnviados()).isNull();
-        verify(emailService, never()).enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
-                anyString(), any(Path.class), anyString());
+        ArgumentCaptor<String> cuerpo = ArgumentCaptor.forClass(String.class);
+        verify(emailService).enviarCorreoConPlantillaYAdjunto(eq(EMAIL_SOCIO), anyString(), cuerpo.capture(),
+                any(), eq(TipoPlantilla.DOCUMENTO_SOCIO.name()), any(Path.class), anyString());
+        // El cuerpo por defecto identifica la solicitud y pide devolver el documento firmado.
+        assertThat(cuerpo.getValue()).contains(NUMERO_SOLICITUD).contains("{nombre}")
+                .contains("{matricula}").contains("{nombrePetrolera}").contains("firmado");
+        // Y lo que viaja adjunto sigue siendo el impreso aplanado.
+        assertThat(capturarAdjunto(TipoPlantilla.DOCUMENTO_SOCIO)).exists().hasFileName("enviado.pdf");
+        assertThat(resultado.getCorreosEnviados()).contains(TipoPlantilla.DOCUMENTO_SOCIO.name());
+    }
+
+    /** Un fallo del correo no deshace nada: la solicitud ya está enviada y así queda. */
+    @Test
+    void unFalloAlEnviarElImpresoAlSocioNoRompeLaTransicion() throws IOException {
+        SolicitudTarjeta solicitud = solicitudEnCircuito(TipoSolicitud.ALTA, EstadoSolicitud.BORRADOR);
+        solicitud.setRutaPdfEditable(pdfEnDisco("editable.pdf"));
+        mockSolicitudGuardada(solicitud);
+        mockServiciosExternos();
+        when(plantillaService.buscarPlantillaActiva(TipoPlantilla.DOCUMENTO_SOCIO)).thenReturn(Optional.empty());
+        when(emailService.enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(), any(),
+                eq(TipoPlantilla.DOCUMENTO_SOCIO.name()), any(Path.class), anyString()))
+                .thenThrow(new RuntimeException("servidor de correo caído"));
+
+        SolicitudTarjetaDTO resultado = service.enviarASocio(SOLICITUD_ID);
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.ENVIADO_SOCIO);
+        assertThat(resultado.getFechaEnvioSocio()).isNotNull();
+        // El impreso aplanado se conserva y el no-envío queda registrado en el historial.
+        assertThat(resultado.getRutaPdfEnviado()).isNotNull();
+        assertThat(solicitud.getCorreosEnviados())
+                .contains(TipoPlantilla.DOCUMENTO_SOCIO.name())
+                .contains("servidor de correo caído");
     }
 
     /** El escaneado puede venir mal: se puede reemplazar, así que el estado no avanza solo. */

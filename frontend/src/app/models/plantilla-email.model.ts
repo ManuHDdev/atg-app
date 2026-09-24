@@ -27,6 +27,10 @@ export enum TipoEventoEmail {
   SOLICITUD_CREDITO_DISPOSITIVO = 'SOLICITUD_CREDITO_DISPOSITIVO',
   BAJA_DISPOSITIVO = 'BAJA_DISPOSITIVO',
   CAMBIO_MATRICULA = 'CAMBIO_MATRICULA',
+  // Circuito del documento firmado de dispositivos: el impreso que se manda al socio para
+  // su firma y el envío a la petrolera con ese mismo impreso ya firmado.
+  DOCUMENTO_SOCIO_DISPOSITIVO = 'DOCUMENTO_SOCIO_DISPOSITIVO',
+  DOCUMENTO_PETROLERA_DISPOSITIVO = 'DOCUMENTO_PETROLERA_DISPOSITIVO',
   NOTIF_SOCIO_DISP_CREADO = 'NOTIF_SOCIO_DISP_CREADO',
   NOTIF_SOCIO_DISP_ENVIADO = 'NOTIF_SOCIO_DISP_ENVIADO',
   NOTIF_SOCIO_DISP_RESULTADO = 'NOTIF_SOCIO_DISP_RESULTADO'
@@ -117,6 +121,17 @@ export const VARIABLES_POR_TIPO: Record<TipoEventoEmail, string[]> = {
     '{{petrolera_nombre}}', '{{matricula}}', '{{matricula_destino}}',
     '{{observaciones}}', '{{fecha_solicitud}}'
   ],
+  [TipoEventoEmail.DOCUMENTO_SOCIO_DISPOSITIVO]: [
+    '{{socio_nombre}}', '{{socio_email}}', '{{socio_nif}}', '{{socio_numero}}',
+    '{{petrolera_nombre}}', '{{tipo_solicitud}}', '{{matricula}}',
+    '{{observaciones}}', '{{fecha_solicitud}}'
+  ],
+  [TipoEventoEmail.DOCUMENTO_PETROLERA_DISPOSITIVO]: [
+    '{{socio_nombre}}', '{{socio_email}}', '{{socio_nif}}', '{{socio_numero}}',
+    '{{empresa_nombre}}', '{{empresa_cif}}',
+    '{{petrolera_nombre}}', '{{tipo_solicitud}}', '{{matricula}}', '{{matricula_destino}}',
+    '{{monto}}', '{{observaciones}}', '{{fecha_solicitud}}'
+  ],
   [TipoEventoEmail.NOTIF_SOCIO_DISP_CREADO]: [
     '{{socio_nombre}}', '{{socio_email}}',
     '{{petrolera_nombre}}', '{{tipo_solicitud}}', '{{matricula}}'
@@ -131,3 +146,34 @@ export const VARIABLES_POR_TIPO: Record<TipoEventoEmail, string[]> = {
     '{{estado}}', '{{respuesta_petrolera}}'
   ]
 };
+
+/**
+ * Etiqueta de cada tipo de evento. Al estar tipado como Record<TipoEventoEmail, string>,
+ * añadir un valor al enum sin añadirlo aquí rompe la compilación: es lo que evita que la
+ * pantalla de plantillas se quede sin ofrecer un tipo que el backend sí busca al enviar.
+ */
+export const TIPO_EVENTO_EMAIL_LABELS: Record<TipoEventoEmail, string> = {
+  [TipoEventoEmail.SOLICITUD_CREDITO]: 'Crédito: Solicitud',
+  [TipoEventoEmail.AMPLIACION_CREDITO]: 'Crédito: Ampliación',
+  [TipoEventoEmail.DEVOLUCION_AVAL]: 'Crédito: Devolución de Aval',
+  [TipoEventoEmail.NOTIF_SOCIO_CREADO]: 'Crédito: Notif. Trámite Registrado',
+  [TipoEventoEmail.NOTIF_SOCIO_ENVIADO]: 'Crédito: Notif. Enviado a Petrolera',
+  [TipoEventoEmail.NOTIF_SOCIO_RESULTADO]: 'Crédito: Notif. Resultado',
+  [TipoEventoEmail.CONTRATO_PETROLERA]: 'Contrato: Email a Petrolera',
+  [TipoEventoEmail.NOTIF_SOCIO_CONTRATO_CREADO]: 'Contrato: Notif. Socio - Solicitud Registrada',
+  [TipoEventoEmail.NOTIF_SOCIO_CONTRATO_ENVIADO]: 'Contrato: Notif. Socio - Contrato Enviado',
+  [TipoEventoEmail.NOTIF_SOCIO_CONTRATO_RESULTADO]: 'Contrato: Notif. Socio - Resultado',
+  [TipoEventoEmail.ALTA_DISPOSITIVO]: 'Dispositivo: Alta',
+  [TipoEventoEmail.SOLICITUD_CREDITO_DISPOSITIVO]: 'Dispositivo: Solicitud de Crédito',
+  [TipoEventoEmail.BAJA_DISPOSITIVO]: 'Dispositivo: Baja',
+  [TipoEventoEmail.CAMBIO_MATRICULA]: 'Dispositivo: Cambio de Matrícula',
+  [TipoEventoEmail.DOCUMENTO_SOCIO_DISPOSITIVO]: 'Dispositivo: Envío al Socio para Firma',
+  [TipoEventoEmail.DOCUMENTO_PETROLERA_DISPOSITIVO]: 'Dispositivo: Envío del Firmado a la Petrolera',
+  [TipoEventoEmail.NOTIF_SOCIO_DISP_CREADO]: 'Dispositivo: Notif. Solicitud Registrada',
+  [TipoEventoEmail.NOTIF_SOCIO_DISP_ENVIADO]: 'Dispositivo: Notif. Enviado a Petrolera',
+  [TipoEventoEmail.NOTIF_SOCIO_DISP_RESULTADO]: 'Dispositivo: Notif. Resultado'
+};
+
+/** Opciones del desplegable y del filtro de tipo, derivadas del enum: nunca se escriben a mano. */
+export const TIPOS_EVENTO_EMAIL: { value: TipoEventoEmail; label: string }[] =
+  Object.values(TipoEventoEmail).map(value => ({ value, label: TIPO_EVENTO_EMAIL_LABELS[value] }));

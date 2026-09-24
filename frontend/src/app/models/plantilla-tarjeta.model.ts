@@ -1,15 +1,30 @@
-export type TipoPlantillaTarjeta =
-  | 'LLEGADA_MADRID'
-  | 'LLEGADA_FUERA'
-  | 'ALTA_SOCIO'
-  | 'ALTA_PETROLERA'
-  | 'ALTA_APROBADA'
-  | 'ALTA_RECHAZADA'
-  | 'BAJA_SOCIO'
-  | 'BAJA_CONFIRMADA'
-  | 'DUPLICADO_SOCIO'
-  | 'DUPLICADO_CONFIRMADA'
-  | 'DUPLICADO_PETROLERA';
+/**
+ * Catálogo único de tipos de plantilla de correo de tarjetas.
+ *
+ * ESTE OBJETO ES LA ÚNICA LISTA: el tipo, el listado del desplegable, las etiquetas y los
+ * iconos se derivan de aquí. Debe contener exactamente los mismos valores que el enum
+ * `TipoPlantilla` del backend (backend/tarjetas/.../model/TipoPlantilla.java): si el backend
+ * declara un tipo que no está aquí, esa plantilla no se puede crear desde la pantalla y el
+ * correo correspondiente no se envía nunca. `plantilla-tarjeta.model.spec.ts` compara ambas
+ * listas y falla si dejan de coincidir.
+ */
+const PLANTILLAS_TARJETA = {
+  LLEGADA_MADRID: { label: 'Llegada - Madrid', icono: 'bi-box-seam' },
+  LLEGADA_FUERA: { label: 'Llegada - Otras Provincias', icono: 'bi-mailbox' },
+  ALTA_SOCIO: { label: 'Alta - Correo al Socio', icono: 'bi-envelope' },
+  ALTA_PETROLERA: { label: 'Alta - Correo a Petrolera', icono: 'bi-envelope-fill' },
+  ALTA_APROBADA: { label: 'Alta - Aprobada por la Petrolera', icono: 'bi-check-circle' },
+  ALTA_RECHAZADA: { label: 'Alta - Rechazada por la Petrolera', icono: 'bi-x-circle' },
+  BAJA_SOCIO: { label: 'Baja - Correo al Socio', icono: 'bi-envelope-open' },
+  BAJA_CONFIRMADA: { label: 'Baja - Confirmada por la Petrolera', icono: 'bi-check2-square' },
+  DUPLICADO_SOCIO: { label: 'Duplicado - Correo al Socio', icono: 'bi-file-earmark' },
+  DUPLICADO_CONFIRMADA: { label: 'Duplicado - Confirmado por la Petrolera', icono: 'bi-file-earmark-check' },
+  DUPLICADO_PETROLERA: { label: 'Duplicado - Correo a Petrolera', icono: 'bi-file-earmark-arrow-up' },
+  DOCUMENTO_SOCIO: { label: 'Documento - Envío al Socio para Firma', icono: 'bi-pen' },
+  DOCUMENTO_PETROLERA: { label: 'Documento - Envío del Firmado a la Petrolera', icono: 'bi-send-check' }
+} as const satisfies Record<string, { label: string; icono: string }>;
+
+export type TipoPlantillaTarjeta = keyof typeof PLANTILLAS_TARJETA;
 
 export interface PlantillaTarjeta {
   id?: string;
@@ -22,36 +37,20 @@ export interface PlantillaTarjeta {
   updatedAt?: Date;
 }
 
-export const TIPOS_PLANTILLA_TARJETA: TipoPlantillaTarjeta[] = [
-  'LLEGADA_MADRID',
-  'LLEGADA_FUERA',
-  'ALTA_SOCIO',
-  'ALTA_PETROLERA',
-  'ALTA_APROBADA',
-  'ALTA_RECHAZADA',
-  'BAJA_SOCIO',
-  'BAJA_CONFIRMADA',
-  'DUPLICADO_SOCIO',
-  'DUPLICADO_CONFIRMADA',
-  'DUPLICADO_PETROLERA'
-];
+/** Tipos que ofrece el desplegable de creación de plantillas, en el orden del catálogo. */
+export const TIPOS_PLANTILLA_TARJETA = Object.keys(PLANTILLAS_TARJETA) as TipoPlantillaTarjeta[];
 
-export const TIPO_PLANTILLA_LABELS: Record<TipoPlantillaTarjeta, string> = {
-  'LLEGADA_MADRID': 'Llegada - Madrid',
-  'LLEGADA_FUERA': 'Llegada - Otras Provincias',
-  'ALTA_SOCIO': 'Alta - Correo al Socio',
-  'ALTA_PETROLERA': 'Alta - Correo a Petrolera',
-  'ALTA_APROBADA': 'Alta - Aprobada por la Petrolera',
-  'ALTA_RECHAZADA': 'Alta - Rechazada por la Petrolera',
-  'BAJA_SOCIO': 'Baja - Correo al Socio',
-  'BAJA_CONFIRMADA': 'Baja - Confirmada por la Petrolera',
-  'DUPLICADO_SOCIO': 'Duplicado - Correo al Socio',
-  'DUPLICADO_CONFIRMADA': 'Duplicado - Confirmado por la Petrolera',
-  'DUPLICADO_PETROLERA': 'Duplicado - Correo a Petrolera'
-};
+export const TIPO_PLANTILLA_LABELS = Object.fromEntries(
+  Object.entries(PLANTILLAS_TARJETA).map(([tipo, meta]) => [tipo, meta.label])
+) as Record<TipoPlantillaTarjeta, string>;
 
 export function getTipoPlantillaLabel(tipo: string): string {
   return TIPO_PLANTILLA_LABELS[tipo as TipoPlantillaTarjeta] ?? tipo;
+}
+
+/** Icono de Bootstrap Icons con el que se pinta cada tipo en el listado. */
+export function getTipoPlantillaIcono(tipo: string): string {
+  return PLANTILLAS_TARJETA[tipo as TipoPlantillaTarjeta]?.icono ?? 'bi-envelope-fill';
 }
 
 export const VARIABLES_DISPONIBLES = [

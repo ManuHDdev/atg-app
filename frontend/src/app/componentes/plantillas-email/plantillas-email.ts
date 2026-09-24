@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { PlantillaEmailService } from '../../services/plantilla-email.service';
-import { PlantillaEmail, TipoEventoEmail } from '../../models/plantilla-email.model';
+import { PlantillaEmail, TipoEventoEmail, TIPOS_EVENTO_EMAIL } from '../../models/plantilla-email.model';
 import { NotificationService } from '../../services/notification.service';
 import { ErrorHandlerService } from '../../services/error-handler.service';
 
@@ -26,25 +26,7 @@ export class PlantillasEmail implements OnInit {
 
   // Tipos de evento
   TipoEventoEmail = TipoEventoEmail;
-  tiposEvento = [
-    { value: TipoEventoEmail.SOLICITUD_CREDITO, label: 'Crédito: Solicitud' },
-    { value: TipoEventoEmail.AMPLIACION_CREDITO, label: 'Crédito: Ampliación' },
-    { value: TipoEventoEmail.DEVOLUCION_AVAL, label: 'Crédito: Devolución de Aval' },
-    { value: TipoEventoEmail.NOTIF_SOCIO_CREADO, label: 'Crédito: Notif. Trámite Registrado' },
-    { value: TipoEventoEmail.NOTIF_SOCIO_ENVIADO, label: 'Crédito: Notif. Enviado a Petrolera' },
-    { value: TipoEventoEmail.NOTIF_SOCIO_RESULTADO, label: 'Crédito: Notif. Resultado' },
-    { value: TipoEventoEmail.CONTRATO_PETROLERA, label: 'Contrato: Email a Petrolera' },
-    { value: TipoEventoEmail.NOTIF_SOCIO_CONTRATO_CREADO, label: 'Contrato: Notif. Socio - Solicitud Registrada' },
-    { value: TipoEventoEmail.NOTIF_SOCIO_CONTRATO_ENVIADO, label: 'Contrato: Notif. Socio - Contrato Enviado' },
-    { value: TipoEventoEmail.NOTIF_SOCIO_CONTRATO_RESULTADO, label: 'Contrato: Notif. Socio - Resultado' },
-    { value: TipoEventoEmail.ALTA_DISPOSITIVO, label: 'Dispositivo: Alta' },
-    { value: TipoEventoEmail.SOLICITUD_CREDITO_DISPOSITIVO, label: 'Dispositivo: Solicitud de Crédito' },
-    { value: TipoEventoEmail.BAJA_DISPOSITIVO, label: 'Dispositivo: Baja' },
-    { value: TipoEventoEmail.CAMBIO_MATRICULA, label: 'Dispositivo: Cambio de Matrícula' },
-    { value: TipoEventoEmail.NOTIF_SOCIO_DISP_CREADO, label: 'Dispositivo: Notif. Solicitud Registrada' },
-    { value: TipoEventoEmail.NOTIF_SOCIO_DISP_ENVIADO, label: 'Dispositivo: Notif. Enviado a Petrolera' },
-    { value: TipoEventoEmail.NOTIF_SOCIO_DISP_RESULTADO, label: 'Dispositivo: Notif. Resultado' }
-  ];
+  tiposEvento = TIPOS_EVENTO_EMAIL;
 
   constructor(
     private plantillaEmailService: PlantillaEmailService,

@@ -71,6 +71,16 @@ describe('PlantillaForm', () => {
       expect(enviada.asunto).toBe('Alta aprobada');
     });
 
+    it('el desplegable ofrece todos los tipos cuando no hay ninguna plantilla creada', async () => {
+      const fixture = await crearComponente(null);
+      const component = fixture.componentInstance;
+
+      // Sin esto, un tipo que el backend sí busca al enviar el correo no se podría crear.
+      expect(component.tiposDisponibles).toEqual(TIPOS_PLANTILLA_TARJETA);
+      expect(component.tiposDisponibles).toContain('DOCUMENTO_SOCIO');
+      expect(component.tiposDisponibles).toContain('DOCUMENTO_PETROLERA');
+    });
+
     it('el desplegable de tipos excluye los tipos que ya tienen plantilla', async () => {
       plantillaServiceSpy.getAll.and.returnValue(of([
         { ...plantillaExistente, tipo: 'ALTA_SOCIO' },
