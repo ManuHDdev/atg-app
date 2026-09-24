@@ -81,13 +81,16 @@ en el código existente del microservicio correspondiente.
 
 ## Deuda técnica conocida
 
-- **Cobertura de tests muy desigual entre módulos**: la convención de este documento (JUnit5 + Mockito, TestContainers) solo se cumple en parte.
-  - `contratos` es el módulo mejor cubierto: ~98 tests (servicios, clientes REST, repositorio e integración de flujo).
-  - `tarjetas` tiene tests unitarios del ciclo de solicitudes y sus correos.
-  - `auth`, `socios`, `petroleras`, `creditos` y `dispositivos` solo tienen el `contextLoads` que genera Spring Initializr: ahí `./mvnw clean verify` sigue pasando en verde sin verificar nada.
-  - Frontend: 13 specs, con cobertura real en `creditos`, `dispositivos` y `plantillas-tarjetas`; el resto son scaffolds de "should create".
+- **Cobertura de tests muy desigual entre módulos**: la convención de este documento (JUnit5 + Mockito, TestContainers) solo se cumple en parte. Conteos medidos ejecutando cada suite (2026-09-24), no estimados:
+  - `tarjetas`: 145 tests — ciclo de solicitudes, circuito del documento firmado (adversarial), creación transaccional y GlobalExceptionHandler.
+  - `dispositivos`: 103 tests — mismo circuito que `tarjetas`, con su suite adversarial. Ya no es un módulo sin tests.
+  - `contratos`: ~90 métodos de test declarados (servicios, clientes REST, repositorio e integración de flujo). No se puede medir el número exacto sin Docker: su suite de integración usa TestContainers y falla en seco si el demonio no está levantado.
+  - `petroleras`: 17 tests (`PlantillaDocumentoServiceTest` + `contextLoads`).
+  - `creditos`: 17 tests (`CreditoServiceTest`, `ProgramadorCorreosServiceTest` + `contextLoads`).
+  - `auth` y `socios`: siguen teniendo **solo** el `contextLoads` que genera Spring Initializr. Ahí `./mvnw clean verify` pasa en verde sin verificar nada; son la deuda de tests que queda por saldar en backend.
+  - Frontend: 19 specs / 147 tests. La cobertura real está en `app`, `creditos`, `dispositivos`, `plantillas-documento`, `plantillas-tarjetas`, `solicitudes-tarjetas`, `zona-soltar-archivo` y los modelos; `inicio`, `login`, `registro`, `petroleras` y `socios` siguen siendo scaffolds de "should create".
   - `ng test` sí se ejecuta en CI desde 2026-08. Antes estaba deshabilitado y la suite entera estaba rota (Karma no cargaba `zone.js` y a la mayoría de specs les faltaban providers).
-  - Ojo con JaCoCo: la versión fijada (0.8.12) no sabe leer class files de Java 25, por eso el pipeline pasa `-Djacoco.skip=true`. Un `./mvnw verify` en local sin ese flag falla en el goal `report` aunque los tests estén en verde.
-  - Cualquier fix o feature nueva debe seguir incluyendo tests, empezando por los microservicios que hoy no tienen ninguno.
+  - Ojo con JaCoCo: la versión fijada (0.8.12) no sabe leer class files de Java 25 (`Unsupported class file major version 69`), por eso el pipeline pasa `-Djacoco.skip=true`. Un `./mvnw verify` en local sin ese flag revienta ya en el agente durante los tests, no solo en el goal `report`.
+  - Cualquier fix o feature nueva debe seguir incluyendo tests, empezando por `auth` y `socios`.
 
-- **Documentos de socios versionados en Git**: `backend/contratos/storage/` tiene ~190 PDFs de solicitudes reales (`SOL-2025-*`, `SOL-2026-*`) commiteados, y no hay ninguna regla en `.gitignore` que lo evite. Son documentos con datos personales (nombre, NIF, dirección, cuenta bancaria). El directorio es almacenamiento de la aplicación en tiempo de ejecución, no código: debería estar ignorado y, idealmente, purgado del historial.
+- **Documentos de socios en el historial de Git**: el commit inicial del monorepo (`5a589d2`) versionó ~190 PDFs de solicitudes reales (`SOL-2025-*`, `SOL-2026-*`) bajo `backend/contratos/storage/`, con datos personales (nombre, NIF, dirección, cuenta bancaria). El árbol de trabajo ya está limpio: `94e030f` los sacó del repo y `.gitignore` ignora `backend/*/storage/`, así que no pueden volver a colarse. **Pero siguen en el historial**: cualquier clon del repo los contiene y basta un `git show` para recuperarlos. Mientras no se purgue el historial (filter-repo + force-push coordinado, y rotación de lo que proceda), el repo sigue sin poder tratarse como público.
