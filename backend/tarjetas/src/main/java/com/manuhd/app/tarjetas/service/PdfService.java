@@ -15,6 +15,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Ficheros del circuito del documento firmado. Cada solicitud tiene un directorio propio,
@@ -195,6 +198,39 @@ public class PdfService {
             throw new IOException("Plantilla original no encontrada para la solicitud: " + numeroSolicitud);
         }
         return Files.readAllBytes(rutaPlantilla);
+    }
+
+    /**
+     * Borra el directorio de una solicitud con todo su contenido.
+     *
+     * <p>Se usa cuando la creación de la solicitud no llega a cuajar: los impresos se escriben
+     * en disco antes de que la transacción confirme, y un directorio huérfano no solo ocupa
+     * sitio, sino que la siguiente solicitud reutilizaría ese mismo número y escribiría encima
+     * de documentos que no son suyos.
+     *
+     * <p>Es idempotente: si el directorio no existe no hace nada.
+     */
+    public void borrarDirectorioSolicitud(String numeroSolicitud) throws IOException {
+        if (numeroSolicitud == null || numeroSolicitud.isBlank()) {
+            return;
+        }
+
+        Path directorio = Paths.get(tarjetasPath, numeroSolicitud);
+        if (!Files.isDirectory(directorio)) {
+            return;
+        }
+
+        // De dentro hacia fuera: un directorio no se puede borrar hasta que está vacío.
+        try (Stream<Path> contenido = Files.walk(directorio)) {
+            List<Path> deLoMasHondoALoMasSomero = contenido
+                    .sorted(Comparator.reverseOrder())
+                    .toList();
+            for (Path ruta : deLoMasHondoALoMasSomero) {
+                Files.deleteIfExists(ruta);
+            }
+        }
+
+        log.info("Directorio de la solicitud {} borrado: su creación no llegó a completarse", numeroSolicitud);
     }
 
     public void guardarPdf(byte[] pdfBytes, String rutaDestino) throws IOException {

@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -119,37 +121,95 @@ public class SolicitudTarjetaService {
             solicitud.setEstado(EstadoSolicitud.TARJETA_LLEGADA);
             solicitud.setProcesadoPor(usuarioActual.nombreUsuario());
             solicitud.setNumeroSolicitud(generarNumeroSolicitud());
-        } else {
-            // El resto de tipos sí llevan papeleo: nacen como borrador con el impreso de la
-            // petrolera ya descargado, y solo llegan a PENDIENTE cuando el socio lo devuelve
-            // firmado y se presenta a la petrolera.
-            String numeroSolicitud = generarNumeroSolicitud();
-            solicitud.setNumeroSolicitud(numeroSolicitud);
-            solicitud.setEstado(EstadoSolicitud.BORRADOR);
-            solicitud.setRutaPdfEditable(descargarPlantillaDeSolicitud(dto.getPetroleraId(), dto.getTipo(), numeroSolicitud));
-            solicitud.setNombrePdfEditable(PdfService.EDITABLE);
+            // Una LLEGADA no descarga ningún impreso: no tiene directorio que limpiar.
+            return convertToDTO(persistirYNotificar(solicitud));
         }
 
+        // El resto de tipos sí llevan papeleo: nacen como borrador con el impreso de la
+        // petrolera ya descargado, y solo llegan a PENDIENTE cuando el socio lo devuelve
+        // firmado y se presenta a la petrolera.
+        String numeroSolicitud = generarNumeroSolicitud();
+        solicitud.setNumeroSolicitud(numeroSolicitud);
+        solicitud.setEstado(EstadoSolicitud.BORRADOR);
+
+        // A partir de aquí la solicitud escribe en disco antes de que su fila esté confirmada,
+        // así que hay que asegurar el borrado del directorio pase lo que pase después.
+        programarLimpiezaSiLaTransaccionNoCuaja(numeroSolicitud);
+        try {
+            solicitud.setRutaPdfEditable(
+                    descargarPlantillaDeSolicitud(dto.getPetroleraId(), dto.getTipo(), numeroSolicitud));
+            solicitud.setNombrePdfEditable(PdfService.EDITABLE);
+
+            return convertToDTO(persistirYNotificar(solicitud));
+        } catch (RuntimeException e) {
+            limpiarDirectorioDeSolicitud(numeroSolicitud);
+            throw e;
+        }
+    }
+
+    /**
+     * Guarda la solicitud y deja constancia de los avisos automáticos.
+     *
+     * <p>Los correos son un efecto secundario del alta: si no salen, la solicitud existe
+     * igualmente y la oficina puede reenviarlos. Por eso ningún fallo de esta parte puede
+     * tumbar la creación, y por eso las plantillas se consultan con
+     * {@link PlantillaTarjetaService#buscarPlantillaActiva(TipoPlantilla)}, que no lanza y
+     * se ejecuta en su propia transacción: cualquier excepción que llegase aquí desde un
+     * método transaccional marcaría la transacción como rollback-only y el commit acabaría
+     * en {@code UnexpectedRollbackException} por muy capturada que estuviese.
+     */
+    private SolicitudTarjeta persistirYNotificar(SolicitudTarjeta solicitud) {
         SolicitudTarjeta saved = repository.save(solicitud);
         log.info("Solicitud creada con id: {}", saved.getId());
 
-        // Enviar correos automáticos según el tipo y registrar envíos
         StringBuilder correosEnviados = new StringBuilder();
         try {
-            List<EnvioCorreoResult> resultados = enviarCorreosAutomaticos(saved);
-            for (EnvioCorreoResult resultado : resultados) {
+            for (EnvioCorreoResult resultado : enviarCorreosAutomaticos(saved)) {
                 correosEnviados.append(resultado.toString()).append("\n");
             }
-            saved.setCorreosEnviados(correosEnviados.toString());
-            repository.save(saved);
         } catch (Exception e) {
-            log.error("Error al enviar correos para solicitud {}: {}", saved.getId(), e.getMessage());
+            log.error("Error al enviar correos para solicitud {}: {}", saved.getId(), e.getMessage(), e);
             correosEnviados.append("ERROR: ").append(e.getMessage());
-            saved.setCorreosEnviados(correosEnviados.toString());
-            repository.save(saved);
         }
 
-        return convertToDTO(saved);
+        saved.setCorreosEnviados(correosEnviados.toString());
+        return repository.save(saved);
+    }
+
+    /**
+     * Pide que el directorio de la solicitud se borre si la transacción acaba en rollback.
+     *
+     * <p>Un try/catch dentro de {@code create} no basta: la transacción también puede
+     * deshacerse al confirmar, cuando este método ya ha devuelto, y ahí los impresos se
+     * quedaban en disco con un número de solicitud que ninguna fila reclamaba.
+     */
+    private void programarLimpiezaSiLaTransaccionNoCuaja(String numeroSolicitud) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status != TransactionSynchronization.STATUS_COMMITTED) {
+                    limpiarDirectorioDeSolicitud(numeroSolicitud);
+                }
+            }
+        });
+    }
+
+    /**
+     * Borra el directorio de una solicitud que no ha llegado a existir. Un fallo de la propia
+     * limpieza solo se registra: taparía el error que la ha provocado, que es el que de verdad
+     * hay que ver.
+     */
+    private void limpiarDirectorioDeSolicitud(String numeroSolicitud) {
+        try {
+            pdfService.borrarDirectorioSolicitud(numeroSolicitud);
+        } catch (Exception e) {
+            log.error("No se ha podido borrar el directorio de la solicitud {} tras fallar su creación: {}",
+                    numeroSolicitud, e.getMessage(), e);
+        }
     }
 
     // ---------- circuito del documento firmado ----------
@@ -934,16 +994,35 @@ public class SolicitudTarjetaService {
             log.info("Enviando correo de llegada fuera de Madrid al socio: {}", socio.getNombre());
         }
 
-        PlantillaTarjeta plantilla = plantillaService.obtenerPlantillaActiva(tipoPlantilla);
-        EnvioCorreoResult resultado = emailService.enviarCorreoConPlantilla(
-                socio.getEmail(),
-                plantilla.getAsunto(),
-                plantilla.getCuerpo(),
-                variables,
-                tipoPlantilla.name()
-        );
-        resultados.add(resultado);
+        resultados.add(avisarAlSocio(tipoPlantilla, socio, variables));
         return resultados;
+    }
+
+    /**
+     * Aviso automático al socio: envía el correo si hay plantilla activa y, si no la hay,
+     * devuelve el no-envío como un resultado fallido más.
+     *
+     * <p>Que falte la plantilla es un despiste de configuración, no un motivo para no dar de
+     * alta la solicitud: antes se consultaba con un método que lanzaba, y eso marcaba la
+     * transacción como rollback-only y tiraba abajo la solicitud entera. El no-envío se
+     * registra en el historial de correos en lugar de desaparecer, para que la oficina vea
+     * que ese aviso no ha salido y pueda darlo de alta y reenviarlo.
+     */
+    private EnvioCorreoResult avisarAlSocio(TipoPlantilla tipo, SocioDTO socio, Map<String, String> variables) {
+        Optional<PlantillaTarjeta> plantilla = plantillaService.buscarPlantillaActiva(tipo);
+        if (plantilla.isEmpty()) {
+            log.warn("No hay plantilla activa para {}; no se envía correo", tipo);
+            return new EnvioCorreoResult(false, tipo.name(), socio.getEmail(),
+                    "No hay plantilla activa para " + tipo);
+        }
+
+        return emailService.enviarCorreoConPlantilla(
+                socio.getEmail(),
+                plantilla.get().getAsunto(),
+                plantilla.get().getCuerpo(),
+                variables,
+                tipo.name()
+        );
     }
 
     /**
@@ -957,15 +1036,7 @@ public class SolicitudTarjetaService {
         List<EnvioCorreoResult> resultados = new java.util.ArrayList<>();
         log.info("Enviando correo de alta al socio: {}", socio.getNombre());
 
-        PlantillaTarjeta plantillaSocio = plantillaService.obtenerPlantillaActiva(TipoPlantilla.ALTA_SOCIO);
-        EnvioCorreoResult resultadoSocio = emailService.enviarCorreoConPlantilla(
-                socio.getEmail(),
-                plantillaSocio.getAsunto(),
-                plantillaSocio.getCuerpo(),
-                variables,
-                TipoPlantilla.ALTA_SOCIO.name()
-        );
-        resultados.add(resultadoSocio);
+        resultados.add(avisarAlSocio(TipoPlantilla.ALTA_SOCIO, socio, variables));
         return resultados;
     }
 
@@ -973,15 +1044,7 @@ public class SolicitudTarjetaService {
         List<EnvioCorreoResult> resultados = new java.util.ArrayList<>();
         log.info("Enviando correo de baja al socio: {}", socio.getNombre());
 
-        PlantillaTarjeta plantilla = plantillaService.obtenerPlantillaActiva(TipoPlantilla.BAJA_SOCIO);
-        EnvioCorreoResult resultado = emailService.enviarCorreoConPlantilla(
-                socio.getEmail(),
-                plantilla.getAsunto(),
-                plantilla.getCuerpo(),
-                variables,
-                TipoPlantilla.BAJA_SOCIO.name()
-        );
-        resultados.add(resultado);
+        resultados.add(avisarAlSocio(TipoPlantilla.BAJA_SOCIO, socio, variables));
         return resultados;
     }
 
@@ -989,15 +1052,7 @@ public class SolicitudTarjetaService {
         List<EnvioCorreoResult> resultados = new java.util.ArrayList<>();
         log.info("Enviando correo de duplicado al socio: {}", socio.getNombre());
 
-        PlantillaTarjeta plantilla = plantillaService.obtenerPlantillaActiva(TipoPlantilla.DUPLICADO_SOCIO);
-        EnvioCorreoResult resultado = emailService.enviarCorreoConPlantilla(
-                socio.getEmail(),
-                plantilla.getAsunto(),
-                plantilla.getCuerpo(),
-                variables,
-                TipoPlantilla.DUPLICADO_SOCIO.name()
-        );
-        resultados.add(resultado);
+        resultados.add(avisarAlSocio(TipoPlantilla.DUPLICADO_SOCIO, socio, variables));
         return resultados;
     }
 

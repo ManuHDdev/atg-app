@@ -59,6 +59,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.contains;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -173,13 +174,6 @@ class SolicitudTarjetaServiceTest {
 
     private void mockPlantillaActiva(TipoPlantilla tipo) {
         when(plantillaService.buscarPlantillaActiva(tipo)).thenReturn(Optional.of(plantilla(tipo)));
-        when(emailService.enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), eq(tipo.name())))
-                .thenReturn(new EnvioCorreoResult(true, tipo.name(), EMAIL_SOCIO));
-    }
-
-    /** Plantilla obligatoria (obtenerPlantillaActiva): los correos de llegada y de alta. */
-    private void mockPlantillaObligatoria(TipoPlantilla tipo) {
-        when(plantillaService.obtenerPlantillaActiva(tipo)).thenReturn(plantilla(tipo));
         when(emailService.enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), eq(tipo.name())))
                 .thenReturn(new EnvioCorreoResult(true, tipo.name(), EMAIL_SOCIO));
     }
@@ -341,7 +335,6 @@ class SolicitudTarjetaServiceTest {
         verify(emailService).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
                 eq(TipoPlantilla.BAJA_CONFIRMADA.name()));
         verify(plantillaService, never()).buscarPlantillaActiva(TipoPlantilla.BAJA_SOCIO);
-        verify(plantillaService, never()).obtenerPlantillaActiva(TipoPlantilla.BAJA_SOCIO);
         assertThat(solicitud.getCorreosEnviados()).contains(TipoPlantilla.BAJA_CONFIRMADA.name());
     }
 
@@ -364,7 +357,7 @@ class SolicitudTarjetaServiceTest {
         assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.APROBADA);
         verify(emailService).enviarCorreoConPlantilla(eq(EMAIL_SOCIO), anyString(), anyString(), any(),
                 eq(TipoPlantilla.DUPLICADO_CONFIRMADA.name()));
-        verify(plantillaService, never()).obtenerPlantillaActiva(TipoPlantilla.DUPLICADO_SOCIO);
+        verify(plantillaService, never()).buscarPlantillaActiva(TipoPlantilla.DUPLICADO_SOCIO);
         assertThat(solicitud.getCorreosEnviados()).contains(TipoPlantilla.DUPLICADO_CONFIRMADA.name());
     }
 
@@ -428,7 +421,7 @@ class SolicitudTarjetaServiceTest {
         solicitud.setEstado(EstadoSolicitud.APROBADA);
         mockSolicitudGuardada(solicitud);
         mockServiciosExternos();
-        when(plantillaService.obtenerPlantillaActiva(esperada)).thenReturn(plantilla(esperada));
+        when(plantillaService.buscarPlantillaActiva(esperada)).thenReturn(Optional.of(plantilla(esperada)));
         when(emailService.enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), eq(esperada.name())))
                 .thenReturn(new EnvioCorreoResult(true, esperada.name(), EMAIL_SOCIO));
 
@@ -496,8 +489,8 @@ class SolicitudTarjetaServiceTest {
         solicitud.setEstado(EstadoSolicitud.APROBADA);
         mockSolicitudGuardada(solicitud);
         mockServiciosExternos();
-        when(plantillaService.obtenerPlantillaActiva(TipoPlantilla.LLEGADA_MADRID))
-                .thenReturn(plantilla(TipoPlantilla.LLEGADA_MADRID));
+        when(plantillaService.buscarPlantillaActiva(TipoPlantilla.LLEGADA_MADRID))
+                .thenReturn(Optional.of(plantilla(TipoPlantilla.LLEGADA_MADRID)));
         when(emailService.enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(),
                 eq(TipoPlantilla.LLEGADA_MADRID.name())))
                 .thenReturn(new EnvioCorreoResult(true, TipoPlantilla.LLEGADA_MADRID.name(), EMAIL_SOCIO));
@@ -593,7 +586,7 @@ class SolicitudTarjetaServiceTest {
     void crearLlegadaNaceEnTarjetaLlegadaYAvisaAlSocioUnaSolaVez() {
         mockGuardadoDeNuevaSolicitud();
         mockServiciosExternos();
-        mockPlantillaObligatoria(TipoPlantilla.LLEGADA_MADRID);
+        mockPlantillaActiva(TipoPlantilla.LLEGADA_MADRID);
 
         LocalDate fechaLlegada = LocalDate.of(2026, 4, 10);
         SolicitudTarjetaDTO resultado = service.create(crearDTO(TipoSolicitud.LLEGADA, fechaLlegada));
@@ -615,7 +608,7 @@ class SolicitudTarjetaServiceTest {
         socio.setProvincia("Toledo");
         mockGuardadoDeNuevaSolicitud();
         mockServiciosExternos();
-        mockPlantillaObligatoria(TipoPlantilla.LLEGADA_FUERA);
+        mockPlantillaActiva(TipoPlantilla.LLEGADA_FUERA);
 
         SolicitudTarjetaDTO resultado = service.create(crearDTO(TipoSolicitud.LLEGADA, LocalDate.of(2026, 4, 10)));
 
@@ -686,7 +679,7 @@ class SolicitudTarjetaServiceTest {
         mockGuardadoDeNuevaSolicitud();
         mockServiciosExternos();
         mockPlantillaDocumentoDescargable();
-        mockPlantillaObligatoria(TipoPlantilla.DUPLICADO_SOCIO);
+        mockPlantillaActiva(TipoPlantilla.DUPLICADO_SOCIO);
 
         CrearSolicitudDTO dto = crearDTO(TipoSolicitud.DUPLICADO, null);
         dto.setTarjetaId(TARJETA_ID);
@@ -724,7 +717,7 @@ class SolicitudTarjetaServiceTest {
         Tarjeta tarjeta = tarjeta(1);
         when(tarjetaService.findById(TARJETA_ID)).thenReturn(tarjeta);
         when(plantillaService.buscarPlantillaActiva(TipoPlantilla.DUPLICADO_CONFIRMADA)).thenReturn(Optional.empty());
-        mockPlantillaObligatoria(TipoPlantilla.LLEGADA_MADRID);
+        mockPlantillaActiva(TipoPlantilla.LLEGADA_MADRID);
 
         // 1. La petrolera confirma el duplicado: queda aprobado, pendiente de que llegue.
         assertThat(service.aprobarDuplicadoPorPetrolera(SOLICITUD_ID,
@@ -783,7 +776,7 @@ class SolicitudTarjetaServiceTest {
         mockGuardadoDeNuevaSolicitud();
         mockServiciosExternos();
         mockPlantillaDocumentoDescargable();
-        mockPlantillaObligatoria(TipoPlantilla.ALTA_SOCIO);
+        mockPlantillaActiva(TipoPlantilla.ALTA_SOCIO);
 
         service.create(crearDTO(TipoSolicitud.ALTA, null));
 
@@ -798,7 +791,7 @@ class SolicitudTarjetaServiceTest {
         mockGuardadoDeNuevaSolicitud();
         mockServiciosExternos();
         mockPlantillaDocumentoDescargable();
-        mockPlantillaObligatoria(TipoPlantilla.ALTA_SOCIO);
+        mockPlantillaActiva(TipoPlantilla.ALTA_SOCIO);
 
         SolicitudTarjetaDTO resultado = service.create(crearDTO(TipoSolicitud.ALTA, null));
 
@@ -828,7 +821,7 @@ class SolicitudTarjetaServiceTest {
     void crearLlegadaNoEntraEnElCircuitoDeFirma() throws IOException {
         mockGuardadoDeNuevaSolicitud();
         mockServiciosExternos();
-        mockPlantillaObligatoria(TipoPlantilla.LLEGADA_MADRID);
+        mockPlantillaActiva(TipoPlantilla.LLEGADA_MADRID);
 
         SolicitudTarjetaDTO resultado = service.create(crearDTO(TipoSolicitud.LLEGADA, LocalDate.of(2026, 4, 10)));
 
@@ -1057,8 +1050,8 @@ class SolicitudTarjetaServiceTest {
         mockGuardadoDeNuevaSolicitud();
         mockServiciosExternos();
         mockPlantillaDocumentoDescargable();
-        mockPlantillaObligatoria(TipoPlantilla.ALTA_SOCIO);
-        mockPlantillaObligatoria(TipoPlantilla.LLEGADA_MADRID);
+        mockPlantillaActiva(TipoPlantilla.ALTA_SOCIO);
+        mockPlantillaActiva(TipoPlantilla.LLEGADA_MADRID);
         mockPlantillaConAdjunto(TipoPlantilla.DOCUMENTO_SOCIO);
         mockPlantillaConAdjunto(TipoPlantilla.DOCUMENTO_PETROLERA);
         when(plantillaService.buscarPlantillaActiva(TipoPlantilla.ALTA_APROBADA)).thenReturn(Optional.empty());
@@ -1101,5 +1094,116 @@ class SolicitudTarjetaServiceTest {
         assertThat(entregada.getEstado()).isEqualTo(EstadoSolicitud.COMPLETADA);
         assertThat(entregada.getFechaEntrega()).isNotNull();
         verify(tarjetaService, times(1)).create(any(Tarjeta.class));
+    }
+
+    // ---------- una plantilla de correo sin dar de alta no puede tumbar la solicitud ----------
+
+    /**
+     * Regresion de produccion: crear un ALTA reventaba entero cuando no habia plantilla
+     * ALTA_SOCIO activa. La consulta lanzaba dentro de la transaccion, el catch de create()
+     * no servia de nada y el commit acababa en UnexpectedRollbackException, asi que no
+     * quedaba ni fila de solicitud ni aviso de que el correo no habia salido.
+     */
+    @ParameterizedTest
+    @EnumSource(value = TipoSolicitud.class, names = {"ALTA", "BAJA", "DUPLICADO"})
+    void crearSinPlantillaDeCorreoActivaSigueCreandoLaSolicitud(TipoSolicitud tipo) throws IOException {
+        mockGuardadoDeNuevaSolicitud();
+        mockServiciosExternos();
+        mockPlantillaDocumentoDescargable();
+        when(plantillaService.buscarPlantillaActiva(plantillaDeCreacion(tipo))).thenReturn(Optional.empty());
+
+        CrearSolicitudDTO dto = crearDTO(tipo, null);
+        dto.setTarjetaId(TARJETA_ID);
+        dto.setMotivoDuplicado(MotivoDuplicado.EXTRAVIO);
+
+        SolicitudTarjetaDTO resultado = service.create(dto);
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.BORRADOR);
+        assertThat(resultado.getNumeroSolicitud()).isNotBlank();
+        verify(repository, atLeastOnce()).save(any(SolicitudTarjeta.class));
+        verify(emailService, never()).enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), anyString());
+    }
+
+    /** El correo que no ha salido queda anotado: la oficina tiene que poder verlo y reenviarlo. */
+    @ParameterizedTest
+    @EnumSource(value = TipoSolicitud.class, names = {"ALTA", "BAJA", "DUPLICADO"})
+    void crearSinPlantillaDeCorreoActivaDejaConstanciaDelNoEnvio(TipoSolicitud tipo) throws IOException {
+        mockGuardadoDeNuevaSolicitud();
+        mockServiciosExternos();
+        mockPlantillaDocumentoDescargable();
+        TipoPlantilla plantillaEsperada = plantillaDeCreacion(tipo);
+        when(plantillaService.buscarPlantillaActiva(plantillaEsperada)).thenReturn(Optional.empty());
+
+        CrearSolicitudDTO dto = crearDTO(tipo, null);
+        dto.setTarjetaId(TARJETA_ID);
+        dto.setMotivoDuplicado(MotivoDuplicado.EXTRAVIO);
+
+        SolicitudTarjetaDTO resultado = service.create(dto);
+
+        assertThat(resultado.getCorreosEnviados())
+                .contains(plantillaEsperada.name())
+                .contains(EMAIL_SOCIO)
+                .contains("No hay plantilla activa para " + plantillaEsperada);
+    }
+
+    /** Una LLEGADA sin plantilla tampoco se pierde, aunque su aviso sea el unico que manda. */
+    @Test
+    void crearLlegadaSinPlantillaDeCorreoActivaSigueRegistrandoLaLlegada() {
+        mockGuardadoDeNuevaSolicitud();
+        mockServiciosExternos();
+        when(plantillaService.buscarPlantillaActiva(TipoPlantilla.LLEGADA_MADRID)).thenReturn(Optional.empty());
+
+        SolicitudTarjetaDTO resultado = service.create(crearDTO(TipoSolicitud.LLEGADA, LocalDate.of(2026, 4, 10)));
+
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.TARJETA_LLEGADA);
+        assertThat(resultado.getCorreosEnviados()).contains(TipoPlantilla.LLEGADA_MADRID.name());
+    }
+
+    private TipoPlantilla plantillaDeCreacion(TipoSolicitud tipo) {
+        return switch (tipo) {
+            case ALTA -> TipoPlantilla.ALTA_SOCIO;
+            case BAJA -> TipoPlantilla.BAJA_SOCIO;
+            case DUPLICADO -> TipoPlantilla.DUPLICADO_SOCIO;
+            case LLEGADA -> TipoPlantilla.LLEGADA_MADRID;
+        };
+    }
+
+    // ---------- una creacion abortada no deja ficheros huerfanos ----------
+
+    /**
+     * Los impresos se escriben en disco antes de que la fila este confirmada. Si la creacion
+     * se cae despues, el directorio no puede sobrevivir: la siguiente solicitud reutilizaria
+     * ese mismo numero y escribiria encima de documentos que no son suyos.
+     */
+    @Test
+    void crearNoDejaDirectorioEnDiscoSiFallaAlPersistirLaSolicitud() throws IOException {
+        mockPlantillaDocumentoDescargable();
+        when(repository.save(any(SolicitudTarjeta.class)))
+                .thenThrow(new IllegalStateException("fallo al guardar la solicitud"));
+
+        CrearSolicitudDTO dto = crearDTO(TipoSolicitud.ALTA, null);
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("fallo al guardar");
+
+        String numeroSolicitud = "TAR-" + Year.now().getValue() + "-00001";
+        assertThat(storageTarjetas.resolve(numeroSolicitud)).doesNotExist();
+    }
+
+    /** Un fallo borrando el directorio no puede tapar el error que lo ha provocado. */
+    @Test
+    void unFalloAlLimpiarElDirectorioNoTapaElErrorOriginal() throws IOException {
+        mockPlantillaDocumentoDescargable();
+        when(repository.save(any(SolicitudTarjeta.class)))
+                .thenThrow(new IllegalStateException("fallo al guardar la solicitud"));
+        doThrow(new IOException("disco de solo lectura"))
+                .when(pdfService).borrarDirectorioSolicitud(anyString());
+
+        CrearSolicitudDTO dto = crearDTO(TipoSolicitud.ALTA, null);
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("fallo al guardar");
     }
 }

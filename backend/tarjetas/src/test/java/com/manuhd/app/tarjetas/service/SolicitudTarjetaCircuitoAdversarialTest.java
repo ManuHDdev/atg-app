@@ -645,7 +645,7 @@ class SolicitudTarjetaCircuitoAdversarialTest {
         altaSocio.setTipo(TipoPlantilla.ALTA_SOCIO);
         altaSocio.setAsunto("Asunto");
         altaSocio.setCuerpo("Cuerpo");
-        when(plantillaService.obtenerPlantillaActiva(TipoPlantilla.ALTA_SOCIO)).thenReturn(altaSocio);
+        when(plantillaService.buscarPlantillaActiva(TipoPlantilla.ALTA_SOCIO)).thenReturn(Optional.of(altaSocio));
         when(emailService.enviarCorreoConPlantilla(anyString(), anyString(), anyString(), any(), anyString()))
                 .thenReturn(new EnvioCorreoResult(true, TipoPlantilla.ALTA_SOCIO.name(), EMAIL_SOCIO));
 

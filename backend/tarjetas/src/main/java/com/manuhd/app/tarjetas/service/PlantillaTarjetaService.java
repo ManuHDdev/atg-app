@@ -7,6 +7,7 @@ import com.manuhd.app.tarjetas.repository.PlantillaTarjetaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -44,18 +45,21 @@ public class PlantillaTarjetaService {
         return convertToDTO(plantilla);
     }
 
-    @Transactional(readOnly = true)
-    public PlantillaTarjeta obtenerPlantillaActiva(TipoPlantilla tipo) {
-        log.info("Obteniendo plantilla activa de tipo: {}", tipo);
-        return repository.findByTipoAndActivaTrue(tipo)
-                .orElseThrow(() -> new RuntimeException("No hay plantilla activa para tipo: " + tipo));
-    }
-
     /**
-     * Variante no lanzadora de {@link #obtenerPlantillaActiva(TipoPlantilla)}: permite
-     * a los llamantes decidir qué hacer cuando todavía no hay plantilla configurada.
+     * Única forma de consultar la plantilla de un correo: devuelve un {@link Optional} vacío
+     * cuando todavía no hay ninguna configurada, para que el llamante decida qué hacer.
+     *
+     * <p>No existe una variante que lance al no encontrarla. La había, y el aviso al socio la
+     * usaba al crear una solicitud: como es un método transaccional que se une a la transacción
+     * del llamante, su excepción marcaba esa transacción como rollback-only. El llamante la
+     * capturaba y seguía, pero el commit posterior fallaba con {@code UnexpectedRollbackException}
+     * y la solicitud entera se perdía por una plantilla de correo sin dar de alta.
+     *
+     * <p>Por el mismo motivo la consulta se hace en su propia transacción ({@code REQUIRES_NEW}):
+     * ni siquiera un fallo real de base de datos leyendo la plantilla puede condenar al rollback
+     * a la transacción de negocio que está enviando el correo.
      */
-    @Transactional(readOnly = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public Optional<PlantillaTarjeta> buscarPlantillaActiva(TipoPlantilla tipo) {
         log.info("Buscando plantilla activa de tipo: {}", tipo);
         return repository.findByTipoAndActivaTrue(tipo);

@@ -251,11 +251,11 @@ export class SolicitudForm implements OnInit {
       case 'LLEGADA':
         return 'Registra la llegada de tarjetas con su fecha. Se enviará automáticamente un correo al socio según su provincia (recogida en Madrid, envío postal fuera). Después solo queda registrar la entrega.';
       case 'ALTA':
-        return 'Solicita el alta de una nueva tarjeta. Se enviarán correos al socio y a la petrolera. Quedará pendiente de la respuesta de la petrolera.';
+        return 'Solicita el alta de una nueva tarjeta. Se genera el impreso de la petrolera para que lo firme el socio: cuando lo devuelva firmado, se sube aquí y se remite a la petrolera.';
       case 'BAJA':
-        return 'Solicita la baja de una tarjeta existente. Se enviará un correo al socio.';
+        return 'Solicita la baja de una tarjeta existente. Se genera el impreso para que lo firme el socio y, una vez firmado, se remite a la petrolera.';
       case 'DUPLICADO':
-        return 'Solicita un duplicado de tarjeta indicando el motivo. Se enviará un correo al socio y quedará pendiente de la respuesta de la petrolera. Después habrá que registrar la llegada y la entrega, como en un alta.';
+        return 'Solicita un duplicado de tarjeta indicando el motivo. Se genera el impreso para que lo firme el socio y se remite a la petrolera; después habrá que registrar la llegada y la entrega, como en un alta.';
       default: return '';
     }
   }
