@@ -476,6 +476,38 @@ class SolicitudDispositivoServiceTest {
     }
 
     @Test
+    void enviarASocioSinPlantillaUsaElTextoDeRespaldoYSigueAdjuntandoElImpreso() throws IOException {
+        // Sin plantilla DOCUMENTO_SOCIO_DISPOSITIVO dada de alta: el correo que lleva el
+        // impreso a firmar tiene que salir igual, o el circuito se queda parado.
+        SolicitudDispositivo solicitud = solicitudEnCircuito(EstadoSolicitud.BORRADOR);
+        conImpresoEditable(solicitud);
+
+        service.enviarASocio(1L);
+
+        assertThat(solicitud.getEstado()).isEqualTo(EstadoSolicitud.ENVIADO_SOCIO);
+
+        ArgumentCaptor<String> asunto = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> cuerpo = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<Path> adjunto = ArgumentCaptor.forClass(Path.class);
+        verify(emailService).enviarCorreoConPlantillaYAdjunto(
+                eq("socio@example.com"), asunto.capture(), cuerpo.capture(), anyMap(),
+                adjunto.capture(), any());
+
+        assertThat(asunto.getValue()).contains("Firma del impreso", solicitud.getNumeroSolicitud());
+        // El cuerpo de respaldo pide explicitamente la devolucion del documento firmado
+        assertThat(cuerpo.getValue())
+                .contains("{{socio_nombre}}")
+                .contains("{{petrolera_nombre}}")
+                .contains("{{matricula}}")
+                .contains("devu&eacute;lvanoslo")
+                .contains("Para que podamos continuar con la tramitaci")
+                .contains("no puede presentarse");
+        assertThat(adjunto.getValue()).hasFileName(PdfService.ENVIADO).exists();
+
+        assertThat(solicitud.getCorreosEnviados()).contains("DOCUMENTO_SOCIO_DISPOSITIVO");
+    }
+
+    @Test
     void subirElImpresoFirmadoNoCambiaElEstado() throws IOException {
         SolicitudDispositivo solicitud = solicitudEnCircuito(EstadoSolicitud.ENVIADO_SOCIO);
 

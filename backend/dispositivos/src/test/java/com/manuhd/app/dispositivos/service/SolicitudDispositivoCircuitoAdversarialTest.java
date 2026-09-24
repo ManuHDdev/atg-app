@@ -606,6 +606,24 @@ class SolicitudDispositivoCircuitoAdversarialTest {
     }
 
     @Test
+    void siElServidorDeCorreoFallaElEnvioAlSocioNoSeDeshaceYQuedaEnElHistorial() throws IOException {
+        SolicitudDispositivo solicitud = solicitud(EstadoSolicitud.BORRADOR);
+        conImpresoEditable(solicitud);
+        doThrow(new RuntimeException("SMTP 421 service not available"))
+                .when(emailService).enviarCorreoConPlantillaYAdjunto(anyString(), anyString(), anyString(),
+                        anyMap(), any(Path.class), anyString());
+
+        SolicitudDispositivoDTO resultado = service.enviarASocio(SOLICITUD_ID);
+
+        // La etapa ya ha avanzado y el impreso esta aplanado: un fallo de correo no lo deshace
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSolicitud.ENVIADO_SOCIO);
+        assertThat(solicitud.getFechaEnvioSocio()).isNotNull();
+        assertThat(solicitud.getCorreosEnviados()).contains("DOCUMENTO_SOCIO_DISPOSITIVO");
+        assertThat(solicitud.getCorreosEnviados()).contains("socio@example.com");
+        assertThat(solicitud.getCorreosEnviados()).contains("SMTP 421");
+    }
+
+    @Test
     void siElServidorDeCorreoFallaLaPresentacionALaPetroleraNoSeDeshace() throws IOException {
         SolicitudDispositivo solicitud = solicitud(EstadoSolicitud.FIRMADO_SOCIO);
         conImpresoFirmado(solicitud);
