@@ -6,7 +6,8 @@ import {
   PlantillaTarjeta,
   TIPOS_PLANTILLA_TARJETA,
   VARIABLES_DISPONIBLES,
-  getTipoPlantillaLabel
+  getTipoPlantillaLabel,
+  getTipoPlantillaIcono
 } from '../../models/plantilla-tarjeta.model';
 import { ErrorHandlerService } from '../../services/error-handler.service';
 
@@ -66,20 +67,7 @@ export class PlantillasTarjetas implements OnInit {
   }
 
   getTipoIcon(tipo: string): string {
-    const icons: any = {
-      'LLEGADA_MADRID': 'bi-box-seam',
-      'LLEGADA_FUERA': 'bi-mailbox',
-      'ALTA_SOCIO': 'bi-envelope',
-      'ALTA_PETROLERA': 'bi-envelope-fill',
-      'ALTA_APROBADA': 'bi-check-circle',
-      'ALTA_RECHAZADA': 'bi-x-circle',
-      'BAJA_SOCIO': 'bi-envelope-open',
-      'BAJA_CONFIRMADA': 'bi-check2-square',
-      'DUPLICADO_SOCIO': 'bi-file-earmark',
-      'DUPLICADO_CONFIRMADA': 'bi-file-earmark-check',
-      'DUPLICADO_PETROLERA': 'bi-file-earmark-arrow-up'
-    };
-    return icons[tipo] || 'bi-envelope-fill';
+    return getTipoPlantillaIcono(tipo);
   }
 
   volver(): void {

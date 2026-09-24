@@ -273,8 +273,11 @@ public class SolicitudTarjetaService {
             PetroleraDTO petrolera = obtenerPetrolera(updated.getPetroleraId());
             Map<String, String> variables = crearMapaVariables(socio, petrolera, updated);
 
-            enviarCorreoConAdjuntoSiHayPlantilla(updated, TipoPlantilla.DOCUMENTO_SOCIO, socio.getEmail(),
-                    variables, adjunto, nombreAdjunto("Solicitud", updated));
+            // Este correo lleva el impreso que el socio tiene que firmar: si no sale, el
+            // circuito se queda parado, así que nunca depende de que haya plantilla.
+            enviarCorreoConAdjuntoObligatorio(updated, TipoPlantilla.DOCUMENTO_SOCIO, socio.getEmail(),
+                    variables, adjunto, nombreAdjunto("Solicitud", updated),
+                    asuntoSocioPorDefecto(updated), cuerpoSocioPorDefecto(updated));
         } catch (Exception e) {
             log.error("Error al enviar el impreso al socio: {}", e.getMessage());
             registrarCorreo(updated, new EnvioCorreoResult(false, TipoPlantilla.DOCUMENTO_SOCIO.name(),
@@ -365,26 +368,11 @@ public class SolicitudTarjetaService {
             PetroleraDTO petrolera = obtenerPetrolera(updated.getPetroleraId());
             Map<String, String> variables = crearMapaVariables(socio, petrolera, updated);
 
-            String asunto;
-            String cuerpo;
-            Optional<PlantillaTarjeta> plantilla = plantillaService.buscarPlantillaActiva(TipoPlantilla.DOCUMENTO_PETROLERA);
-            if (plantilla.isPresent()) {
-                asunto = plantilla.get().getAsunto();
-                cuerpo = plantilla.get().getCuerpo();
-            } else {
-                // Este correo no puede dejar de salir por una plantilla sin configurar: es el
-                // que presenta la solicitud a la petrolera.
-                log.warn("No hay plantilla activa para {}; se usa el texto por defecto",
-                        TipoPlantilla.DOCUMENTO_PETROLERA);
-                asunto = asuntoPetroleraPorDefecto(updated);
-                cuerpo = cuerpoPetroleraPorDefecto(updated);
-            }
-
-            EnvioCorreoResult resultado = emailService.enviarCorreoConPlantillaYAdjunto(
-                    petrolera.getEmail(), asunto, cuerpo, variables,
-                    TipoPlantilla.DOCUMENTO_PETROLERA.name(), adjunto,
-                    nombreAdjunto("Solicitud-firmada", updated));
-            registrarCorreo(updated, resultado);
+            // Este correo no puede dejar de salir por una plantilla sin configurar: es el
+            // que presenta la solicitud a la petrolera.
+            enviarCorreoConAdjuntoObligatorio(updated, TipoPlantilla.DOCUMENTO_PETROLERA, petrolera.getEmail(),
+                    variables, adjunto, nombreAdjunto("Solicitud-firmada", updated),
+                    asuntoPetroleraPorDefecto(updated), cuerpoPetroleraPorDefecto(updated));
         } catch (Exception e) {
             log.error("Error al enviar la solicitud a la petrolera: {}", e.getMessage());
             registrarCorreo(updated, new EnvioCorreoResult(false, TipoPlantilla.DOCUMENTO_PETROLERA.name(),
@@ -890,25 +878,62 @@ public class SolicitudTarjetaService {
     }
 
     /**
-     * Variante con adjunto de {@link #enviarCorreoSiHayPlantilla}: si no hay plantilla activa
-     * deja constancia en el log y no interrumpe la transición.
+     * Correo con adjunto de los dos pasos del circuito del documento firmado. Sin plantilla
+     * activa el correo sale igual con el texto de respaldo, porque el circuito se queda
+     * parado si no llega: el envío nunca depende de que la oficina haya creado la plantilla.
+     * Las variables las resuelve después el EmailService, tanto en la plantilla como en el
+     * texto de respaldo.
      */
-    private void enviarCorreoConAdjuntoSiHayPlantilla(SolicitudTarjeta solicitud, TipoPlantilla tipo,
-                                                      String destinatario, Map<String, String> variables,
-                                                      Path adjunto, String nombreAdjunto) {
+    private void enviarCorreoConAdjuntoObligatorio(SolicitudTarjeta solicitud, TipoPlantilla tipo,
+                                                   String destinatario, Map<String, String> variables,
+                                                   Path adjunto, String nombreAdjunto,
+                                                   String asuntoPorDefecto, String cuerpoPorDefecto) {
         Optional<PlantillaTarjeta> plantilla = plantillaService.buscarPlantillaActiva(tipo);
-        if (plantilla.isEmpty()) {
-            log.warn("No hay plantilla activa para {}; no se envía correo", tipo);
-            return;
+
+        String asunto;
+        String cuerpo;
+        if (plantilla.isPresent()) {
+            asunto = plantilla.get().getAsunto();
+            cuerpo = plantilla.get().getCuerpo();
+        } else {
+            log.warn("No hay plantilla activa para {}; se usa el texto por defecto", tipo);
+            asunto = asuntoPorDefecto;
+            cuerpo = cuerpoPorDefecto;
         }
 
         registrarCorreo(solicitud, emailService.enviarCorreoConPlantillaYAdjunto(
-                destinatario, plantilla.get().getAsunto(), plantilla.get().getCuerpo(),
-                variables, tipo.name(), adjunto, nombreAdjunto));
+                destinatario, asunto, cuerpo, variables, tipo.name(), adjunto, nombreAdjunto));
     }
 
     private String nombreAdjunto(String prefijo, SolicitudTarjeta solicitud) {
         return prefijo + "-" + solicitud.getNumeroSolicitud() + ".pdf";
+    }
+
+    private String asuntoSocioPorDefecto(SolicitudTarjeta solicitud) {
+        return "Firma del impreso de solicitud de tarjeta - " + solicitud.getNumeroSolicitud()
+                + " - Matrícula " + solicitud.getMatricula();
+    }
+
+    /**
+     * Cuerpo de respaldo del correo al socio: es el que lleva el impreso que tiene que firmar
+     * y devolver, así que pide explícitamente esa devolución. Las variables las resuelve
+     * después el EmailService.
+     */
+    private String cuerpoSocioPorDefecto(SolicitudTarjeta solicitud) {
+        return "<html><body>"
+                + "<h2>Solicitud de tarjeta - " + solicitud.getTipo() + "</h2>"
+                + "<p>Estimado/a {nombre},</p>"
+                + "<p>Le adjuntamos el impreso de su solicitud de tarjeta para la petrolera "
+                + "<strong>{nombrePetrolera}</strong>, correspondiente a la matrícula "
+                + "<strong>{matricula}</strong> (nº de solicitud " + solicitud.getNumeroSolicitud() + ").</p>"
+                + "<p><strong>Para que podamos continuar con la tramitación, revise el documento, "
+                + "fírmelo y devuélvanoslo</strong> respondiendo a este correo con el impreso firmado "
+                + "escaneado o entregándolo en nuestras oficinas.</p>"
+                + "<p>Hasta que no recibamos el documento firmado, la solicitud no puede presentarse "
+                + "a la petrolera.</p>"
+                + "<p>Gracias por su colaboración.</p>"
+                + "<p>Saludos cordiales,<br/>Sistema de Gestión ATG</p>"
+                + "</body></html>";
     }
 
     private String asuntoPetroleraPorDefecto(SolicitudTarjeta solicitud) {
