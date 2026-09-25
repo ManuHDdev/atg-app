@@ -305,7 +305,7 @@ export class ContratoDetail implements OnInit {
   aceptarPorPetrolera(): void {
     if (!this.solicitud?.id) return;
 
-    if (!confirm('¿Está seguro de aceptar la solicitud? Se creará el contrato correspondiente.')) {
+    if (!confirm('¿Confirma que la petrolera ha aprobado la solicitud? Se creará el contrato correspondiente.')) {
       return;
     }
 
@@ -314,7 +314,7 @@ export class ContratoDetail implements OnInit {
       next: (solicitudActualizada) => {
         this.solicitud = solicitudActualizada;
         this.procesando = false;
-        this.notificationService.success('Solicitud aceptada por la petrolera');
+        this.notificationService.success('Aprobación de la petrolera registrada correctamente');
       },
       error: (err) => {
         this.procesando = false;
@@ -327,7 +327,7 @@ export class ContratoDetail implements OnInit {
   rechazarPorPetrolera(): void {
     if (!this.solicitud?.id) return;
 
-    if (!confirm('¿Está seguro de rechazar la solicitud? Esta acción es definitiva.')) {
+    if (!confirm('¿Confirma que la petrolera ha denegado la solicitud? Esta acción es definitiva.')) {
       return;
     }
 
@@ -338,7 +338,7 @@ export class ContratoDetail implements OnInit {
         this.procesando = false;
         this.mostrarFormRechazo = false;
         this.motivoRechazo = '';
-        this.notificationService.success('Solicitud rechazada por la petrolera');
+        this.notificationService.success('Denegación de la petrolera registrada correctamente');
       },
       error: (err) => {
         this.procesando = false;
@@ -366,8 +366,8 @@ export class ContratoDetail implements OnInit {
       [EstadoSolicitud.ENVIADO_SOCIO]: 'Enviado a Socio',
       [EstadoSolicitud.FIRMADO_SOCIO]: 'Firmado por Socio',
       [EstadoSolicitud.ENVIADO_PETROLERA]: 'Enviado a Petrolera',
-      [EstadoSolicitud.ACEPTADA_PETROLERA]: 'Aceptada por Petrolera',
-      [EstadoSolicitud.RECHAZADA_PETROLERA]: 'Rechazada por Petrolera'
+      [EstadoSolicitud.ACEPTADA_PETROLERA]: 'Aprobada por la petrolera',
+      [EstadoSolicitud.RECHAZADA_PETROLERA]: 'Denegada por la petrolera'
     };
     return textos[estado] || estado;
   }

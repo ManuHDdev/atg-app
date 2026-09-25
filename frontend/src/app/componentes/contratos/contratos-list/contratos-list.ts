@@ -187,8 +187,8 @@ export class ContratosList implements OnInit {
       [EstadoSolicitud.ENVIADO_SOCIO]: 'Enviado a Socio',
       [EstadoSolicitud.FIRMADO_SOCIO]: 'Firmado por Socio',
       [EstadoSolicitud.ENVIADO_PETROLERA]: 'Enviado a Petrolera',
-      [EstadoSolicitud.ACEPTADA_PETROLERA]: 'Aceptada',
-      [EstadoSolicitud.RECHAZADA_PETROLERA]: 'Rechazada'
+      [EstadoSolicitud.ACEPTADA_PETROLERA]: 'Aprobada',
+      [EstadoSolicitud.RECHAZADA_PETROLERA]: 'Denegada'
     };
     return textos[estado] || estado;
   }
