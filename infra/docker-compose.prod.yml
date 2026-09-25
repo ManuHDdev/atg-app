@@ -176,6 +176,7 @@ services:
       - KEYCLOAK_REALM=atg
       - KEYCLOAK_INTERNAL_URL=http://keycloak:8080
       - SPRING_WEB_CORS_ALLOWED_ORIGINS=https://${DOMAIN}
+      - MICROSERVICES_SOCIOS_URL=http://socios:8080
       - MICROSERVICES_PETROLERAS_URL=http://petroleras:8080
       - STORAGE_PLANTILLAS=/app/storage/plantillas/originales
       - STORAGE_CONTRATOS=/app/storage/contratos/solicitudes
