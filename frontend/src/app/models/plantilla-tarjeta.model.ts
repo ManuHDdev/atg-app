@@ -7,22 +7,28 @@
  * declara un tipo que no está aquí, esa plantilla no se puede crear desde la pantalla y el
  * correo correspondiente no se envía nunca. `plantilla-tarjeta.model.spec.ts` compara ambas
  * listas y falla si dejan de coincidir.
+ *
+ * Un tipo marcado con `obsoleto: true` sigue declarado en el backend pero ya no lo usa
+ * ningún envío: conserva etiqueta e icono para que las plantillas antiguas guardadas con
+ * ese tipo se sigan leyendo, pero no se ofrece al crear una plantilla nueva.
  */
 const PLANTILLAS_TARJETA = {
   LLEGADA_MADRID: { label: 'Llegada - Madrid', icono: 'bi-box-seam' },
   LLEGADA_FUERA: { label: 'Llegada - Otras Provincias', icono: 'bi-mailbox' },
   ALTA_SOCIO: { label: 'Alta - Correo al Socio', icono: 'bi-envelope' },
-  ALTA_PETROLERA: { label: 'Alta - Correo a Petrolera', icono: 'bi-envelope-fill' },
+  /** Obsoleto: el correo de alta a la petrolera se dejó de enviar al crear la solicitud. */
+  ALTA_PETROLERA: { label: 'Alta - Correo a Petrolera', icono: 'bi-envelope-fill', obsoleto: true },
   ALTA_APROBADA: { label: 'Alta - Aprobada por la Petrolera', icono: 'bi-check-circle' },
   ALTA_RECHAZADA: { label: 'Alta - Rechazada por la Petrolera', icono: 'bi-x-circle' },
   BAJA_SOCIO: { label: 'Baja - Correo al Socio', icono: 'bi-envelope-open' },
   BAJA_CONFIRMADA: { label: 'Baja - Confirmada por la Petrolera', icono: 'bi-check2-square' },
   DUPLICADO_SOCIO: { label: 'Duplicado - Correo al Socio', icono: 'bi-file-earmark' },
   DUPLICADO_CONFIRMADA: { label: 'Duplicado - Confirmado por la Petrolera', icono: 'bi-file-earmark-check' },
-  DUPLICADO_PETROLERA: { label: 'Duplicado - Correo a Petrolera', icono: 'bi-file-earmark-arrow-up' },
+  /** Obsoleto: ningún punto del circuito de duplicados envía ya este correo. */
+  DUPLICADO_PETROLERA: { label: 'Duplicado - Correo a Petrolera', icono: 'bi-file-earmark-arrow-up', obsoleto: true },
   DOCUMENTO_SOCIO: { label: 'Documento - Envío al Socio para Firma', icono: 'bi-pen' },
   DOCUMENTO_PETROLERA: { label: 'Documento - Envío del Firmado a la Petrolera', icono: 'bi-send-check' }
-} as const satisfies Record<string, { label: string; icono: string }>;
+} as const satisfies Record<string, { label: string; icono: string; obsoleto?: true }>;
 
 export type TipoPlantillaTarjeta = keyof typeof PLANTILLAS_TARJETA;
 
@@ -37,8 +43,21 @@ export interface PlantillaTarjeta {
   updatedAt?: Date;
 }
 
+/**
+ * Tipos declarados por el backend, en el orden del catálogo. Incluye los obsoletos, porque
+ * siguen existiendo como valor posible en las plantillas ya guardadas.
+ */
+export const TIPOS_PLANTILLA_DECLARADOS = Object.keys(PLANTILLAS_TARJETA) as TipoPlantillaTarjeta[];
+
+/** Tipos retirados: se siguen leyendo, pero ya no se ofrecen para crear plantillas nuevas. */
+export const TIPOS_PLANTILLA_OBSOLETOS = TIPOS_PLANTILLA_DECLARADOS.filter(
+  tipo => (PLANTILLAS_TARJETA[tipo] as { obsoleto?: boolean }).obsoleto === true
+);
+
 /** Tipos que ofrece el desplegable de creación de plantillas, en el orden del catálogo. */
-export const TIPOS_PLANTILLA_TARJETA = Object.keys(PLANTILLAS_TARJETA) as TipoPlantillaTarjeta[];
+export const TIPOS_PLANTILLA_TARJETA = TIPOS_PLANTILLA_DECLARADOS.filter(
+  tipo => !TIPOS_PLANTILLA_OBSOLETOS.includes(tipo)
+);
 
 export const TIPO_PLANTILLA_LABELS = Object.fromEntries(
   Object.entries(PLANTILLAS_TARJETA).map(([tipo, meta]) => [tipo, meta.label])
