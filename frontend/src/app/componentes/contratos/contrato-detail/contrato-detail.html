@@ -338,7 +338,7 @@
                   <i class="bi bi-send"></i> Enviar a Petrolera
                 </button>
                 <small class="help-text">
-                  Esto enviará el PDF final a la petrolera. Después, la petrolera deberá aceptar o rechazar la solicitud.
+                  Esto enviará el PDF final a la petrolera. Después, cuando la petrolera comunique su decisión, se registra aquí.
                 </small>
               </div>
             }
@@ -356,9 +356,9 @@
           @if (solicitud.estado === EstadoSolicitud.ENVIADO_PETROLERA) {
             <span class="badge-warning">Pendiente de Resolución</span>
           } @else if (solicitud.estado === EstadoSolicitud.ACEPTADA_PETROLERA) {
-            <span class="badge-success"><i class="bi bi-check-circle"></i> Aceptada</span>
+            <span class="badge-success"><i class="bi bi-check-circle"></i> Aprobada</span>
           } @else if (solicitud.estado === EstadoSolicitud.RECHAZADA_PETROLERA) {
-            <span class="badge-danger"><i class="bi bi-x-circle"></i> Rechazada</span>
+            <span class="badge-danger"><i class="bi bi-x-circle"></i> Denegada</span>
           } @else {
             <span class="badge-secondary">Pendiente</span>
           }
@@ -380,39 +380,39 @@
               </div>
             }
 
-            <!-- Pendiente de resolución: mostrar botones Aceptar/Rechazar -->
+            <!-- Pendiente de resolución: registrar la decisión comunicada por la petrolera -->
             @if (solicitud.estado === EstadoSolicitud.ENVIADO_PETROLERA) {
               <div class="send-action">
-                <p><strong>La petrolera debe resolver esta solicitud:</strong></p>
+                <p><strong>Registre aquí la resolución comunicada por la petrolera:</strong></p>
                 <div class="button-group">
                   <button
                     class="btn-success"
                     (click)="aceptarPorPetrolera()"
                     [disabled]="procesando">
-                    <i class="bi bi-check-circle"></i> Aceptar Solicitud
+                    <i class="bi bi-check-circle"></i> Registrar aprobación de la petrolera
                   </button>
                   <button
                     class="btn-danger"
                     (click)="mostrarFormRechazo = !mostrarFormRechazo"
                     [disabled]="procesando">
-                    <i class="bi bi-x-circle"></i> Rechazar Solicitud
+                    <i class="bi bi-x-circle"></i> Registrar denegación de la petrolera
                   </button>
                 </div>
 
                 @if (mostrarFormRechazo) {
                   <div class="upload-section">
-                    <p class="upload-label"><strong>Motivo del rechazo:</strong></p>
+                    <p class="upload-label"><strong>Motivo indicado por la petrolera:</strong></p>
                     <textarea
                       class="form-control"
                       [(ngModel)]="motivoRechazo"
                       rows="3"
-                      placeholder="Indique el motivo del rechazo..."></textarea>
+                      placeholder="Motivo por el que la petrolera ha denegado la solicitud..."></textarea>
                     <div class="button-group tight">
                       <button
                         class="btn-danger"
                         (click)="rechazarPorPetrolera()"
                         [disabled]="procesando || !motivoRechazo.trim()">
-                        Confirmar Rechazo
+                        Registrar denegación
                       </button>
                     </div>
                   </div>
@@ -420,20 +420,20 @@
               </div>
             }
 
-            <!-- Aceptada -->
+            <!-- Aprobada por la petrolera -->
             @if (solicitud.estado === EstadoSolicitud.ACEPTADA_PETROLERA) {
               <div class="completed-info">
-                <p><i class="bi bi-check-circle"></i> La solicitud ha sido <strong>aceptada</strong> por la petrolera.</p>
+                <p><i class="bi bi-check-circle"></i> La petrolera ha <strong>aprobado</strong> la solicitud.</p>
                 @if (solicitud.fechaResolucionPetrolera) {
                   <p><strong>Fecha de resolución:</strong> {{ solicitud.fechaResolucionPetrolera | date: 'dd/MM/yyyy HH:mm' }}</p>
                 }
               </div>
             }
 
-            <!-- Rechazada -->
+            <!-- Denegada por la petrolera -->
             @if (solicitud.estado === EstadoSolicitud.RECHAZADA_PETROLERA) {
               <div class="rejection-box">
-                <p><i class="bi bi-x-circle"></i> La solicitud ha sido <strong>rechazada</strong> por la petrolera.</p>
+                <p><i class="bi bi-x-circle"></i> La petrolera ha <strong>denegado</strong> la solicitud.</p>
                 @if (solicitud.fechaResolucionPetrolera) {
                   <p><strong>Fecha de resolución:</strong> {{ solicitud.fechaResolucionPetrolera | date: 'dd/MM/yyyy HH:mm' }}</p>
                 }

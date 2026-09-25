@@ -139,6 +139,42 @@ code {
   color: var(--accent-color);
 }
 
+/* ========== Selector de Petrolera ========== */
+.selector-petrolera {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  max-width: 28rem;
+}
+
+.selector-petrolera label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.selector-petrolera-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.selector-petrolera-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-focus);
+}
+
 /* ========== Info Message ========== */
 .info-message {
   background: var(--info-light);
