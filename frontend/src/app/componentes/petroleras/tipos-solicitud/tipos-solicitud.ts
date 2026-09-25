@@ -23,6 +23,13 @@ export class TiposSolicitud implements OnInit {
   petroleras: Petrolera[] = [];
   petroleraId: string | null = null;
   petroleraNombre = '';
+  /**
+   * La pantalla tiene dos entradas: el enlace "Ver" de cada fila de petroleras, que llega con
+   * ?petroleraId=, y la entrada del menú lateral, que llega sin parámetro. En el primer caso la
+   * petrolera viene fijada por la ruta y no se ofrece el selector; en el segundo, el usuario la
+   * elige aquí mismo y esa elección alimenta exactamente el mismo listado.
+   */
+  petroleraFijadaPorRuta = false;
   loading = false;
 
   // Formulario para añadir/editar tipo de solicitud
@@ -59,29 +66,26 @@ export class TiposSolicitud implements OnInit {
 
   ngOnInit(): void {
     this.petroleraId = this.route.snapshot.queryParamMap.get('petroleraId');
+    this.petroleraFijadaPorRuta = !!this.petroleraId;
 
     if (this.petroleraId) {
       this.cargarTiposSolicitudDePetrolera(this.petroleraId);
-    } else {
-      this.cargarTodosTiposSolicitud();
     }
 
     this.cargarPetroleras();
   }
 
-  cargarTodosTiposSolicitud(): void {
-    this.loading = true;
-    this.tipoSolicitudService.getAll().subscribe({
-      next: (tipos) => {
-        this.tiposSolicitud = tipos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-        this.loading = false;
-      },
-      error: (err) => {
-        this.notificationService.error(this.errorHandler.getMensaje(err));
-        this.loading = false;
-        console.error(err);
-      }
-    });
+  /** Cambio en el selector de petrolera: sustituye el ámbito del listado sin salir de la pantalla. */
+  onPetroleraSeleccionada(petroleraId: string): void {
+    this.cancelarFormulario();
+    this.petroleraId = petroleraId || null;
+    this.tiposSolicitud = [];
+    // Se pinta ya el nombre elegido para que la cabecera no parpadee mientras llega la respuesta.
+    this.petroleraNombre = this.petroleras.find(p => String(p.id) === petroleraId)?.nombre || '';
+
+    if (this.petroleraId) {
+      this.cargarTiposSolicitudDePetrolera(this.petroleraId);
+    }
   }
 
   cargarTiposSolicitudDePetrolera(petroleraId: string): void {
@@ -244,8 +248,6 @@ export class TiposSolicitud implements OnInit {
           this.notificationService.success('Tipo de solicitud eliminado correctamente');
           if (this.petroleraId) {
             this.cargarTiposSolicitudDePetrolera(this.petroleraId);
-          } else {
-            this.cargarTodosTiposSolicitud();
           }
         },
         error: (err) => {

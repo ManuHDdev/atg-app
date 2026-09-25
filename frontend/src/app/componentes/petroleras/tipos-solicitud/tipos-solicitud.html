@@ -2,9 +2,9 @@
   <header class="page-header">
     <div>
       <h1 class="page-title">
-        {{ petroleraId ? 'Tipos de Solicitud de ' + petroleraNombre : 'Gestión de Tipos de Solicitud' }}
+        {{ petroleraNombre ? 'Tipos de Solicitud de ' + petroleraNombre : 'Gestión de Tipos de Solicitud' }}
       </h1>
-      @if (petroleraId) {
+      @if (petroleraFijadaPorRuta) {
         <button class="btn-link" (click)="volver()">← Volver a Petroleras</button>
       }
     </div>
@@ -13,14 +13,34 @@
     }
   </header>
 
+  <!-- Sin ?petroleraId= en la ruta la petrolera se elige aquí: el selector alimenta el mismo listado. -->
+  @if (!petroleraFijadaPorRuta) {
+    <div class="selector-petrolera">
+      <label for="selectorPetrolera">Petrolera</label>
+      <select
+        id="selectorPetrolera"
+        class="selector-petrolera-select"
+        aria-describedby="selectorPetrolera-ayuda"
+        (change)="onPetroleraSeleccionada($any($event.target).value)"
+      >
+        <option value="">Seleccione una petrolera…</option>
+        @for (petrolera of petroleras; track petrolera.id) {
+          <option [value]="petrolera.id">{{ petrolera.nombre }}</option>
+        }
+      </select>
+      <small class="help-text" id="selectorPetrolera-ayuda">
+        Los tipos de solicitud se configuran por petrolera: elija una para ver y editar los suyos.
+      </small>
+    </div>
+  }
+
   @if (loading) {
     <div class="loading">Cargando...</div>
   }
 
-  @if (!loading && !petroleraId) {
+  @if (!loading && !petroleraId && !petroleraFijadaPorRuta) {
     <div class="info-message">
-      <p>Seleccione una petrolera desde la gestión de petroleras para configurar sus tipos de solicitud.</p>
-      <button class="btn-primary" (click)="volver()">Ir a Petroleras</button>
+      <p>Todavía no hay ninguna petrolera seleccionada.</p>
     </div>
   }
 
